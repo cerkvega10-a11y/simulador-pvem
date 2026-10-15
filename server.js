@@ -54,6 +54,11 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Ruta de salud / keep-alive 24/7 para evitar que el servidor se duerma en Render
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+});
+
 // --- RUTAS DE LA API ---
 
 // 1. Obtener Estados de la República
