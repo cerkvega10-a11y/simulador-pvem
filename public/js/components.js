@@ -1774,6 +1774,441 @@ const Components = {
     `;
 
     container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 2: INTELIGENCIA SINDICAL Y RIESGO DE PARO (12 FUERZAS GREMIALES)
+   */
+  renderTab2InteligenciaSindical(containerId, unionData) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!unionData || !unionData.fuerzas) {
+      container.innerHTML = `
+        <div class="card-pvem p-8 bg-white border border-slate-200 text-center text-slate-500 text-sm">
+          Ejecute una simulación para activar la Matriz de Inteligencia Sindical de las 12 Fuerzas.
+        </div>
+      `;
+      return;
+    }
+
+    const { riesgoParoScore = 25, semaforo = 'Verde', semaforoTexto = 'Riesgo Mínimo', dictamenSindical = '', fuerzas = [] } = unionData;
+
+    let semaforoColor = 'bg-emerald-600 text-white';
+    let semaforoBorder = 'border-emerald-300';
+    let semaforoBg = 'bg-emerald-50';
+    if (semaforo === 'Rojo') {
+      semaforoColor = 'bg-red-600 text-white animate-pulse';
+      semaforoBorder = 'border-red-300';
+      semaforoBg = 'bg-red-50';
+    } else if (semaforo === 'Amarillo') {
+      semaforoColor = 'bg-amber-500 text-slate-900';
+      semaforoBorder = 'border-amber-300';
+      semaforoBg = 'bg-amber-50';
+    }
+
+    const renderBar = (favor, contra, neutro) => `
+      <div class="w-full bg-slate-200 rounded-full h-3 flex overflow-hidden shadow-inner my-1.5 border border-slate-300/60">
+        <div style="width: ${favor}%" class="bg-emerald-600 h-full" title="A Favor: ${favor}%"></div>
+        <div style="width: ${contra}%" class="bg-red-600 h-full" title="En Contra: ${contra}%"></div>
+        <div style="width: ${neutro}%" class="bg-slate-400 h-full" title="Neutro: ${neutro}%"></div>
+      </div>
+      <div class="flex items-center justify-between text-[11px] font-bold">
+        <span class="text-emerald-700">${favor}% <span class="text-[9px] font-normal text-emerald-600">Favor</span></span>
+        <span class="text-red-600">${contra}% <span class="text-[9px] font-normal text-red-500">Contra</span></span>
+        <span class="text-slate-600">${neutro}% <span class="text-[9px] font-normal text-slate-400">Neutro</span></span>
+      </div>
+    `;
+
+    const html = `
+      <div class="space-y-6">
+        <!-- SEMÁFORO DE RIESGO DE PARO / BLOQUEO VIAL -->
+        <div class="card-pvem p-6 ${semaforoBg} border-2 ${semaforoBorder} rounded-2xl shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">🚦</span>
+                <span class="text-xs uppercase tracking-widest font-black text-slate-600">Alerta Temprana de Gobernabilidad</span>
+              </div>
+              <h3 class="text-xl font-black text-slate-900">Semáforo de Riesgo de Paro y Bloqueo Vial</h3>
+              <p class="text-xs text-slate-700 max-w-2xl leading-relaxed">${dictamenSindical}</p>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <div class="text-center px-5 py-3 rounded-xl ${semaforoColor} shadow-md">
+                <span class="text-3xl font-black block">${riesgoParoScore}/100</span>
+                <span class="text-[10px] uppercase tracking-wider font-extrabold block mt-0.5">${semaforoTexto}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MATRIZ DE LAS 12 FUERZAS SINDICALES -->
+        <div class="card-pvem p-6 bg-white rounded-2xl shadow-md space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-600"></span> Matriz de Reacción de las 12 Fuerzas Sindicales
+              </h3>
+              <p class="text-xs text-slate-500">Auditoría cruzada de contratos colectivos (CFCRL/STPS) y pliegos petitorios gremiales.</p>
+            </div>
+            <span class="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">
+              12 Fuerzas Monitoreadas
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${fuerzas.map(f => {
+              let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+              if (f.postura === 'En Contra') badgeBg = 'bg-red-100 text-red-800 border-red-200';
+              else if (f.postura.includes('Reserva')) badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
+
+              return `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <h4 class="text-xs font-black text-slate-900 leading-tight">${f.gremio}</h4>
+                        <span class="text-[10px] font-bold text-slate-500 font-mono">${f.siglas}</span>
+                      </div>
+                      <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${badgeBg} whitespace-nowrap">
+                        ${f.postura}
+                      </span>
+                    </div>
+
+                    ${renderBar(f.favor, f.contra, f.neutro)}
+                  </div>
+
+                  <div class="space-y-2 pt-2 border-t border-slate-200/60 text-[11px]">
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200 text-slate-700">
+                      <strong class="text-slate-900 font-bold block mb-0.5 text-[10px] uppercase tracking-wide text-emerald-800">📋 Pliego Petitorio Sintético:</strong>
+                      ${f.pliegoPetitorio}
+                    </div>
+
+                    <div class="bg-slate-100 p-2.5 rounded-lg border border-slate-200/80 text-slate-600 italic">
+                      <strong class="text-slate-800 font-bold not-italic block mb-0.5 text-[10px] uppercase tracking-wide">🗣️ Voz del Líder Delegacional:</strong>
+                      "${f.liderTestimonio}"
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 4: BLINDAJE Y DEFENSA ESTRATÉGICA (20 PREGUNTAS CRÍTICAS + RESPUESTAS)
+   */
+  renderTab4BlindajeDefensa(containerId, defenseData) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!defenseData || !defenseData.preguntas) {
+      container.innerHTML = `
+        <div class="card-pvem p-8 bg-white border border-slate-200 text-center text-slate-500 text-sm">
+          Ejecute una simulación para generar el Entrenador de Debate y las 20 Preguntas Críticas de Blindaje.
+        </div>
+      `;
+      return;
+    }
+
+    const { preguntas = [], bloques = [] } = defenseData;
+
+    const html = `
+      <div class="space-y-6">
+        <!-- ENCABEZADO DE BLINDAJE -->
+        <div class="card-pvem p-6 bg-gradient-to-r from-slate-900 to-emerald-950 text-white rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs uppercase tracking-widest font-black text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">Media Training Político</span>
+              <span class="text-xs text-slate-400">•</span>
+              <span class="text-xs text-emerald-300 font-bold">20 Preguntas de Alta Complejidad</span>
+            </div>
+            <h3 class="text-xl font-black text-white">Escudo de Blindaje y Defensa Estratégica</h3>
+            <p class="text-xs text-emerald-200/80 max-w-3xl leading-relaxed">
+              Batería exacta de los 20 cuestionamientos más agresivos de periodistas, regidores opositores y líderes sindicales, con respuestas factibles de 30 segundos respaldadas en datos oficiales y pivotes de validación política.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs bg-emerald-500 text-emerald-950 font-black px-3 py-1.5 rounded-xl shadow-xs">
+              4 Bloques x 5 Preguntas
+            </span>
+          </div>
+        </div>
+
+        <!-- FILTRO POR BLOQUES TEMÁTICOS -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
+          <button type="button" onclick="filterDefenseQuestions('todos')" class="btn-defense-filter active px-3.5 py-2 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs transition-all" data-block="todos">
+            Todas (20)
+          </button>
+          <button type="button" onclick="filterDefenseQuestions('Financiero y Presupuestal')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Financiero y Presupuestal">
+            1. Financiero & SHCP (5)
+          </button>
+          <button type="button" onclick="filterDefenseQuestions('Impacto Social y Pobreza')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Impacto Social y Pobreza">
+            2. Social & CONEVAL (5)
+          </button>
+          <button type="button" onclick="filterDefenseQuestions('Conflicto Sindical y Gremial')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Conflicto Sindical y Gremial">
+            3. Sindical & STPS (5)
+          </button>
+          <button type="button" onclick="filterDefenseQuestions('Técnico, Legal y de Ejecución')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Técnico, Legal y de Ejecución">
+            4. Técnico & CONAGUA (5)
+          </button>
+        </div>
+
+        <!-- LISTA DE LAS 20 PREGUNTAS (ACORDEÓN INTERACTIVO) -->
+        <div id="defense-questions-list" class="space-y-3.5">
+          ${preguntas.map((q, idx) => `
+            <div class="card-pvem bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs hover:border-emerald-300 transition-all defense-card" data-block="${q.bloque}">
+              <!-- Cabecera / Dardo Hostil -->
+              <div class="accordion-toggle p-4 sm:p-5 flex items-start justify-between gap-3 bg-slate-50/50 hover:bg-emerald-50/30 transition-colors" onclick="toggleDefenseAccordion(this)">
+                <div class="flex items-start gap-3">
+                  <span class="w-7 h-7 rounded-lg bg-slate-800 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                    ${q.numero}
+                  </span>
+                  <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-red-800 bg-red-100 border border-red-200 px-2 py-0.5 rounded">
+                        ${q.peligro}
+                      </span>
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                        ${q.bloque} • ${q.sectorAtacante}
+                      </span>
+                    </div>
+                    <h4 class="text-sm font-black text-slate-900 leading-snug">
+                      🎯 ${q.dardo}
+                    </h4>
+                  </div>
+                </div>
+                <span class="accordion-icon text-slate-400 text-base font-bold shrink-0 transition-transform duration-200">▼</span>
+              </div>
+
+              <!-- Contenido Desplegable (El Escudo + Pivote Político) -->
+              <div class="accordion-content px-4 sm:px-5 pb-5 pt-2 border-t border-slate-200/60 bg-white space-y-3">
+                <!-- El Escudo -->
+                <div class="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-slate-800 space-y-1.5">
+                  <div class="flex items-center gap-2 text-emerald-900 font-black text-[11px] uppercase tracking-wide">
+                    <span>🛡️</span> <span>Respuesta Maestra Factible (Guion de 30 Segundos):</span>
+                  </div>
+                  <p class="leading-relaxed font-medium text-slate-800">${q.escudo}</p>
+                </div>
+
+                <!-- Pivote Político -->
+                <div class="p-3.5 rounded-xl bg-slate-900 text-emerald-300 text-xs space-y-1">
+                  <div class="flex items-center gap-1.5 text-amber-400 font-black text-[10px] uppercase tracking-wider">
+                    <span>🔄</span> <span>Pivote Político (Transforma el Ataque en Fortaleza):</span>
+                  </div>
+                  <p class="text-slate-200 font-semibold leading-relaxed">${q.pivotePolitico}</p>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 5: MODO ATAQUE (DEMOLICIÓN DE CONTRINCANTE / INGENIERÍA INVERSA)
+   */
+  renderTab5ModoAtaque(containerId, attackData, report) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const data = attackData || {
+      partidoRival: 'MORENA',
+      municipio: report?.resumenEjecutivo?.municipio || 'Ecatepec de Morelos',
+      rechazoEstimado: 68,
+      aprobacionRival: 32,
+      sectoresAgraviados: [
+        { sector: 'Transportistas y Choferes de Ruta', nivelFriccion: '92% de Oposición', motivo: 'Amenaza a ingresos diarios y cancelación de derroteros.' },
+        { sector: 'Comerciantes y Tianguistas Populares', nivelFriccion: '84% de Oposición', motivo: 'Riesgo de cierres viales prolongados o desalojos.' },
+        { sector: 'Familias de Colonias Populares', nivelFriccion: '78% de Oposición', motivo: 'Ignora las carencias urgentes de agua potable y drenaje.' }
+      ],
+      planCaptura: {
+        focoTerritorial: 'Despliegue territorial inmediato en bastiones afectados',
+        lugaresVisita: [
+          'Paraderos y bases de combis a las 06:00 AM para dialogar con choferes',
+          'Mercados municipales y tianguis a las 11:00 AM con pliego petitorio',
+          'Comités vecinales de colonias en desabasto a las 17:00 PM'
+        ],
+        promesaCompromiso: 'Compromiso firmado de frenar la medida y subsidiar mejoras directas.'
+      },
+      soundbites: [
+        '"Gobiernan desde el aire acondicionado sin saber lo que cuesta pagar el pasaje diario."',
+        '"Según datos de CONEVAL, las familias ya no soportan más cargas económicas."',
+        '"Nosotros proponemos tecnificar y dar créditos; ellos quieren multar y prohibir."',
+        '"¿Por qué persiguen a los trabajadores en vez de atrapar a los extorsionadores?"',
+        '"El pueblo organizado frenará este atropello con la ley y en las urnas."'
+      ],
+      guionDebate: {
+        apertura: 'Candidato rival: su propuesta es una ocurrencia costosa que castiga a los trabajadores.',
+        demolicionTecnica: 'Carece de suficiencia presupuestal SHCP y viola contratos colectivos.',
+        contrasteEmocional: 'Ustedes ven contratos; nosotros vemos a las familias trabajadoras.',
+        cierreContundente: 'Vamos a defender al pueblo y construir la verdadera alternativa comunitaria.'
+      },
+      contrapropuestaGanadora: {
+        titulo: 'Alternativa Comunitaria Sustentable e Incluyente',
+        resumen: 'Financiamiento con bonos ambientales del Estado sin deuda ni afectación a trabajadores.',
+        ventajaCompetitiva: 'Cuenta con el respaldo del 78% del enjambre ciudadano.'
+      }
+    };
+
+    const html = `
+      <div class="space-y-6">
+        <!-- HEADER MODO ATAQUE -->
+        <div class="card-pvem p-6 bg-gradient-to-r from-red-950 via-slate-900 to-slate-900 text-white rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-2 border-red-500/40">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs uppercase tracking-widest font-black text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded border border-red-700">Guerra Electoral Asimétrica</span>
+              <span class="text-xs text-slate-400">•</span>
+              <span class="text-xs text-amber-300 font-bold">Auditoría a Propuestas Rivales</span>
+            </div>
+            <h3 class="text-xl font-black text-white flex items-center gap-2">
+              <span>⚔️</span> Modo Ataque: Demolición de Contrincante
+            </h3>
+            <p class="text-xs text-slate-300 max-w-3xl leading-relaxed">
+              Ingeniería inversa electoral para detectar las fisuras técnicas y sociales de las propuestas de los partidos adversarios en ${data.municipio}, capitalizar el voto de los sectores agraviados y posicionar nuestra contrapropuesta ganadora.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs bg-red-600 text-white font-black px-3.5 py-1.5 rounded-xl shadow-xs">
+              ${data.partidoRival} en la mira
+            </span>
+          </div>
+        </div>
+
+        <!-- SELECTOR DE PARTIDO RIVAL -->
+        <div class="card-pvem p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1">
+                Seleccionar Partido Adversario a Auditar:
+              </label>
+              <p class="text-[11px] text-slate-500">Seleccione el partido contrincante para reorientar el arsenal de contraataque:</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="select-rival-party" onchange="window.recomputeAttackMode(this.value)" class="text-xs font-black px-3.5 py-2 border-2 border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-800">
+                <option value="MORENA" ${data.partidoRival === 'MORENA' ? 'selected' : ''}>🦅 MORENA</option>
+                <option value="PAN" ${data.partidoRival === 'PAN' ? 'selected' : ''}>🔵 PAN</option>
+                <option value="PRI" ${data.partidoRival === 'PRI' ? 'selected' : ''}>🔴 PRI</option>
+                <option value="MC" ${data.partidoRival === 'MC' ? 'selected' : ''}>🟠 Movimiento Ciudadano</option>
+                <option value="PT" ${data.partidoRival === 'PT' ? 'selected' : ''}>⭐ PT</option>
+                <option value="PVEM" ${data.partidoRival === 'PVEM' ? 'selected' : ''}>🌿 PVEM</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- RADIOGRAFÍA DE VULNERABILIDAD DEL RIVAL (LOS 3 SECTORES FURAGIOSOS) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card-pvem p-5 bg-red-50/80 border-2 border-red-200 rounded-2xl flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-red-800 block mb-1">Rechazo Popular Estimado</span>
+              <div class="text-3xl font-black text-red-600">${data.rechazoEstimado}%</div>
+              <span class="text-[11px] font-bold text-red-800">de desaprobación social en ${data.municipio}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 mt-3 pt-2 border-t border-red-200/80">
+              La iniciativa del adversario lastima intereses clave y es vulnerable a contraataque inmediato.
+            </p>
+          </div>
+
+          <div class="md:col-span-2 card-pvem p-5 bg-white border border-slate-200 rounded-2xl space-y-3">
+            <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Los 3 Sectores Más Agraviados con la Medida de ${data.partidoRival}
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              ${data.sectoresAgraviados.map((s, i) => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                  <div>
+                    <span class="text-[10px] font-black text-red-600 block mb-0.5">#${i + 1} ${s.nivelFriccion}</span>
+                    <strong class="text-xs font-black text-slate-900 block leading-tight">${s.sector}</strong>
+                  </div>
+                  <p class="text-[10px] text-slate-500 mt-2 leading-tight">${s.motivo}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- PLAN TERRITORIAL DE CAPTURA DEL VOTO INCONFORME (ABRAZAR A LOS AFECTADOS) -->
+        <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3">
+          <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Estrategia Territorial de Captura (Abrazar a los Afectados Mañana Mismo)
+          </h4>
+          <p class="text-xs text-slate-600 leading-relaxed font-medium">${data.planCaptura.promesaCompromiso}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            ${data.planCaptura.lugaresVisita.map((visita, idx) => `
+              <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 text-xs text-slate-800 flex items-start gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-700 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                <span class="font-semibold">${visita}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 5 SOUNDBITES DEMOLEDORES -->
+        <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3">
+          <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <span>📢</span> 5 Líneas de Discurso Demoledoras (Soundbites Oficiales para Prensa y Redes)
+          </h4>
+          <div class="space-y-2">
+            ${data.soundbites.map((sb, idx) => `
+              <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex items-start gap-3">
+                <span class="text-xs font-mono font-bold text-slate-400 shrink-0">#${idx + 1}</span>
+                <p class="text-xs font-bold text-slate-800 italic leading-snug">${sb}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- GUION DE DEBATE Y CONTRAPROPUESTA GANADORA -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Guion de Debate -->
+          <div class="card-pvem p-5 bg-slate-900 text-white rounded-2xl space-y-3">
+            <h4 class="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <span>🎙️</span> Guion Blindado para Debate en Tribuna
+            </h4>
+            <div class="space-y-2.5 text-xs">
+              <div class="p-2.5 rounded-lg bg-slate-800 border border-slate-700">
+                <strong class="text-emerald-400 text-[10px] uppercase block mb-1">Apertura Demoledora:</strong>
+                <p class="text-slate-200">${data.guionDebate.apertura}</p>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-800 border border-slate-700">
+                <strong class="text-red-400 text-[10px] uppercase block mb-1">Demolición Técnica:</strong>
+                <p class="text-slate-200">${data.guionDebate.demolicionTecnica}</p>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-800 border border-slate-700">
+                <strong class="text-amber-300 text-[10px] uppercase block mb-1">Cierre Contundente:</strong>
+                <p class="text-slate-200">${data.guionDebate.cierreContundente}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contrapropuesta Ganadora -->
+          <div class="card-pvem p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-2xl space-y-3">
+            <h4 class="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-2">
+              <span>🏆</span> Contrapropuesta Ganadora (Nuestra Bandera)
+            </h4>
+            <div class="space-y-2">
+              <h5 class="text-sm font-black text-slate-900">${data.contrapropuestaGanadora.titulo}</h5>
+              <p class="text-xs text-slate-700 leading-relaxed font-medium">${data.contrapropuestaGanadora.resumen}</p>
+              <div class="p-3 bg-white rounded-xl border border-emerald-200 text-xs text-emerald-900 font-bold mt-2">
+                ✨ Ventaja Competitiva: ${data.contrapropuestaGanadora.ventajaCompetitiva}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    container.innerHTML = html;
   }
 };
 
@@ -1839,4 +2274,49 @@ window.runLiveAiDiagnostic = async function() {
       `;
     }
   }
+};
+
+window.toggleDefenseAccordion = function(element) {
+  const card = element.closest('.defense-card');
+  if (!card) return;
+  const content = card.querySelector('.accordion-content');
+  const icon = card.querySelector('.accordion-icon');
+  if (!content) return;
+
+  const isOpen = content.classList.contains('open');
+  if (isOpen) {
+    content.classList.remove('open');
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  } else {
+    content.classList.add('open');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
+};
+
+window.filterDefenseQuestions = function(blockName) {
+  document.querySelectorAll('.btn-defense-filter').forEach(btn => {
+    if (btn.getAttribute('data-block') === blockName) {
+      btn.className = 'btn-defense-filter active px-3.5 py-2 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs transition-all';
+    } else {
+      btn.className = 'btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all';
+    }
+  });
+
+  document.querySelectorAll('.defense-card').forEach(card => {
+    if (blockName === 'todos' || card.getAttribute('data-block') === blockName) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+};
+
+window.recomputeAttackMode = function(rivalParty) {
+  if (!appState || !appState.currentReport) return;
+  const report = appState.currentReport;
+  const baseAttack = report.modoAtaque || {};
+  baseAttack.partidoRival = rivalParty;
+  baseAttack.municipio = report.resumenEjecutivo?.municipio || 'Ecatepec de Morelos';
+
+  Components.renderTab5ModoAtaque('attack-mode-container', baseAttack, report);
 };

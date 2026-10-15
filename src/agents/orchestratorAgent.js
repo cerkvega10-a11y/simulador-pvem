@@ -198,7 +198,12 @@ class OrchestratorAgent {
       chatTelemetry: auditResult.chatTelemetry,
       radarData: auditResult.radarData,
       evolucionData: auditResult.evolucionData,
-      porSectorSocial: auditResult.porSectorSocial
+      porSectorSocial: auditResult.porSectorSocial,
+      inteligenciaSindical: auditResult.inteligenciaSindical,
+      blindajeDefensa: auditResult.blindajeDefensa,
+      modoAtaque: auditResult.modoAtaque,
+      variacionMuestral: auditResult.variacionMuestral,
+      qaWatchdogCertificacion: auditResult.qaWatchdogCertificacion
     };
 
     const finalReport = politicalStrategistAgent.compileReport(state);
@@ -210,6 +215,11 @@ class OrchestratorAgent {
     finalReport.porSectorSocial = auditResult.porSectorSocial || state.mapaCalorDemografico?.porSectorSocial;
     finalReport.fuentesOficialesVerificadas = municipalResearch.fuentesOficialesVerificadas || [];
     finalReport.protocoloDeepGov = municipalResearch.protocoloDeepGov || null;
+    finalReport.inteligenciaSindical = auditResult.inteligenciaSindical;
+    finalReport.blindajeDefensa = auditResult.blindajeDefensa;
+    finalReport.modoAtaque = auditResult.modoAtaque;
+    finalReport.variacionMuestral = auditResult.variacionMuestral;
+    finalReport.qaWatchdogCertificacion = auditResult.qaWatchdogCertificacion;
 
     // --- META-AGENTE: Verificación y Autodiagnóstico de IA Real y Datos Oficiales ---
     onProgress({

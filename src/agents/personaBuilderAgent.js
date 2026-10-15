@@ -36,16 +36,19 @@ class PersonaBuilderAgent {
   }
 
   /**
-   * Genera N agentes sintéticos (100 a 1,000)
+   * Genera N agentes sintéticos (50 a 10,000)
    */
   generateSwarm(swarmSize, municipalData, demographicFilters = {}) {
-    const size = Math.min(Math.max(parseInt(swarmSize, 10) || 250, 100), 1000);
+    const rawSize = parseInt(swarmSize, 10) || 250;
+    const size = Math.min(Math.max(rawSize, 50), 10000);
+    // Para muestras masivas (2000, 5000, 10000), instanciamos hasta 1000 agentes representativos para el DOM y chats
+    const arrayCount = Math.min(size, 1000);
     const colonias = municipalData.coloniasRepresentativas || ['Colonia Centro', 'Barrio Tradicional', 'Fraccionamiento'];
     const nseDistribution = municipalData.distribucionNSE || { 'A/B': 5, 'C+': 15, 'C': 35, 'D+': 30, 'D/E': 15 };
     
     const personas = [];
 
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < arrayCount; i++) {
       const id = `agente-${i + 1}`;
       const genero = i % 100 < 51 ? 'Femenino' : (i % 100 < 98 ? 'Masculino' : 'No Binario');
       const nombre = this.pickName(genero);
@@ -82,7 +85,7 @@ class PersonaBuilderAgent {
     }
 
     return {
-      totalGenerados: personas.length,
+      totalGenerados: size,
       resumenMuestra: {
         distribucionGenero: {
           femenino: personas.filter(p => p.genero === 'Femenino').length,

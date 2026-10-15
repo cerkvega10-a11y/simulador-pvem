@@ -120,7 +120,12 @@ class PoliticalStrategistAgent {
       evolucionData: orchestratorState.evolucionData || null,
       estrategiaPoliticaPVEM: estrategiaPVEM,
       proofOfReasoning: orchestratorState.proofOfReasoning || null,
-      evidenciaMultimodal: multimodalData.visualData || null
+      evidenciaMultimodal: multimodalData.visualData || null,
+      inteligenciaSindical: orchestratorState.inteligenciaSindical || null,
+      blindajeDefensa: orchestratorState.blindajeDefensa || null,
+      modoAtaque: orchestratorState.modoAtaque || null,
+      variacionMuestral: orchestratorState.variacionMuestral || null,
+      qaWatchdogCertificacion: orchestratorState.qaWatchdogCertificacion || null
     };
   }
 

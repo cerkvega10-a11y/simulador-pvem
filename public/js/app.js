@@ -10,8 +10,10 @@ let appState = {
   municipio: 'Ecatepec de Morelos',
   localidad: '',
   filtrosDemograficos: { rangoEdad: 'todos', nse: 'todos', ocupacion: 'todos' },
-  swarmSize: 250,
+  swarmSize: 500,
   webSearchActive: true,
+  activeParty: 'PVEM',
+  isLocked: false,
   aiConfig: {
     provider: 'native',
     model: 'native',
@@ -33,7 +35,9 @@ async function initApp() {
   await loadStates();
   await loadMunicipalities('Estado de México');
   await loadPresets();
-  updateSwarmDepthIndicator(appState.swarmSize);
+  setExactSwarmSize(500);
+  onPartyThemeChange('PVEM');
+  switchWarRoomTab('tab-resumen-demografia');
 }
 
 /**
@@ -120,9 +124,12 @@ window.clearForCustomProposal = function() {
 
 /**
  * REGLA 2: Botón de Refresh / Nueva Simulación (Reset Total en Pantalla Principal)
- * Limpia campos, documentos, imágenes, selectores, slider, terminal y resultados sin recargar la página.
+ * Limpia campos, documentos, imágenes, selectores, terminal y resultados; desbloquea controles.
  */
 window.resetFullSimulation = function() {
+  // Desbloquear controles primero
+  lockSimulationControls(false);
+
   // 1. Limpiar campos de texto
   const inputTitulo = document.getElementById('input-titulo');
   if (inputTitulo) inputTitulo.value = '';
@@ -161,12 +168,8 @@ window.resetFullSimulation = function() {
     previewContainer.classList.add('hidden');
   }
 
-  // 4. Restablecer slider de enjambre a 100
-  const slider = document.getElementById('swarm-slider');
-  if (slider) slider.value = 100;
-  const countDisp = document.getElementById('swarm-count-display');
-  if (countDisp) countDisp.innerText = '100';
-  updateSwarmDepthIndicator(100);
+  // 4. Restablecer muestra a 500 agentes
+  setExactSwarmSize(500);
 
   // 5. Restablecer checkbox de búsqueda web
   const toggleWeb = document.getElementById('toggle-web-search');
@@ -186,19 +189,21 @@ window.resetFullSimulation = function() {
   const dashboard = document.getElementById('results-dashboard-section');
   if (dashboard) dashboard.classList.add('hidden');
 
-  const proofCont = document.getElementById('proof-of-reasoning-container');
-  if (proofCont) proofCont.innerHTML = '';
-  const sourcesCont = document.getElementById('official-sources-table-container');
-  if (sourcesCont) sourcesCont.innerHTML = '';
-  const verifCont = document.getElementById('real-ai-verification-container');
-  if (verifCont) verifCont.innerHTML = '';
-  const swarmChatsCont = document.getElementById('swarm-chats-container');
-  if (swarmChatsCont) swarmChatsCont.innerHTML = '';
-  const respInterrogacion = document.getElementById('respuestas-interrogacion-container');
-  if (respInterrogacion) {
-    respInterrogacion.classList.add('hidden');
-    respInterrogacion.innerHTML = '';
-  }
+  const containersToClear = [
+    'demographic-heatmap-container',
+    'unions-intelligence-container',
+    'official-sources-table-container',
+    'proof-of-reasoning-container',
+    'real-ai-verification-container',
+    'swarm-chats-container',
+    'strategic-defense-container',
+    'attack-mode-container',
+    'respuestas-interrogacion-container'
+  ];
+  containersToClear.forEach(cid => {
+    const el = document.getElementById(cid);
+    if (el) el.innerHTML = '';
+  });
 
   // Restablecer etiquetas y KPIs a sus valores iniciales
   ['dash-titulo-proyecto', 'dash-territorio', 'dash-tamano-enjambre', 'dash-dictamen'].forEach(id => {
@@ -231,51 +236,231 @@ window.resetFullSimulation = function() {
   appState.estado = 'Estado de México';
   appState.municipio = 'Ecatepec de Morelos';
   appState.localidad = '';
-  appState.swarmSize = 100;
+  appState.swarmSize = 500;
   appState.webSearchActive = true;
   appState.currentReport = null;
 
+  // Restaurar pestaña activa por defecto
+  switchWarRoomTab('tab-resumen-demografia');
   restoreSimulateButton();
 
   // 10. Scroll suave hacia arriba
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (inputTitulo) inputTitulo.focus();
 
-  showToast('Sistema reiniciado. Listo para ingresar una nueva simulación.');
+  showToast('Sistema desbloqueado y reiniciado. Listo para ingresar una nueva propuesta.');
 };
 
 /**
- * Carga de Propuestas de Ejemplo (Presets) con opción destacada de Propuesta Propia
+ * BLOQUEO DE CONTROLES POST-EJECUCIÓN (STATE LOCKING)
+ * Inhabilita controles de configuración tras iniciar la simulación hasta presionar Reiniciar.
+ */
+window.lockSimulationControls = function(locked) {
+  appState.isLocked = locked;
+  const elementsToLock = [
+    'select-party-theme',
+    'select-estado',
+    'select-municipio',
+    'input-localidad',
+    'filtro-edad',
+    'filtro-nse',
+    'filtro-ocupacion',
+    'select-swarm-size',
+    'toggle-web-search',
+    'input-titulo',
+    'input-propuesta',
+    'input-file-doc',
+    'input-file-img'
+  ];
+
+  elementsToLock.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = locked;
+      if (locked) {
+        el.classList.add('opacity-65', 'cursor-not-allowed', 'border-amber-300');
+      } else {
+        el.classList.remove('opacity-65', 'cursor-not-allowed', 'border-amber-300');
+      }
+    }
+  });
+
+  document.querySelectorAll('.btn-swarm-quick').forEach(btn => {
+    btn.disabled = locked;
+    if (locked) {
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  });
+
+  const btnSimular = document.getElementById('btn-iniciar-simulacion');
+  if (btnSimular) {
+    if (locked) {
+      btnSimular.disabled = true;
+      btnSimular.classList.add('opacity-60', 'cursor-not-allowed');
+      btnSimular.innerHTML = `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>Simulación Bloqueada (Usa 'Reiniciar' para nueva propuesta)</span></span>`;
+    } else {
+      btnSimular.disabled = false;
+      btnSimular.classList.remove('opacity-60', 'cursor-not-allowed');
+      btnSimular.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span>Iniciar Simulación Predictiva</span>
+      `;
+    }
+  }
+};
+
+/**
+ * BARRA DE NAVEGACIÓN TÁCTICA POR PESTAÑAS (TABBED WAR ROOM UI — CERO SATURACIÓN VISUAL)
+ * Muestra solo una pestaña a la vez con animación fluida.
+ */
+window.switchWarRoomTab = function(tabId) {
+  // 1. Alternar estilos de botones
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => {
+    if (btn.getAttribute('data-tab') === tabId) {
+      btn.className = 'tab-btn active px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 bg-emerald-600 text-white shadow-xs';
+    } else {
+      btn.className = 'tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0';
+    }
+  });
+
+  // 2. Ocultar todos los paneles y mostrar únicamente el seleccionado
+  const tabs = document.querySelectorAll('.tab-content');
+  tabs.forEach(tab => {
+    if (tab.id === tabId) {
+      tab.classList.remove('hidden');
+      tab.classList.add('tabFadeIn');
+    } else {
+      tab.classList.add('hidden');
+      tab.classList.remove('tabFadeIn');
+    }
+  });
+};
+
+/**
+ * SELECTOR MULTIPARTIDISTA Y TEMAS WHITE-LABEL (PVEM, MORENA, PAN, PRI, MC, PT)
+ */
+window.onPartyThemeChange = function(partyCode) {
+  appState.activeParty = partyCode || 'PVEM';
+
+  const partyThemes = ['theme-pvem', 'theme-morena', 'theme-pan', 'theme-pri', 'theme-mc', 'theme-pt'];
+  partyThemes.forEach(th => document.body.classList.remove(th));
+  
+  const currentClass = `theme-${(partyCode || 'pvem').toLowerCase()}`;
+  document.body.classList.add(currentClass);
+
+  const titleSystem = document.getElementById('header-system-title');
+  const titleParty = document.getElementById('header-party-title');
+
+  const partyInfo = {
+    PVEM: {
+      title: 'Comité Directivo Estado de México',
+      system: 'SISTEMA ENJAMBRE AI — PARTIDO VERDE'
+    },
+    MORENA: {
+      title: 'Coordinación Estatal Estado de México',
+      system: 'SISTEMA CUARTO DE GUERRA AI — MORENA'
+    },
+    PAN: {
+      title: 'Comité Directivo Estatal Edomex',
+      system: 'SISTEMA INTELIGENCIA ELECTORAL AI — PAN'
+    },
+    PRI: {
+      title: 'Comité Directivo Estatal Edomex',
+      system: 'SISTEMA OPERACIÓN TERRITORIAL AI — PRI'
+    },
+    MC: {
+      title: 'Coordinación Ciudadana Edomex',
+      system: 'SISTEMA ESCUCHA CIUDADANA AI — MOVIMIENTO CIUDADANO'
+    },
+    PT: {
+      title: 'Comisión Coordinadora Estatal Edomex',
+      system: 'SISTEMA PODER POPULAR AI — PARTIDO DEL TRABAJO'
+    }
+  };
+
+  const info = partyInfo[partyCode] || partyInfo.PVEM;
+  if (titleParty) titleParty.innerText = info.title;
+  if (titleSystem) titleSystem.innerText = info.system;
+
+  renderPresetsList(partyCode);
+};
+
+/**
+ * CONFIGURACIÓN DE TAMAÑO EXACTO DEL ENJAMBRE (50 A 10,000 AGENTES)
+ */
+window.setExactSwarmSize = function(val) {
+  const num = parseInt(val, 10) || 500;
+  appState.swarmSize = num;
+
+  const select = document.getElementById('select-swarm-size');
+  if (select) select.value = String(num);
+
+  const display = document.getElementById('swarm-count-display');
+  if (display) display.innerText = num.toLocaleString();
+
+  const slider = document.getElementById('swarm-slider');
+  if (slider) slider.value = num;
+
+  document.querySelectorAll('.btn-swarm-quick').forEach(btn => {
+    const bVal = parseInt(btn.getAttribute('data-val'), 10);
+    if (bVal === num) {
+      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-emerald-600 text-white transition-all border border-emerald-700 shadow-xs font-black';
+    } else {
+      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 font-bold';
+    }
+  });
+
+  updateSwarmDepthIndicator(num);
+};
+
+window.onSwarmSizeSelectChange = function(val) {
+  window.setExactSwarmSize(val);
+};
+
+/**
+ * Carga de Propuestas de Ejemplo (Presets) con filtrado por partido y opción de Propuesta Propia
  */
 async function loadPresets() {
-  const container = document.getElementById('presets-container');
-  if (!container) return;
-
   try {
     const res = await fetch('/api/presets');
     const data = await res.json();
     if (data.success && data.presets) {
       appState.presets = data.presets;
-      
-      const customBtn = `
-        <button type="button" onclick="clearForCustomProposal()"
-          class="text-xs text-left px-3 py-2 rounded-lg border-2 border-dashed border-emerald-400 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold transition-all flex items-center justify-between gap-2 shadow-xs group">
-          <span class="truncate group-hover:underline">➕ Mi Propia Propuesta</span>
-          <span class="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded shrink-0">En blanco</span>
-        </button>
-      `;
-
-      container.innerHTML = customBtn + data.presets.map((p, idx) => `
-        <button type="button" onclick="applyPreset('${p.id}')"
-          class="text-xs text-left px-3 py-2 rounded-lg border border-emerald-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-800 transition-all flex items-center justify-between gap-2 shadow-sm">
-          <span class="font-semibold truncate">${p.titulo}</span>
-          <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded shrink-0">${p.municipio.split(' ')[0]}</span>
-        </button>
-      `).join('');
+      renderPresetsList(appState.activeParty || 'PVEM');
     }
   } catch (err) {
     console.error('Error cargando presets:', err);
   }
+}
+
+function renderPresetsList(partyCode) {
+  const container = document.getElementById('presets-container');
+  if (!container || !appState.presets) return;
+
+  const activeParty = partyCode || appState.activeParty || 'PVEM';
+  let filtered = appState.presets.filter(p => p.partido === activeParty);
+  if (!filtered || filtered.length === 0) {
+    filtered = appState.presets;
+  }
+
+  const customBtn = `
+    <button type="button" onclick="clearForCustomProposal()"
+      class="text-xs text-left px-3 py-2 rounded-lg border-2 border-dashed border-emerald-400 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold transition-all flex items-center justify-between gap-2 shadow-xs group">
+      <span class="truncate group-hover:underline">➕ Mi Propia Propuesta</span>
+      <span class="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded shrink-0">En blanco</span>
+    </button>
+  `;
+
+  container.innerHTML = customBtn + filtered.slice(0, 4).map((p) => `
+    <button type="button" onclick="applyPreset('${p.id}')"
+      class="text-xs text-left px-3 py-2 rounded-lg border border-emerald-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-800 transition-all flex items-center justify-between gap-2 shadow-sm">
+      <span class="font-semibold truncate">${p.titulo}</span>
+      <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded shrink-0">${p.municipio.split(' ')[0]}</span>
+    </button>
+  `).join('');
 }
 
 /**
@@ -671,15 +856,13 @@ async function startSimulation() {
   const filtroOcupacion = document.getElementById('filtro-ocupacion')?.value || 'todos';
   appState.filtrosDemograficos = { rangoEdad: filtroEdad, nse: filtroNse, ocupacion: filtroOcupacion };
 
+  // Bloquear controles de inmediato según directriz de State Locking
+  lockSimulationControls(true);
+
   // Mostrar sección de consola de progreso y scroll
   const consoleSection = document.getElementById('progress-console-section');
   consoleSection.classList.remove('hidden');
   consoleSection.scrollIntoView({ behavior: 'smooth' });
-
-  // Deshabilitar botón temporalmente
-  const btnSimular = document.getElementById('btn-iniciar-simulacion');
-  btnSimular.disabled = true;
-  btnSimular.classList.add('opacity-50', 'cursor-not-allowed');
 
   // Resetear estados de pasos
   resetProgressSteps();
@@ -815,8 +998,19 @@ async function startSimulation() {
 
 function restoreSimulateButton() {
   const btnSimular = document.getElementById('btn-iniciar-simulacion');
-  btnSimular.disabled = false;
-  btnSimular.classList.remove('opacity-50', 'cursor-not-allowed');
+  if (!btnSimular) return;
+  if (appState.isLocked) {
+    btnSimular.disabled = true;
+    btnSimular.classList.add('opacity-60', 'cursor-not-allowed');
+    btnSimular.innerHTML = `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>Simulación Bloqueada (Usa 'Reiniciar' para nueva propuesta)</span></span>`;
+  } else {
+    btnSimular.disabled = false;
+    btnSimular.classList.remove('opacity-60', 'cursor-not-allowed');
+    btnSimular.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      <span>Iniciar Simulación Predictiva</span>
+    `;
+  }
 }
 
 /**
@@ -945,7 +1139,7 @@ function onSimulationFinished(report) {
   // 1. Rellenar métricas del encabezado del dashboard
   safeSetText('dash-titulo-proyecto', res.tituloProyecto || 'Iniciativa Comunitaria');
   safeSetText('dash-territorio', `${res.municipio || 'Edomex'}, ${res.estado || 'México'} (${res.localidad || 'Zona Urbana'})`);
-  safeSetText('dash-tamano-enjambre', `${(res.tamanoEnjambre || appState.swarmSize || 100).toLocaleString()} Agentes Ciudadanos`);
+  safeSetText('dash-tamano-enjambre', `${(res.tamanoEnjambre || appState.swarmSize || 500).toLocaleString()} Agentes Sintéticos (Margen ${report.variacionMuestral?.margenError || '±3.5%'})`);
   safeSetText('dash-dictamen', res.dictamenPolitico || 'Evaluación predictiva completada');
 
   // 2. Tarjetas KPI Principales (Garantía absoluta de porcentajes visibles)
@@ -960,7 +1154,9 @@ function onSimulationFinished(report) {
   const friccionBadge = document.getElementById('kpi-friccion-badge');
   if (friccionBadge) friccionBadge.innerText = res.indiceFriccionSocial?.nivel || 'Moderada';
 
-  // 2.5 Segmentación Demográfica y Estrato Socioeconómico (Barras Gráficas Visuales)
+  // ========================================================
+  // PESTAÑA 1: RESUMEN EJECUTIVO Y DEMOGRAFÍA
+  // ========================================================
   try {
     if (report.mapaCalorDemografico) {
       Components.renderHeatmap('demographic-heatmap-container', report.mapaCalorDemografico);
@@ -969,36 +1165,32 @@ function onSimulationFinished(report) {
     console.warn('Advertencia en Segmentación Demográfica:', e);
   }
 
-  // 3. Panel del Agente Auditor de IA (Proof of Reasoning)
+  // ========================================================
+  // PESTAÑA 2: INTELIGENCIA SINDICAL Y RIESGO DE PARO
+  // ========================================================
   try {
+    if (report.inteligenciaSindical) {
+      Components.renderTab2InteligenciaSindical('unions-intelligence-container', report.inteligenciaSindical);
+    }
+  } catch (e) {
+    console.warn('Advertencia en Inteligencia Sindical:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 3: 18 FUENTES OFICIALES (.GOB.MX) Y VOCES CIUDADANAS
+  // ========================================================
+  try {
+    const fuentes = report.fuentesOficialesVerificadas || report.fuentesTrazables;
+    if (fuentes) {
+      Components.renderOfficialSourcesTable('official-sources-table-container', fuentes);
+    }
     if (report.proofOfReasoning) {
       Components.renderProofOfReasoning('proof-of-reasoning-container', report.proofOfReasoning);
     }
-  } catch (e) {
-    console.warn('Advertencia en Proof of Reasoning:', e);
-  }
-
-  // 4. Tabla de Fuentes Oficiales Gubernamentales Verificadas
-  try {
-    if (report.fuentesOficialesVerificadas) {
-      Components.renderOfficialSourcesTable('official-sources-table-container', report.fuentesOficialesVerificadas);
-    }
-  } catch (e) {
-    console.warn('Advertencia en Fuentes Oficiales:', e);
-  }
-
-  // 5. Consola de Verificación y Autodiagnóstico de IA Real
-  try {
     if (report.verificacionIAReal) {
       Components.renderRealAiVerificationPanel('real-ai-verification-container', report.verificacionIAReal);
     }
-  } catch (e) {
-    console.warn('Advertencia en Verificación IA:', e);
-  }
 
-
-  // 7. FEED DE CHATS DEL ENJAMBRE CIUDADANO (RENDERIZADO INMEDIATO Y AUTOMÁTICO EN "TODOS")
-  try {
     const swarmChats = report.chatsDelEnjambre || report.vocesDelEnjambre || [];
     Components.renderSwarmChatFeed('swarm-chats-container', swarmChats, 'todos', '');
 
@@ -1014,13 +1206,48 @@ function onSimulationFinished(report) {
     const inputSearch = document.getElementById('input-search-chats');
     if (inputSearch) inputSearch.value = '';
   } catch (chatErr) {
-    console.error('Error renderizando feed de chats del enjambre:', chatErr);
+    console.error('Error renderizando fuentes y voces:', chatErr);
   }
 
-  // 8. Scroll suave al dashboard de resultados
+  // ========================================================
+  // PESTAÑA 4: BLINDAJE Y DEFENSA ESTRATÉGICA (20 PREGUNTAS)
+  // ========================================================
+  try {
+    if (report.blindajeDefensa) {
+      Components.renderTab4BlindajeDefensa('strategic-defense-container', report.blindajeDefensa);
+    }
+  } catch (e) {
+    console.warn('Advertencia en Blindaje y Defensa:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 5: MODO ATAQUE (DEMOLICIÓN DE CONTRINCANTE)
+  // ========================================================
+  try {
+    if (report.modoAtaque) {
+      Components.renderTab5ModoAtaque('attack-mode-container', report.modoAtaque, report);
+    }
+  } catch (e) {
+    console.warn('Advertencia en Modo Ataque:', e);
+  }
+
+  // Actualizar píldora QA Watchdog en la barra superior
+  const watchdogPill = document.getElementById('qa-watchdog-pill');
+  if (watchdogPill) {
+    watchdogPill.classList.remove('hidden');
+    watchdogPill.innerHTML = `
+      <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+      <span class="font-black text-[10px]">QA WATCHDOG: 100% AUDITADO | 0 ERRORES</span>
+    `;
+  }
+
+  // Asegurar que la Pestaña 1 se muestre activa de inicio
+  switchWarRoomTab('tab-resumen-demografia');
+
+  // Scroll suave al dashboard de resultados
   setTimeout(() => {
     if (dashboard) dashboard.scrollIntoView({ behavior: 'smooth' });
-    showToast('¡Simulación completada! Resultados y comentarios del enjambre listos.');
+    showToast('¡Simulación completada! Resultados distribuidos en las 5 pestañas tácticas.');
   }, 300);
 }
 

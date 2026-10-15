@@ -237,9 +237,111 @@ main {
 }
 
 /* Hover únicamente en dispositivos que tienen ratón real (evita estados pegajosos en móviles) */
-@media (hover: hover) and (pointer: fine) {
-  .btn-chat-filter:hover {
-    transform: translateY(-1px);
+/* ========================================================
+   WAR ROOM: PESTAÑAS TÁCTICAS Y ANIMACIONES FADE-IN
+   ======================================================== */
+
+.tab-btn {
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-btn.active {
+  background-color: var(--pvem-primary);
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+  animation: tabFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
+
+/* ========================================================
+   TEMAS MULTIPARTIDISTAS (WHITE-LABEL THEMES)
+   ======================================================== */
+
+body.theme-pvem {
+  --party-primary: #00A859;
+  --party-primary-dark: #008f39;
+  --party-accent: #84cc16;
+  --party-bg-badge: #ecfdf5;
+  --party-text-badge: #065f46;
+}
+
+body.theme-morena {
+  --party-primary: #621132;
+  --party-primary-dark: #490d25;
+  --party-accent: #B38E5D;
+  --party-bg-badge: #fdf2f8;
+  --party-text-badge: #831843;
+}
+
+body.theme-pan {
+  --party-primary: #0056A3;
+  --party-primary-dark: #00417c;
+  --party-accent: #38bdf8;
+  --party-bg-badge: #f0f9ff;
+  --party-text-badge: #0369a1;
+}
+
+body.theme-pri {
+  --party-primary: #DA291C;
+  --party-primary-dark: #b91c1c;
+  --party-accent: #006847;
+  --party-bg-badge: #fef2f2;
+  --party-text-badge: #991b1b;
+}
+
+body.theme-mc {
+  --party-primary: #FF6B00;
+  --party-primary-dark: #ea580c;
+  --party-accent: #fbbf24;
+  --party-bg-badge: #fff7ed;
+  --party-text-badge: #9a3412;
+}
+
+body.theme-pt {
+  --party-primary: #E30613;
+  --party-primary-dark: #b91c1c;
+  --party-accent: #FFD100;
+  --party-bg-badge: #fef2f2;
+  --party-text-badge: #991b1b;
+}
+
+/* Acordeón de 20 Preguntas de Defensa */
+.accordion-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.25s ease-out;
+  opacity: 0;
+}
+.accordion-content.open {
+  max-height: 800px;
+  opacity: 1;
+}
+
+/* Indicador de Candado y Bloqueo de Estados */
+.locked-field {
+  background-color: #f1f5f9 !important;
+  cursor: not-allowed !important;
+  border-color: #cbd5e1 !important;
+  opacity: 0.75;
+}
+
 
