@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: simulador-predictivo-pvem
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKUP_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

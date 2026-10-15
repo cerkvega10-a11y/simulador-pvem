@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador Predictivo de Impacto Social — Partido Verde Ecologista Estado de México</title>
+  
+  <!-- Favicon y Metatags -->
+  <link rel="icon" type="image/svg+xml" href="/assets/logo-pvem.svg">
+  <meta name="description" content="Plataforma de Inteligencia Predictiva y Simulación Social con Enjambre de IA (Swarm Intelligence) para el Partido Verde Ecologista Estado de México.">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pvem: {
+              DEFAULT: '#008f39',
+              dark: '#006829',
+              darker: '#00471c',
+              light: '#e6f6ec',
+              lime: '#84cc16',
+              accent: '#22c55e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Chart.js Oficial CDN Síncrono (Garantiza inicialización inmediata del motor gráfico) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      document.write('<script src="/js/chart.min.js"><\/script>');
+    }
+  </script>
+  
+  <!-- Librerías Oficiales para Generación y Descarga Real de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- Estilos Personalizados -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased flex flex-col">
+
+  <!-- TOP BAR INSTITUCIONAL -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs transition-all">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:h-20 flex items-center justify-between gap-2">
+      <!-- Logo Oficial PVEM Edomex -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <img src="/assets/logo-pvem.svg" alt="Partido Verde Ecologista Estado de México" class="h-9 sm:h-12 w-auto shrink-0">
+        <div class="hidden sm:block border-l border-slate-200 pl-3">
+          <span class="text-[10px] font-black uppercase tracking-widest text-emerald-800 block">SISTEMA ENJAMBRE AI</span>
+          <span class="text-xs font-bold text-slate-700">Comité Directivo Estado de México</span>
+        </div>
+      </div>
+
+      <!-- Estado del Sistema, Configuración de IA y Meta-Agentes -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <button type="button" onclick="resetFullSimulation()" id="btn-refresh-simulation"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-xs font-black shadow-xs transition-all active:scale-95"
+          title="Limpiar todo y comenzar nueva simulación">
+          <span class="text-sm">🔄</span>
+          <span class="hidden md:inline">Nueva Simulación / Limpiar Todo</span>
+          <span class="md:hidden text-[11px]">Reiniciar</span>
+        </button>
+
+        <button type="button" onclick="openConfigModal()" 
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 text-xs font-bold shadow-xs transition-all active:scale-95">
+          <span>⚙️</span>
+          <span class="hidden md:inline">Configuración</span>
+          <span id="nav-model-badge" class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">Motor Híbrido</span>
+        </button>
+
+        <div class="hidden lg:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-semibold text-emerald-900">
+          <span class="pulse-indicator"></span>
+          <span>7 Meta-Agentes</span>
+          <span class="text-emerald-400">•</span>
+          <span class="text-emerald-700">100 - 1,000 Nodos</span>
+        </div>
+        <div class="hidden sm:block text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-mono border border-slate-200">
+          Zero-Auth
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+    <!-- SECCIÓN HERO / INTRODUCCIÓN (OBLIGATORIA) -->
+    <section id="hero-section" class="bg-gradient-hero rounded-2xl p-6 sm:p-10 shadow-sm border border-emerald-100 relative overflow-hidden">
+      <div class="relative z-10 max-w-4xl space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase tracking-wide border border-emerald-200">
+          <span>🌿 Inteligencia Artificial y Participación Ciudadana Predictiva</span>
+        </div>
+        
+        <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+          Plataforma de Inteligencia Predictiva y Simulación Social — <span class="text-pvem">Partido Verde Ecologista Estado de México</span>
+        </h1>
+        
+        <p class="text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
+          Bienvenido al sistema de predicción de impacto comunitario. Esta herramienta utiliza inteligencia artificial multi-agente y análisis demográfico en tiempo real para evaluar con precisión la viabilidad, aceptación ciudadana y riesgos de cualquier proyecto de obra pública, iniciativa social o propuesta política antes de su implementación en las localidades seleccionadas.
+        </p>
+
+        <!-- Presets / Propuestas Rápidas de Ejemplo -->
+        <div class="pt-4 border-t border-emerald-200/60">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              💡 Elige una propuesta muestra o ingresa tu propio proyecto:
+            </span>
+            <button type="button" onclick="clearForCustomProposal()" class="text-xs font-extrabold text-emerald-800 hover:text-emerald-950 underline flex items-center gap-1 transition-colors">
+              <span>✍️ Redactar mi propia propuesta</span>
+            </button>
+          </div>
+          <div id="presets-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <!-- Rellenado dinámicamente con JS (incluye botón 'Mi Propia Propuesta') -->
+            <div class="text-xs text-slate-400 py-2">Cargando opciones...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decoración de Fondo -->
+      <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
+        <svg width="400" height="400" viewBox="0 0 200 200" fill="#008f39">
+          <path d="M45,-78C58,-71,68,-58,75,-44C82,-30,86,-15,84,-1C82,14,75,27,67,39C60,51,52,62,40,70C28,78,14,84,-1,85C-15,87,-31,84,-45,76C-59,69,-72,56,-79,41C-86,26,-87,9,-84,-7C-81,-23,-73,-39,-62,-51C-51,-63,-36,-72,-21,-77C-6,-82,10,-83,26,-80C42,-77,58,-71,45,-78Z" transform="translate(100 100)" />
+        </svg>
+      </div>
+    </section>
+
+    <!-- FORMULARIO DE ENTRADA MULTIMODAL & CONFIGURACIÓN -->
+    <section id="input-modules-section" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- COLUMNA IZQUIERDA: MÓDULO 1 - INGRESO MULTIMODAL (7 COLS) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="card-pvem p-6 space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm">1</span>
+              <h2 class="text-lg font-bold text-slate-900">Ingreso del Proyecto (Input Multimodal)</h2>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Texto + Documentos + Renders</span>
+          </div>
+
+          <!-- Barra de Acción Rápida: Cargar Propia Propuesta vs Ejemplo -->
+          <div class="p-3.5 bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">✍️</div>
+              <div>
+                <span class="text-xs font-extrabold text-emerald-950 block">Ingresa tu propia propuesta ciudadana</span>
+                <span class="text-[11px] text-slate-600">Escribe libremente o adjunta tu documento técnico (.pdf, .docx, .txt).</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button type="button" onclick="clearForCustomProposal()" 
+                class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5">
+                <span>➕ Redactar en Blanco</span>
+              </button>
+              <button type="button" onclick="document.getElementById('input-file-doc').click();" 
+                class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5">
+                <span>📁 Subir Documento</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Título del Proyecto -->
+          <div>
+            <label for="input-titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+              Título de la Propuesta / Obra Pública
+            </label>
+            <input type="text" id="input-titulo" 
+              placeholder="Ej. Mi Proyecto Comunitario en Toluca / Ecatepec..." 
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-slate-800 font-medium transition-all">
+          </div>
+
+          <!-- Redacción Libre Amplia -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="input-propuesta" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                Detalle Técnico, Iniciativa o Proyecto Social
+              </label>
+              <span class="text-[11px] text-slate-400">Entre más específico sea, mayor precisión de simulación</span>
+            </div>
+            <textarea id="input-propuesta" rows="5"
+              placeholder="Describe los objetivos, ruta, población beneficiaria, si tiene gratuidad o costo, paraderos, tecnología verde o medidas de mitigación..."
+              class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-slate-800 transition-all resize-y"></textarea>
+          </div>
+
+          <!-- Zona de Subida de Archivos Multimodal (2 Dropzones) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            
+            <!-- Dropzone Documentos (.pdf, .docx, .txt) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                <span>📄 Documento Técnico</span>
+                <span class="text-[10px] text-slate-400 font-normal">(.pdf, .docx, .txt)</span>
+              </label>
+              <div id="dropzone-doc" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-50/50 hover:bg-emerald-50/30 group">
+                <input type="file" id="input-file-doc" accept=".pdf,.docx,.txt" class="hidden">
+                <div onclick="document.getElementById('input-file-doc').click();" class="space-y-1">
+                  <div class="w-9 h-9 mx-auto rounded-full bg-slate-200 group-hover:bg-emerald-200 text-slate-600 group-hover:text-emerald-800 flex items-center justify-center transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                  </div>
+                  <p class="text-xs font-bold text-slate-700">Arrastra o haz clic</p>
+                  <p class="text-[10px] text-slate-400">PDF, DOCX o TXT</p>
+                </div>
+              </div>
+              <div id="doc-status-box" class="mt-2 hidden"></div>
+            </div>
+
+            <!-- Dropzone Imágenes con IA Vision (.jpg, .png, .webp) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                <span>👁️ Renders / Planos / Carteles</span>
+                <span class="text-[10px] text-slate-400 font-normal">(IA Vision)</span>
+              </label>
+              <div id="dropzone-img" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-50/50 hover:bg-emerald-50/30 group">
+                <input type="file" id="input-file-img" accept="image/*" class="hidden">
+                <div onclick="document.getElementById('input-file-img').click();" class="space-y-1">
+                  <div class="w-9 h-9 mx-auto rounded-full bg-slate-200 group-hover:bg-emerald-200 text-slate-600 group-hover:text-emerald-800 flex items-center justify-center transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </div>
+                  <p class="text-xs font-bold text-slate-700">Subir imagen o render</p>
+                  <p class="text-[10px] text-slate-400">JPG, PNG o WEBP</p>
+                </div>
+              </div>
+
+              <!-- Vista previa miniatura -->
+              <div id="image-preview-container" class="mt-2 hidden flex items-center gap-2 p-1.5 bg-slate-100 rounded-lg border border-slate-200">
+                <img id="image-preview-element" src="" alt="Preview" class="w-12 h-12 object-cover rounded border border-slate-300">
+                <span class="text-xs text-slate-600 font-medium truncate">Imagen cargada lista para Vision</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Recuadro: Resumen Visual detectado por IA (Requerimiento C.3) -->
+          <div id="image-visual-card" class="hidden"></div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: MÓDULO 2 Y MÓDULO 3 (5 COLS) -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- MÓDULO 2: SEGMENTACIÓN GEOGRÁFICA Y DEMOGRÁFICA (MÉXICO) -->
+        <div class="card-pvem p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm">2</span>
+              <h2 class="text-base font-bold text-slate-900">Segmentación Geográfica</h2>
+            </div>
+            <span class="text-xs text-emerald-700 font-bold">Base INEGI / Edomex</span>
+          </div>
+
+          <!-- Selector de Estado -->
+          <div>
+            <label for="select-estado" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Estado de la República
+            </label>
+            <select id="select-estado" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-800">
+              <!-- Rellenado dinámicamente con los 32 estados -->
+            </select>
+          </div>
+
+          <!-- Selector Dinámico de Municipio / Alcaldía -->
+          <div>
+            <label for="select-municipio" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Municipio / Alcaldía
+            </label>
+            <select id="select-municipio" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold text-slate-800">
+              <!-- Rellenado dinámicamente (125 municipios de Edomex) -->
+            </select>
+          </div>
+
+          <!-- Campo de Región o Localidad Específica -->
+          <div>
+            <label for="input-localidad" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Región, Colonia o Distrito Específico
+            </label>
+            <input type="text" id="input-localidad" 
+              placeholder="Ej. Ciudad Azteca, San Mateo Oxtotitlán, San Bartolo..." 
+              class="w-full px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs text-slate-800">
+          </div>
+
+          <!-- Filtros Demográficos Opcionales -->
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <span class="text-xs font-bold text-slate-700 uppercase tracking-wide block">Filtros Demográficos (Opcional):</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-1">Rango de Edad</label>
+                <select id="filtro-edad" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white">
+                  <option value="todos">Censo General</option>
+                  <option value="jovenes">Jóvenes (18-29)</option>
+                  <option value="adultos">Adultos (30-49)</option>
+                  <option value="mayores">Mayores (50+)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-1">Estrato NSE</label>
+                <select id="filtro-nse" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white">
+                  <option value="todos">Todos los NSE</option>
+                  <option value="bajos_medios">Popular (D+/D)</option>
+                  <option value="altos">Medio-Alto (C+/AB)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-1">Ocupación</label>
+                <select id="filtro-ocupacion" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white">
+                  <option value="todos">Todas</option>
+                  <option value="comercio">Comercio</option>
+                  <option value="transporte">Transporte</option>
+                  <option value="estudiantes">Estudiantes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÓDULO 3: CONFIGURACIÓN DEL ENJAMBRE (SWARM CONTROL) -->
+        <div class="card-pvem p-6 space-y-5 bg-gradient-to-br from-white to-emerald-50/20 border-emerald-200">
+          <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-sm">3</span>
+              <h2 class="text-base font-bold text-slate-900">Configuración del Enjambre</h2>
+            </div>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Swarm AI</span>
+          </div>
+
+          <!-- Slider de Agentes (100 a 1,000) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label for="swarm-slider" class="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                Tamaño del Enjambre Ciudadano:
+              </label>
+              <div class="flex items-baseline gap-1">
+                <span id="swarm-count-display" class="text-2xl font-black text-pvem">250</span>
+                <span class="text-xs font-bold text-slate-600">agentes</span>
+              </div>
+            </div>
+
+            <input type="range" id="swarm-slider" min="100" max="1000" step="50" value="250" class="w-full pvem-slider h-2.5 bg-slate-200 rounded-lg">
+            
+            <!-- Botones de Salto Rápido -->
+            <div class="flex justify-between items-center text-xs">
+              <button type="button" data-val="100" class="btn-swarm-quick px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-slate-700 font-semibold transition-colors">100</button>
+              <button type="button" data-val="250" class="btn-swarm-quick px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-slate-700 font-semibold transition-colors">250</button>
+              <button type="button" data-val="500" class="btn-swarm-quick px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-slate-700 font-semibold transition-colors">500</button>
+              <button type="button" data-val="750" class="btn-swarm-quick px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-slate-700 font-semibold transition-colors">750</button>
+              <button type="button" data-val="1000" class="btn-swarm-quick px-2 py-1 rounded bg-slate-100 hover:bg-emerald-100 text-slate-700 font-semibold transition-colors">1,000</button>
+            </div>
+
+            <!-- Indicador Dinámico de Profundidad Estadística (Requerimiento E.2) -->
+            <div id="swarm-depth-indicator" class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs leading-relaxed">
+              <!-- Rellenado dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Toggle de Investigación Web Activa (Requerimiento E.3) -->
+          <div class="pt-3 border-t border-slate-200">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" id="toggle-web-search" checked class="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+              <div class="text-xs">
+                <span class="font-bold text-slate-900 block">Investigación Web y OSINT en Tiempo Real</span>
+                <span class="text-slate-500 text-[11px] leading-relaxed">
+                  Extrae contexto actual de noticias locales, problemáticas barriales (agua, transporte, bacheo) e intereses de la localidad.
+                </span>
+              </div>
+            </label>
+          </div>
+
+          <!-- BOTÓN PRINCIPAL DE EJECUCIÓN -->
+          <div class="pt-2">
+            <button type="button" id="btn-iniciar-simulacion"
+              class="w-full py-3.5 px-6 rounded-xl bg-gradient-pvem text-white font-extrabold text-sm uppercase tracking-wider shadow-lg hover:shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Iniciar Simulación Predictiva</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CONSOLA DE PROGRESO EN TIEMPO REAL (PIPELINE DE AGENTES) -->
+    <section id="progress-console-section" class="hidden card-pvem p-6 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="pulse-indicator"></span>
+          <h3 class="text-base font-bold text-slate-900">Ejecución del Enjambre Multi-Agente en Tiempo Real</h3>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+          <span>Progreso:</span>
+          <span id="global-progress-text">0%</span>
+        </div>
+      </div>
+
+      <!-- Barra de Progreso Global -->
+      <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+        <div id="global-progress-bar" class="bg-gradient-pvem h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- 4 Fases Visuales del Pipeline (Meta-Agentes de Sistema) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        
+        <div id="step-card-1" class="p-3 border rounded-xl bg-white shadow-xs transition-all flex items-center gap-3">
+          <div id="step-badge-1" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">1</div>
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block">Fase 1: Multimodal</span>
+            <span class="text-slate-500 text-[11px]">Agente 1 Router + Agente 2 Visión/Docs</span>
+          </div>
+        </div>
+
+        <div id="step-card-2" class="p-3 border rounded-xl bg-white shadow-xs transition-all flex items-center gap-3">
+          <div id="step-badge-2" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">2</div>
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block">Fase 2: Deep Gov OSINT</span>
+            <span class="text-slate-500 text-[11px]">Agente 3 INEGI, SEP, CONEVAL, SESNSP</span>
+          </div>
+        </div>
+
+        <div id="step-card-3" class="p-3 border rounded-xl bg-white shadow-xs transition-all flex items-center gap-3">
+          <div id="step-badge-3" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">3</div>
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block">Fase 3: Swarm Engine</span>
+            <span class="text-slate-500 text-[11px]">Agente 4 Persona + Agente 5 Enjambre N</span>
+          </div>
+        </div>
+
+        <div id="step-card-4" class="p-3 border rounded-xl bg-white shadow-xs transition-all flex items-center gap-3">
+          <div id="step-badge-4" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">4</div>
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block">Fase 4: Deliberación & Verificación</span>
+            <span class="text-slate-500 text-[11px]">Agentes 6-8: Contagio, PVEM & Auditoría IA</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- DASHBOARD DE RESULTADOS PREDICTIVOS (SECCIÓN 4) -->
+    <section id="results-dashboard-section" class="hidden space-y-8">
+      
+      <!-- ENCABEZADO DEL REPORTE -->
+      <div class="card-pvem p-6 bg-gradient-to-r from-emerald-900 to-slate-900 text-white rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs uppercase tracking-wider font-black text-emerald-300 bg-emerald-950/70 px-2.5 py-0.5 rounded border border-emerald-700">Dictamen Oficial</span>
+            <span id="dash-territorio" class="text-xs text-slate-300 font-semibold"></span>
+            <span class="text-slate-400">•</span>
+            <span id="dash-tamano-enjambre" class="text-xs text-emerald-300 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60"></span>
+          </div>
+          <h2 id="dash-titulo-proyecto" class="text-xl sm:text-2xl font-black text-white"></h2>
+          <p id="dash-dictamen" class="text-xs sm:text-sm text-emerald-200 font-medium"></p>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+          <button type="button" id="btn-export-pdf"
+            class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Descargar Reporte PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TARJETAS KPI RESUMEN (RESPONSIVE EN MÓVILES Y PANTALLAS GRANDES) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        
+        <div class="card-pvem p-4 bg-white border-l-4 border-emerald-600">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Aprobación Final</span>
+          <div id="kpi-aprobacion" class="text-2xl sm:text-3xl font-black text-emerald-700 my-1">--%</div>
+          <span class="text-[10px] sm:text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Voto Favorable</span>
+        </div>
+
+        <div class="card-pvem p-4 bg-white border-l-4 border-red-500">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Rechazo Social</span>
+          <div id="kpi-rechazo" class="text-2xl sm:text-3xl font-black text-red-600 my-1">--%</div>
+          <span class="text-[10px] sm:text-[11px] text-red-800 bg-red-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Oposición Ciudadana</span>
+        </div>
+
+        <div class="card-pvem p-4 bg-white border-l-4 border-slate-400">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Indiferencia / Neutro</span>
+          <div id="kpi-indiferencia" class="text-2xl sm:text-3xl font-black text-slate-600 my-1">--%</div>
+          <span class="text-[10px] sm:text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Indecisos / Reserva</span>
+        </div>
+
+        <div class="card-pvem p-4 bg-white border-l-4 border-sky-500">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Fricción Social</span>
+          <div id="kpi-friccion-val" class="text-2xl sm:text-3xl font-black text-sky-700 my-1">--/100</div>
+          <span id="kpi-friccion-badge" class="text-[10px] sm:text-[11px] text-sky-800 bg-sky-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Moderada</span>
+        </div>
+
+        <div class="card-pvem p-4 bg-white border-l-4 border-amber-500 col-span-2 sm:col-span-1">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Entusiasmo Cívico</span>
+          <div id="kpi-entusiasmo" class="text-2xl sm:text-3xl font-black text-amber-600 my-1">--%</div>
+          <span class="text-[10px] sm:text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Movilización Activa</span>
+        </div>
+
+      </div>
+
+      <!-- PANEL DEL AGENTE AUDITOR DE IA: REGISTRO DE AUDITORÍA Y PRUEBA DE RAZONAMIENTO (PROOF OF REASONING) -->
+      <div id="proof-of-reasoning-container">
+        <!-- Renderizado dinámicamente con Components.renderProofOfReasoning -->
+      </div>
+
+      <!-- TABLA DE TRAZABILIDAD DE FUENTES OFICIALES GUBERNAMENTALES (INEGI, SEP, CONEVAL, SESNSP, CONAGUA, IGECEM) -->
+      <div id="official-sources-table-container">
+        <!-- Renderizado dinámicamente con Components.renderOfficialSourcesTable -->
+      </div>
+
+      <!-- CONSOLA DE VERIFICACIÓN Y AUTODIAGNÓSTICO DE IA REAL (PRUEBAS VISIBLES EN VIVO) -->
+      <div id="real-ai-verification-container">
+        <!-- Renderizado dinámicamente con Components.renderRealAiVerificationPanel -->
+      </div>
+
+
+      <!-- Contenedores auxiliares en modo silencioso -->
+      <div id="web-context-container" class="hidden"></div>
+      <div id="demographic-heatmap-container" class="hidden"></div>
+
+      <!-- BLOQUE 4: CHATS DINÁMICOS DEL ENJAMBRE CIUDADANO (MÍNIMO 50% DE RESPUESTAS ÚNICAS) -->
+      <div class="card-pvem p-6 space-y-5 bg-white shadow-md">
+        <div class="flex flex-col gap-3 border-b border-slate-200 pb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></span> Chat del Enjambre Ciudadano en Vivo
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Voces individuales del enjambre con jerga mexiquense, mención de montos/medidas y anclaje territorial verídico (0% clonación).
+              </p>
+            </div>
+            
+            <!-- Contador Dinámico Verificado (Regla Maestro 50%+) -->
+            <div id="swarm-chat-header-counter" class="text-xs font-black text-emerald-900 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-full shadow-xs shrink-0">
+              Mostrando respuestas del enjambre (Mínimo 50% de participación activa verificada)
+            </div>
+          </div>
+
+          <!-- Buscador y Filtros -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <!-- Barra de Búsqueda en Vivo -->
+            <div class="relative flex-1">
+              <input type="text" id="input-search-chats" 
+                placeholder="🔍 Buscar por palabra clave, colonia, ocupación o postura..." 
+                class="w-full px-3.5 py-2 pl-9 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50 focus:bg-white transition-all">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <!-- Pestañas de Filtro por Postura (100% Responsive en Celulares) -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar shrink-0">
+              <button type="button" data-filter="todos" class="btn-chat-filter whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold bg-emerald-600 text-white transition-all shadow-xs">
+                Todos (<span id="chat-count-todos">0</span>)
+              </button>
+              <button type="button" data-filter="favor" class="btn-chat-filter whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                A Favor (<span id="chat-count-favor">0</span>)
+              </button>
+              <button type="button" data-filter="contra" class="btn-chat-filter whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                En Contra (<span id="chat-count-contra">0</span>)
+              </button>
+              <button type="button" data-filter="neutro" class="btn-chat-filter whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                Neutros (<span id="chat-count-neutro">0</span>)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenedor con Scroll de los Chats del Enjambre (Hasta 500+ mensajes únicos) -->
+        <div id="swarm-chats-container" class="max-h-[650px] overflow-y-auto space-y-3.5 pr-1 divide-y divide-slate-100">
+          <!-- Rellenado dinámicamente con Components.renderSwarmChatFeed -->
+        </div>
+
+        <!-- Contenedor alias para retrocompatibilidad -->
+        <div id="swarm-voices-container" class="hidden"></div>
+      </div>
+
+      <!-- Contenedores secundarios ocultos para mantener pantalla limpia según Orden Maestra -->
+      <div id="debate-threads-container" class="hidden"></div>
+      <div id="respuestas-interrogacion-container" class="hidden"></div>
+      <div id="pvem-strategy-container" class="hidden"></div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER INSTITUCIONAL -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-6 h-6 rounded-md bg-emerald-600 flex items-center justify-center text-white font-black text-xs">PV</div>
+        <p class="font-medium text-slate-300">
+          Simulador Predictivo de Impacto Social — Partido Verde Ecologista Estado de México
+        </p>
+      </div>
+      <p class="text-slate-500 text-[11px]">
+        Arquitectura Swarm AI Multi-Agente • Zero-Auth • Sistema de Evaluación Ciudadana Sintética
+      </p>
+    </div>
+  </footer>
+
+  <!-- MODAL DE CONFIGURACIÓN DE IA Y MODELOS LLM -->
+  <div id="modal-config" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="card-pvem max-w-xl w-full p-6 space-y-5 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95">
+      
+      <!-- Encabezado del Modal -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-base">⚙️</div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Configuración de Modelos de IA</h3>
+            <p class="text-xs text-slate-500">Conecta tu propia API Key de Google Gemini u OpenAI</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeConfigModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center text-base font-bold transition-colors">✕</button>
+      </div>
+
+      <!-- Selector de Proveedor de IA -->
+      <div class="space-y-2.5">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+          Motor de Inteligencia Artificial para el Enjambre:
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <!-- Opción 1: Motor Nativo -->
+          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-emerald-50/40 border-emerald-300" id="label-provider-native">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-950">Motor Híbrido Semántico</span>
+              <input type="radio" name="ai_provider" value="native" checked onchange="onProviderChange('native')" class="text-emerald-600 focus:ring-emerald-500">
+            </div>
+            <p class="text-[11px] text-slate-600">Nativo INEGI-ABM. Detección de absurdos, 0 costo y sin API Key.</p>
+          </label>
+
+          <!-- Opción 2: Groq Cloud (Gratuito) -->
+          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-groq">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-slate-900">Groq Cloud</span>
+                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded">GRATIS</span>
+              </div>
+              <input type="radio" name="ai_provider" value="groq" onchange="onProviderChange('groq')" class="text-emerald-600 focus:ring-emerald-500">
+            </div>
+            <p class="text-[11px] text-slate-600">Llama 3.3 70B ultra-rápido. 14,400 peticiones/día sin tarjeta.</p>
+          </label>
+
+          <!-- Opción 3: Google Gemini (Gratuito) -->
+          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-gemini">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-slate-900">Google Gemini</span>
+                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded">GRATIS</span>
+              </div>
+              <input type="radio" name="ai_provider" value="gemini" onchange="onProviderChange('gemini')" class="text-emerald-600 focus:ring-emerald-500">
+            </div>
+            <p class="text-[11px] text-slate-600">Gemini 1.5 Flash. 1,500 peticiones/día gratis en Google AI Studio.</p>
+          </label>
+
+          <!-- Opción 4: OpenRouter (Modelos :free) -->
+          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-openrouter">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-slate-900">OpenRouter</span>
+                <span class="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-1.5 py-0.2 rounded">:FREE</span>
+              </div>
+              <input type="radio" name="ai_provider" value="openrouter" onchange="onProviderChange('openrouter')" class="text-emerald-600 focus:ring-emerald-500">
+            </div>
+            <p class="text-[11px] text-slate-600">Llama 3.2 3B y Gemini 2.0 Flash libres sin costo por token.</p>
+          </label>
+
+          <!-- Opción 5: OpenAI -->
+          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-openai">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-slate-900">OpenAI</span>
+              <input type="radio" name="ai_provider" value="openai" onchange="onProviderChange('openai')" class="text-emerald-600 focus:ring-emerald-500">
+            </div>
+            <p class="text-[11px] text-slate-600">GPT-4o y GPT-4o-mini con tu API Key personal.</p>
+          </label>
+        </div>
+      </div>
+
+      <!-- Configuración Específica del Proveedor Externo -->
+      <div id="external-llm-settings" class="space-y-3.5 hidden pt-2 border-t border-slate-100">
+        <!-- Selector de Modelo -->
+        <div>
+          <label for="cfg-model" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+            Modelo de Inferencia:
+          </label>
+          <select id="cfg-model" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <!-- Rellenado dinámicamente según el proveedor -->
+          </select>
+        </div>
+
+        <!-- Entrada de API Key -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="cfg-api-key" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+              API Key del Proveedor:
+            </label>
+            <a id="cfg-key-link" href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-emerald-700 hover:underline font-semibold">
+              Obtener clave gratuita ↗
+            </a>
+          </div>
+          <div class="relative">
+            <input type="password" id="cfg-api-key" placeholder="Pega tu clave API aquí..."
+              class="w-full px-3.5 py-2 pr-10 rounded-lg border border-slate-300 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-700">👁️</button>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">Tu clave se almacena de forma segura en tu navegador local (localStorage) y nunca se divulga.</p>
+        </div>
+      </div>
+
+      <!-- Proveedor Opcional de Búsqueda OSINT Web -->
+      <div class="pt-2 border-t border-slate-100 space-y-2">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+          Búsqueda Web OSINT / Noticias Municipales:
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="p-2 border rounded-lg flex items-center justify-between text-xs cursor-pointer bg-emerald-50/30 border-emerald-200" id="label-search-native">
+            <span>INEGI + Noticias Edomex (Nativo)</span>
+            <input type="radio" name="search_provider" value="native" checked onchange="onSearchProviderChange('native')" class="text-emerald-600">
+          </label>
+          <label class="p-2 border rounded-lg flex items-center justify-between text-xs cursor-pointer bg-white border-slate-200" id="label-search-tavily">
+            <span>Tavily Search API (Opcional)</span>
+            <input type="radio" name="search_provider" value="tavily" onchange="onSearchProviderChange('tavily')" class="text-emerald-600">
+          </label>
+        </div>
+        <div id="tavily-key-container" class="hidden">
+          <input type="password" id="cfg-tavily-key" placeholder="API Key de Tavily (tvly-...)"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono">
+        </div>
+      </div>
+
+      <!-- Área de Feedback / Alertas de Test -->
+      <div id="cfg-feedback-alert" class="hidden p-3 rounded-lg text-xs"></div>
+
+      <!-- Botones de Acción -->
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <button type="button" id="btn-test-connection" onclick="testAIConnection()"
+          class="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+          ⚡ Probar Conexión
+        </button>
+        <button type="button" onclick="saveAIConfig()"
+          class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition-all">
+          💾 Guardar Configuración
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALLE DE CIUDADANO SINTÉTICO (INTERACTIVO) -->
+  <div id="modal-citizen-detail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="card-pvem max-w-lg w-full p-6 space-y-4 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-3">
+          <img id="m-citizen-avatar" src="" alt="Avatar" class="w-12 h-12 rounded-full border border-slate-300 bg-slate-50">
+          <div>
+            <h3 id="m-citizen-name" class="text-base font-black text-slate-900 leading-tight"></h3>
+            <p id="m-citizen-meta" class="text-xs text-slate-500"></p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCitizenDetailModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center text-base font-bold transition-colors">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+          <span class="font-bold text-emerald-950">Voto Emitido: <b id="m-citizen-vote" class="uppercase"></b></span>
+          <span class="text-emerald-800">Nivel de Entusiasmo: <b id="m-citizen-enthusiasm"></b></span>
+        </div>
+
+        <div>
+          <span class="font-bold text-slate-700 block mb-1 uppercase tracking-wide text-[10px]">Argumento Personal:</span>
+          <blockquote id="m-citizen-argument" class="italic p-3 rounded-lg bg-slate-50 border-l-4 border-emerald-600 text-slate-800 leading-relaxed"></blockquote>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50/60">
+            <span class="text-slate-500 block text-[10px] font-bold uppercase">Medio de Transporte:</span>
+            <span id="m-citizen-transport" class="font-semibold text-slate-800"></span>
+          </div>
+          <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50/60">
+            <span class="text-slate-500 block text-[10px] font-bold uppercase">Preocupación Familiar:</span>
+            <span id="m-citizen-concern" class="font-semibold text-slate-800"></span>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-lg border border-slate-200 bg-white">
+          <span class="text-slate-500 block text-[10px] font-bold uppercase mb-0.5">Dinámica en Deliberación Vecinal:</span>
+          <p id="m-citizen-deliberation" class="text-slate-700 text-[11px]"></p>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button type="button" onclick="closeCitizenDetailModal()" class="px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DE LA APLICACIÓN -->
+  <script src="/js/components.js"></script>
+  <script src="/js/pdfExport.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
