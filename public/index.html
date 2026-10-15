@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulador Predictivo de Impacto Social — Partido Verde Ecologista Estado de México</title>
+  <title>GovTech War Room — Plataforma de Inteligencia Predictiva y Simulación Social</title>
   
-  <!-- Favicon y Metatags -->
-  <link rel="icon" type="image/svg+xml" href="/assets/logo-pvem.svg">
-  <meta name="description" content="Plataforma de Inteligencia Predictiva y Simulación Social con Enjambre de IA (Swarm Intelligence) para el Partido Verde Ecologista Estado de México.">
+  <!-- Favicon Neutro Corporativo y Metatags -->
+  <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><text x='16' y='21' font-family='Arial' font-weight='bold' font-size='13' fill='%23f8fafc' text-anchor='middle'>GW</text></svg>">
+  <meta name="description" content="GovTech War Room — Plataforma de Inteligencia Predictiva y Simulación Social. Desarrollado por Neural Media House / Erick de Jesús Vega Carmona.">
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,22 +49,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <!-- Cyber Sentinel 24/7 Cybersecurity Agent -->
-  <script src="/js/cyberSentinelAgent.js?v=4.8.2"></script>
+  <script src="/js/cyberSentinelAgent.js?v=4.9.0"></script>
 
   <!-- Estilos Personalizados -->
-  <link rel="stylesheet" href="/css/styles.css?v=4.8.2">
+  <link rel="stylesheet" href="/css/styles.css?v=4.9.0">
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 antialiased flex flex-col">
 
-  <!-- TOP BAR INSTITUCIONAL -->
-  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs transition-all">
+  <!-- TOP BAR INSTITUCIONAL (OCULTO HASTA AUTENTICACIÓN VÁLIDA) -->
+  <header id="app-main-header" class="hidden bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs transition-all">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
-      <!-- Logo Oficial y Selector Multipartidista -->
+      <!-- Logo Oficial y Selector Multipartidista (Renderizado Post-Login) -->
       <div class="flex items-center gap-2.5 shrink-0">
-        <img id="main-party-logo" src="/assets/logo-pvem.svg" alt="Partido Verde Ecologista" class="h-8 sm:h-10 w-auto shrink-0 transition-all">
+        <img id="main-party-logo" src="" alt="Logotipo Institucional" class="h-8 sm:h-10 w-auto shrink-0 transition-all">
         <div class="hidden sm:block border-l border-slate-200 pl-2.5">
-          <span id="header-system-title" class="text-[10px] font-black uppercase tracking-widest text-emerald-800 block">SISTEMA ENJAMBRE AI</span>
-          <span id="header-party-title" class="text-xs font-bold text-slate-700">Comité Directivo Estado de México</span>
+          <span id="header-system-title" class="text-[10px] font-black uppercase tracking-widest text-slate-800 block">GOVTECH WAR ROOM</span>
+          <span id="header-party-title" class="text-xs font-bold text-slate-700">Sesión Autorizada</span>
         </div>
       </div>
 
@@ -73,14 +73,14 @@
         <!-- Etiqueta Dinámica de Cargo y Territorio Asignado (White-Label Cliente) -->
         <div id="header-assigned-region-pill" class="hidden items-center gap-1.5 bg-slate-900 text-white px-2.5 py-1 rounded-xl border border-slate-700 text-[11px] font-bold shadow-2xs">
           <span>📍</span>
-          <span id="header-assigned-region-text">Estado de México</span>
+          <span id="header-assigned-region-text">Región Autorizada</span>
         </div>
 
-        <!-- Selector de Entorno Partidista / White-Label -->
+        <!-- Selector de Entorno Partidista / White-Label (Solo habilitado para Admin Maestro) -->
         <div id="party-selector-wrapper" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
-          <span class="text-[10px] font-black text-slate-500 uppercase px-1 hidden md:inline">Entorno:</span>
-          <select id="select-party-theme" onchange="onPartyThemeChange(this.value)" class="text-xs font-black bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer">
-            <option value="PVEM" selected>🌿 PVEM</option>
+          <span class="text-[10px] font-black text-slate-500 uppercase px-1 hidden md:inline">Partido:</span>
+          <select id="select-party-theme" onchange="onPartyThemeChange(this.value)" class="text-xs font-black bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-500 cursor-pointer">
+            <option value="PVEM">🌿 PVEM</option>
             <option value="MORENA">🦅 MORENA</option>
             <option value="PAN">🔵 PAN</option>
             <option value="PRI">🔴 PRI</option>
@@ -130,7 +130,7 @@
         </div>
       </div>
 
-      <!-- Estado del Sistema, Configuración de IA, Reinicio y Sesión -->
+      <!-- Estado del Sistema, Configuración de IA, Reinicio y Cierre de Sesión -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <button type="button" onclick="resetFullSimulation()" id="btn-refresh-simulation"
           class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-xs font-black shadow-xs transition-all active:scale-95"
@@ -147,18 +147,19 @@
           <span id="nav-model-badge" class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">Híbrido</span>
         </button>
 
-        <button type="button" onclick="openAuthLoginModal()" id="btn-auth-session"
-          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
-          title="Cambiar de cuenta o abrir Portal de Acceso / Licencia">
-          <span>🔐</span>
-          <span id="nav-session-label" class="hidden sm:inline">Acceso / Licencia</span>
+        <!-- BOTÓN DE CIERRE DE SESIÓN SEGURO (LOGOUT) -->
+        <button type="button" onclick="logoutSession()" id="btn-logout-header"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer"
+          title="Cerrar sesión activa y volver al Portal Neutral de Bienvenida">
+          <span>🚪</span>
+          <span>Cerrar Sesión</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+  <!-- CONTENIDO PRINCIPAL (OCULTO HASTA AUTENTICACIÓN VÁLIDA) -->
+  <main id="app-main-workspace" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
     <!-- SECCIÓN HERO / INTRODUCCIÓN (OBLIGATORIA) -->
     <section id="hero-section" class="bg-gradient-hero rounded-2xl p-6 sm:p-10 shadow-sm border border-emerald-100 relative overflow-hidden">
@@ -789,8 +790,8 @@
 
   </main>
 
-  <!-- FOOTER INSTITUCIONAL -->
-  <footer class="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-16">
+  <!-- FOOTER INSTITUCIONAL (OCULTO HASTA INICIAR SESIÓN) -->
+  <footer id="app-main-footer" class="hidden bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <div id="footer-party-badge" class="w-7 h-7 rounded-md bg-emerald-600 flex items-center justify-center text-white font-black text-xs">PV</div>
@@ -799,7 +800,7 @@
         </p>
       </div>
       <p class="text-slate-500 text-[11px]">
-        Arquitectura Swarm AI Multi-Agente • Zero-Auth • Sistema de Evaluación Ciudadana Sintética
+        Arquitectura Swarm AI Multi-Agente • Licencia Verificada • Desarrollado por Neural Media House / Erick de Jesús Vega Carmona
       </p>
     </div>
   </footer>
@@ -1024,6 +1025,9 @@
           <button type="button" onclick="closeRadarElectoralModal()" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-xs sm:text-sm font-bold transition-all">
             ← <span class="hidden sm:inline">Ir al War Room Táctico (Vista 2)</span><span class="sm:hidden">Volver</span>
           </button>
+          <button type="button" onclick="logoutSession()" class="px-3 py-2 rounded-lg bg-rose-900/60 hover:bg-rose-800/80 border border-rose-400/50 text-rose-100 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5" title="Cerrar Sesión y volver al Portal Neutral">
+            <span>🚪</span><span>Cerrar Sesión</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1104,7 +1108,7 @@
         </div>
       </div>
 
-      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v4.8 Enterprise — Desarrollado por <b>Neural Media House</b> · Dirección de Proyecto: <b>Erick Vega</b></p>
+      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v4.9 Enterprise — Desarrollado por <b>Neural Media House / Erick de Jesús Vega Carmona</b></p>
     </div>
   </div>
 
@@ -1113,11 +1117,11 @@
        ===================================================================== -->
   <div id="modal-platform-info" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this) closePlatformInfoModal()">
     <div class="bg-white w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200">
-      <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-5 sm:p-6 rounded-t-2xl relative">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 rounded-t-2xl relative">
         <button type="button" onclick="closePlatformInfoModal()" class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 text-lg font-bold">✕</button>
-        <span class="inline-block text-[10px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/15 border border-emerald-400/40 px-2.5 py-0.5 rounded-full mb-2">ℹ️ Información de la Plataforma</span>
+        <span class="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-300 bg-indigo-500/15 border border-indigo-400/40 px-2.5 py-0.5 rounded-full mb-2">ℹ️ Información de la Plataforma</span>
         <h3 class="text-lg sm:text-2xl font-black leading-tight pr-10">GovTech War Room — Simulador Predictivo Electoral y de Políticas Públicas</h3>
-        <p class="text-emerald-300 text-sm font-bold mt-1">v4.8 Enterprise Macro-Censal Edition</p>
+        <p class="text-indigo-300 text-sm font-bold mt-1">v4.9 Enterprise Macro-Censal Edition</p>
       </div>
 
       <div class="p-5 sm:p-6 space-y-5">
@@ -1128,7 +1132,7 @@
           </div>
           <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide block">Arquitecto y Director de Proyecto</span>
-            <span class="text-base font-black text-slate-900">Erick Vega</span>
+            <span class="text-base font-black text-slate-900">Erick de Jesús Vega Carmona</span>
           </div>
         </div>
 
@@ -1141,9 +1145,9 @@
 
         <div class="space-y-2">
           <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide block">Sellos de Certificación Integrados</span>
-          <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900">✔ [QA Watchdog Agent — Integridad Matemática y Coherencia Demográfica Activa]</div>
-          <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900">✔ [Cyber Sentinel Agent — Ciberseguridad y Cifrado Grado Militar 24/7]</div>
-          <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900">✔ [High-Performance Vector Engine — Procesamiento Asíncrono por Web Worker]</div>
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">✔ [QA Watchdog Agent — Integridad Matemática y Coherencia Demográfica Activa]</div>
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">✔ [Cyber Sentinel Agent — Ciberseguridad y Cifrado Grado Militar 24/7]</div>
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">✔ [High-Performance Vector Engine — Procesamiento Asíncrono por Web Worker]</div>
         </div>
 
         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -1155,48 +1159,73 @@
   </div>
 
   <!-- =====================================================================
-       PORTAL DE ENTRADA Y LOGIN NEUTRO (ADMINISTRADOR MAESTRO & CLIENTES)
+       PORTAL NEUTRAL DE BIENVENIDA Y ACCESO OBLIGATORIO (PRIMERA VISTA)
+       Cero colores partidistas • Estética corporativa minimalista
        ===================================================================== -->
-  <div id="modal-auth-login" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-300 overflow-hidden">
-      <!-- Cabecera Neutra Corporativa -->
-      <div class="bg-slate-900 text-white p-6 border-b border-slate-800 relative">
-        <button type="button" onclick="closeAuthLoginModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center">✕</button>
-        <div class="flex items-center gap-2.5 mb-2">
-          <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-black text-slate-200">GW</div>
-          <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Portal Unificado de Licencias</span>
-        </div>
-        <h3 class="text-xl font-black text-white leading-tight">GovTech War Room</h3>
-        <p class="text-xs text-slate-400 mt-1">Simulador Predictivo Electoral y de Políticas Públicas • v4.8 Enterprise</p>
+  <div id="modal-auth-login" class="fixed inset-0 bg-slate-50 z-50 flex flex-col items-center justify-between p-4 sm:p-8 overflow-y-auto">
+    <!-- Barra superior minimalista neutra -->
+    <div class="w-full max-w-5xl flex items-center justify-between py-2 border-b border-slate-200/80">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-black tracking-wider shadow-xs">GW</div>
+        <span class="text-xs font-extrabold tracking-widest uppercase text-slate-700">GovTech War Room</span>
+      </div>
+      <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
+        🔒 Acceso Restringido • Cifrado Grado Militar
+      </span>
+    </div>
+
+    <!-- Contenedor Central de Bienvenida y Login -->
+    <div class="w-full max-w-md my-auto py-8">
+      <div class="text-center mb-6 space-y-2">
+        <span class="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-full">
+          GovTech War Room • Enterprise Edition
+        </span>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+          Plataforma de Inteligencia Predictiva y Simulación Social
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 font-medium">
+          Sistema de Micro-Targeting Territorial, Enjambre Sintético y Análisis Estadístico Oficial (.gob.mx)
+        </p>
       </div>
 
-      <!-- Formulario de Acceso -->
-      <form onsubmit="handleAuthLogin(event)" class="p-6 space-y-4">
-        <div id="auth-error-box" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold"></div>
-
-        <div>
-          <label for="auth-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Usuario de Licencia / Administrador</label>
-          <input type="text" id="auth-username" required placeholder="Ingresa tu usuario asignado..."
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+      <div class="bg-white w-full rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden">
+        <!-- Encabezado del Formulario -->
+        <div class="bg-slate-900 text-white px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-black uppercase tracking-wider text-white">Iniciar Sesión / Acceso a Licencia</h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">Introduce tus credenciales asignadas para desbloquear el sistema</p>
+          </div>
+          <span class="text-lg">🔐</span>
         </div>
 
-        <div>
-          <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Contraseña de Seguridad</label>
-          <input type="password" id="auth-password" required placeholder="••••••••••••"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
-        </div>
+        <!-- Formulario de Acceso -->
+        <form onsubmit="handleAuthLogin(event)" class="p-6 space-y-4">
+          <div id="auth-error-box" class="hidden p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold leading-relaxed"></div>
 
-        <button type="submit" class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-sm tracking-wide shadow-lg transition-all active:scale-95">
-          🔐 Validar Credenciales e Iniciar Sesión
-        </button>
+          <div>
+            <label for="auth-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Usuario</label>
+            <input type="text" id="auth-username" required autocomplete="username" placeholder="Ingresa tu usuario autorizado..."
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
+          </div>
 
-        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Neural Media House · Erick Vega</span>
-          <button type="button" onclick="fillMasterDemoCredentials()" class="font-bold text-slate-700 hover:text-slate-950 underline">
-            👑 Acceso Maestro
+          <div>
+            <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Contraseña</label>
+            <input type="password" id="auth-password" required autocomplete="current-password" placeholder="••••••••••••"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
+          </div>
+
+          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-indigo-950 text-white font-black text-sm tracking-wide shadow-md transition-all active:scale-95 cursor-pointer">
+            Iniciar Sesión / Acceso a Licencia →
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
+    </div>
+
+    <!-- Leyenda Inferior Obligatoria -->
+    <div class="w-full max-w-5xl text-center py-3 border-t border-slate-200/80">
+      <p class="text-xs text-slate-500 font-medium">
+        Desarrollado por <strong class="text-slate-700">Neural Media House</strong> / <strong class="text-slate-700">Erick de Jesús Vega Carmona</strong>
+      </p>
     </div>
   </div>
 
@@ -1224,6 +1253,9 @@
           </button>
           <button type="button" onclick="closeMasterAdminModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold transition-all">
             📊 Ir a Vista 2: War Room Táctico
+          </button>
+          <button type="button" onclick="logoutSession()" class="px-3 py-2 rounded-xl bg-rose-900/70 hover:bg-rose-800 border border-rose-500/50 text-rose-100 text-xs font-black transition-all flex items-center gap-1.5">
+            <span>🚪</span><span>Cerrar Sesión</span>
           </button>
         </div>
       </div>
@@ -1391,10 +1423,10 @@
     </div>
   </div>
 
-  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v4.8.2) -->
-  <script src="/js/components.js?v=4.8.2"></script>
-  <script src="/js/planMaestroPdfExport.js?v=4.8.2"></script>
-  <script src="/js/pdfExport.js?v=4.8.2"></script>
-  <script src="/js/app.js?v=4.8.2"></script>
+  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v4.9.0) -->
+  <script src="/js/components.js?v=4.9.0"></script>
+  <script src="/js/planMaestroPdfExport.js?v=4.9.0"></script>
+  <script src="/js/pdfExport.js?v=4.9.0"></script>
+  <script src="/js/app.js?v=4.9.0"></script>
 </body>
 </html>

@@ -33,14 +33,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+  // Asegurar estado 100% neutral en la primera vista (Cero colores partidistas pre-login)
+  enforceNeutralWelcomeState();
+
+  // Bloqueo de botón "Atrás" del navegador tras cerrar sesión
+  window.addEventListener('popstate', () => {
+    if (!appState.activeSession) {
+      enforceNeutralWelcomeState();
+      window.history.pushState({ loggedOut: true }, '', window.location.pathname);
+    }
+  });
+
   loadStoredAIConfig();
   setupEventListeners();
   await loadStates();
   await loadMunicipalities('Estado de México');
   await loadPresets();
   setExactSwarmSize(500);
-  onPartyThemeChange('PVEM');
   switchWarRoomTab('tab-resumen-demografia');
+}
+
+function enforceNeutralWelcomeState() {
+  const partyThemes = ['theme-pvem', 'theme-morena', 'theme-pan', 'theme-pri', 'theme-mc', 'theme-pt'];
+  partyThemes.forEach(th => document.body.classList.remove(th));
+
+  document.title = 'GovTech War Room — Plataforma de Inteligencia Predictiva y Simulación Social';
+  const fav = document.getElementById('dynamic-favicon');
+  if (fav) {
+    fav.href = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><text x='16' y='21' font-family='Arial' font-weight='bold' font-size='13' fill='%23f8fafc' text-anchor='middle'>GW</text></svg>";
+  }
+
+  ['app-main-header', 'app-main-workspace', 'app-main-footer', 'modal-master-admin', 'modal-radar-electoral', 'modal-platform-info', 'modal-config', 'modal-citizen-detail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+
+  const loginGate = document.getElementById('modal-auth-login');
+  if (loginGate) {
+    loginGate.classList.remove('hidden');
+  }
 }
 
 /**
@@ -2499,15 +2530,10 @@ window.openAuthLoginModal = function() {
 };
 
 window.closeAuthLoginModal = function() {
+  // Bloqueo estricto: jamás cerrar el portal de acceso si no hay sesión autenticada
+  if (!appState.activeSession) return;
   const modal = document.getElementById('modal-auth-login');
   if (modal) modal.classList.add('hidden');
-};
-
-window.fillMasterDemoCredentials = function() {
-  const u = document.getElementById('auth-username');
-  const p = document.getElementById('auth-password');
-  if (u) u.value = 'Cerkvega92';
-  if (p) p.value = 'Tutusito1*';
 };
 
 window.handleAuthLogin = async function(event) {
@@ -2540,7 +2566,14 @@ window.handleAuthLogin = async function(event) {
       user: data.user
     };
 
+    // Desbloquear contenedores principales de la plataforma
+    ['app-main-header', 'app-main-workspace', 'app-main-footer'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+    });
+
     closeAuthLoginModal();
+    window.history.pushState({ authenticated: true }, '', window.location.pathname);
 
     if (data.role === 'MASTER_ADMIN') {
       const btnMaster = document.getElementById('btn-master-admin-header');
@@ -2548,10 +2581,15 @@ window.handleAuthLogin = async function(event) {
         btnMaster.classList.remove('hidden');
         btnMaster.classList.add('flex');
       }
+      const userBadge = document.getElementById('active-user-badge');
+      if (userBadge) {
+        userBadge.classList.remove('hidden');
+        userBadge.classList.add('flex');
+      }
       const navLabel = document.getElementById('nav-session-label');
       if (navLabel) navLabel.innerText = '👑 Cerkvega92';
 
-      applyLicenseRestrictionsToUI(data.user, true);
+      await applyLicenseRestrictionsToUI(data.user, true);
       await openMasterAdminModal();
       showToast('Bienvenido Erick Vega (Cerkvega92). Panel de Control Maestro desbloqueado.');
     } else {
@@ -2560,6 +2598,11 @@ window.handleAuthLogin = async function(event) {
       if (btnMaster) {
         btnMaster.classList.add('hidden');
         btnMaster.classList.remove('flex');
+      }
+      const userBadge = document.getElementById('active-user-badge');
+      if (userBadge) {
+        userBadge.classList.remove('hidden');
+        userBadge.classList.add('flex');
       }
       const navLabel = document.getElementById('nav-session-label');
       if (navLabel) navLabel.innerText = `👤 ${data.user.username}`;
@@ -2575,6 +2618,54 @@ window.handleAuthLogin = async function(event) {
       errBox.classList.remove('hidden');
     }
   }
+};
+
+/**
+ * CIERRE DE SESIÓN SEGURO Y LIMPIEZA DE MEMORIA (LOGOUT)
+ * Destruye sesión activa, purga simulaciones, elimina colores partidistas y regresa al Portal Neutral
+ */
+window.logoutSession = function() {
+  // 1. Destruir sesión activa y almacenamiento temporal
+  appState.activeSession = null;
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    // ignore
+  }
+
+  // 2. Purgar cualquier dato simulado, gráficas y memoria volátil
+  if (typeof window.resetFullSimulation === 'function') {
+    window.resetFullSimulation();
+  }
+
+  // Limpiar campos del Radar Electoral
+  ['radar-input-candidato', 'radar-input-titulo', 'radar-input-propuesta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const radarResults = document.getElementById('radar-results-container');
+  if (radarResults) {
+    radarResults.innerHTML = `
+      <div class="card-pvem p-8 bg-white text-center text-slate-500 text-sm">
+        Pulsa <b>"Iniciar Diagnóstico de Radar"</b> para desplegar las 6 problemáticas críticas (.gob.mx), batería de propuestas ganadoras por cargo, postura de los 12 sindicatos y micro-targeting por colonias.
+      </div>
+    `;
+  }
+
+  // 3. Limpiar formulario de login
+  const uInput = document.getElementById('auth-username');
+  const pInput = document.getElementById('auth-password');
+  const errBox = document.getElementById('auth-error-box');
+  if (uInput) uInput.value = '';
+  if (pInput) pInput.value = '';
+  if (errBox) errBox.classList.add('hidden');
+
+  // 4. Forzar regreso a la Página de Bienvenida Neutral (Cero colores de partido)
+  enforceNeutralWelcomeState();
+
+  // 5. Bloquear navegación hacia atrás en el historial del navegador
+  window.history.replaceState({ loggedOut: true }, '', window.location.pathname);
+  window.history.pushState({ loggedOut: true }, '', window.location.pathname);
 };
 
 /**
