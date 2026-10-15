@@ -95,7 +95,9 @@ class SocialDynamicsAgent {
 
       postAgents.push({
         ...agent,
+        voto: nuevoVoto,
         votoFinal: nuevoVoto,
+        entusiasmo: nuevoEntusiasmo,
         entusiasmoFinal: nuevoEntusiasmo,
         desplazamiento: nuevoVoto !== agent.voto ? 'Cambio tras deliberación' : 'Voto estable',
         notaDeliberacion: notaDeliberacion || 'Mantuvo su postura inicial tras contrastar opiniones con vecinos.'

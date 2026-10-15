@@ -27,7 +27,7 @@ class PoliticalStrategistAgent {
     const indiceFriccionSocial = this.calculateSocialFrictionIndex(votosFinales, municipalResearch);
 
     // 2. Mapa de Calor Demográfico (Sectores Sociales requeridos, Edad y NSE)
-    const mapaCalor = this.generateDemographicHeatmap(agentes);
+    const mapaCalor = this.generateDemographicHeatmap(agentes, votosFinales);
 
     // 3. Voces del Enjambre (Mínimo 6 testimonios auténticos garantizando voces en contra, neutras y a favor)
     const testimoniosSeleccionados = this.curateSwarmVoices(agentes, votosFinales);
@@ -174,60 +174,222 @@ class PoliticalStrategistAgent {
   }
 
   /**
-   * Genera el Mapa de Calor segmentando por los sectores sociales requeridos, edad y NSE
+   * Normaliza la postura de voto del agente (soporta votoFinal, voto, postura)
    */
-  generateDemographicHeatmap(agentes) {
+  normalizeVote(agent) {
+    if (!agent) return 'Neutro';
+    const v = (agent.votoFinal || agent.voto || agent.postura || '').toString().trim().toLowerCase();
+    if (v.includes('favor') || v === 'a' || v === 'si' || v === 'sí') return 'A favor';
+    if (v.includes('contra') || v === 'no') return 'En contra';
+    return 'Neutro';
+  }
+
+  /**
+   * Obtiene la edad del agente de forma segura y tipada
+   */
+  getAgentAge(agent) {
+    if (!agent) return 35;
+    if (typeof agent.edad === 'number' && !isNaN(agent.edad)) return agent.edad;
+    const parsed = parseInt(agent.edad, 10);
+    if (!isNaN(parsed)) return parsed;
+    const str = (agent.rangoEdad || agent.grupoEtario || '').toString().toLowerCase();
+    if (str.includes('18') || str.includes('29') || str.includes('joven')) return 24;
+    if (str.includes('30') || str.includes('49') || str.includes('productiv') || str.includes('medio')) return 38;
+    if (str.includes('50') || str.includes('64') || str.includes('madur')) return 56;
+    if (str.includes('65') || str.includes('mayor') || str.includes('jubilad') || str.includes('pension')) return 68;
+    return 35;
+  }
+
+  /**
+   * Obtiene el estrato NSE del agente de forma segura
+   */
+  getAgentNSE(agent) {
+    if (!agent) return 'C';
+    const raw = (agent.nse || agent.estratoNSE || '').toString().trim().toUpperCase();
+    if (raw.includes('A/B') || raw === 'AB') return 'A/B';
+    if (raw.includes('C+')) return 'C+';
+    if (raw === 'C' || raw.includes('MEDIO TÍPICO')) return 'C';
+    if (raw.includes('D+')) return 'D+';
+    if (raw.includes('D/E') || raw.includes('DE') || raw === 'E' || raw === 'D') return 'D/E';
+    return 'C';
+  }
+
+  /**
+   * Genera el Mapa de Calor segmentando por los sectores sociales requeridos, edad y NSE
+   * (Cálculo 100% dinámico por segmento - Cero fallbacks estáticos de 100% neutro)
+   */
+  generateDemographicHeatmap(agentes, votosFinalesReferencia = {}) {
+    const listadoAgentes = Array.isArray(agentes) && agentes.length > 0 ? agentes : [];
+    
+    // Función de agregación dinámica por segmento
     const calcularSegmento = (filtroFn) => {
-      const sub = agentes.filter(filtroFn);
-      if (sub.length === 0) return { favor: 50, contra: 30, neutro: 20, total: 0 };
-      const fav = Math.round((sub.filter(a => a.votoFinal === 'A favor').length / sub.length) * 100);
-      const con = Math.round((sub.filter(a => a.votoFinal === 'En contra').length / sub.length) * 100);
-      const neu = 100 - fav - con;
-      return { favor: fav, contra: con, neutro: neu, total: sub.length };
+      const sub = listadoAgentes.filter(filtroFn);
+      
+      // Si el subconjunto está vacío, derivar proporcionalmente de las métricas globales
+      if (sub.length === 0) {
+        const baseFav = votosFinalesReferencia.porcentajeFavor ?? 50;
+        const baseCon = votosFinalesReferencia.porcentajeContra ?? 30;
+        const baseNeu = Math.max(100 - baseFav - baseCon, 0);
+        return { favor: baseFav, contra: baseCon, neutro: baseNeu, total: 0 };
+      }
+
+      const total = sub.length;
+      let favCount = 0;
+      let conCount = 0;
+      let neuCount = 0;
+
+      for (const a of sub) {
+        const v = this.normalizeVote(a);
+        if (v === 'A favor') favCount++;
+        else if (v === 'En contra') conCount++;
+        else neuCount++;
+      }
+
+      const favPct = Math.round((favCount / total) * 100);
+      const conPct = Math.round((conCount / total) * 100);
+      let neuPct = 100 - favPct - conPct;
+      if (neuPct < 0) neuPct = 0;
+
+      return {
+        favor: favPct,
+        contra: conPct,
+        neutro: neuPct,
+        total: total,
+        votosDetalle: { favor: favCount, contra: conCount, neutro: neuCount }
+      };
     };
 
-    // 1. Desglose por Sector Social Específico (Requerimiento Maestro)
+    // 1. Desglose por Sector Social Específico
     const porSectorSocial = [
       {
-        sector: 'Obreros y Usuarios de Transporte',
-        ...calcularSegmento(a => a.ocupacion.includes('obrero') || a.ocupacion.includes('transporte') || a.ocupacion.includes('viaja a CDMX') || a.nse === 'D+' || a.nse === 'D/E'),
+        sector: 'Usuarios de Transporte y Obreros',
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          const n = this.getAgentNSE(a);
+          return o.includes('obrero') || o.includes('transporte') || o.includes('combi') || o.includes('chofer') || o.includes('cdmx') || s.includes('transporte') || n === 'D+' || n === 'D/E';
+        }),
         observacion: 'Sensibles al costo del pasaje, tiempos de traslado y asaltos en paraderos'
       },
       {
         sector: 'Comerciantes y Tianguistas',
-        ...calcularSegmento(a => a.ocupacion.includes('tianguis') || a.ocupacion.includes('abarrotes') || a.ocupacion.includes('Comerciante')),
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          return o.includes('tianguis') || o.includes('mercado') || o.includes('abarrotes') || o.includes('comerciante') || s.includes('tianguis') || s.includes('comercio');
+        }),
         observacion: 'Rechazo frontal a cierres viales prolongados o reubicaciones sin garantías de venta'
       },
       {
-        sector: 'Automovilistas y Clase Media',
-        ...calcularSegmento(a => (a.nse === 'A/B' || a.nse === 'C+') || a.ocupacion.includes('Profesionista') || a.ocupacion.includes('corporativo')),
+        sector: 'Clase Media y Automovilistas',
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          const n = this.getAgentNSE(a);
+          return n === 'A/B' || n === 'C+' || o.includes('profesionista') || o.includes('contador') || o.includes('ingeniero') || s.includes('media');
+        }),
         observacion: 'Rechazan reducción de carriles, nuevos impuestos vehiculares o prediales'
       },
       {
         sector: 'Jóvenes y Estudiantes',
-        ...calcularSegmento(a => a.edad <= 29 || a.ocupacion.includes('Estudiante')),
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          const e = this.getAgentAge(a);
+          return e <= 29 || o.includes('estudiante') || s.includes('joven');
+        }),
         observacion: 'Aliados de la agenda verde, ciclovías, internet y movilidad eléctrica'
       },
       {
+        sector: 'Sector Rural y Turismo',
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          return o.includes('agro') || o.includes('campo') || o.includes('turism') || o.includes('artesan') || s.includes('rural') || s.includes('turismo');
+        }),
+        observacion: 'Prioridad al suministro hídrico y preservación ecológica'
+      },
+      {
         sector: 'Adultos Mayores y Pensionados',
-        ...calcularSegmento(a => a.edad >= 60 || a.ocupacion.includes('pensionado')),
+        ...calcularSegmento(a => {
+          const o = (a.ocupacion || '').toLowerCase();
+          const s = (a.sectorSocial || '').toLowerCase();
+          const e = this.getAgentAge(a);
+          return e >= 60 || o.includes('pensionado') || o.includes('jubilad') || s.includes('mayor');
+        }),
         observacion: 'Exigen rampas, gratuidad en transporte y suministro constante de agua'
       }
     ];
 
-    // 2. Segmentos por Grupo Etario
+    // 2. Segmentos por Grupo Etario (18-29, 30-49, 50-64, 65+)
     const porEdad = [
-      { grupo: '18 a 29 años (Jóvenes)', ...calcularSegmento(a => a.edad <= 29), observacion: 'Sólido apego a causas ambientales y modernización tecnológica' },
-      { grupo: '30 a 49 años (Adultos Productivos)', ...calcularSegmento(a => a.edad >= 30 && a.edad <= 49), observacion: 'Priorizan seguridad en el trayecto, ahorro en transporte y abasto de agua' },
-      { grupo: '50 a 64 años (Adultos Maduros)', ...calcularSegmento(a => a.edad >= 50 && a.edad <= 64), observacion: 'Sensibles a afectaciones viales temporales y mantenimiento de colonias' },
-      { grupo: '65+ años (Adultos Mayores)', ...calcularSegmento(a => a.edad >= 65), observacion: 'Preocupación por rampas peatonales, gratuidad y trato digno' }
+      {
+        grupo: '18 a 29 años (Jóvenes)',
+        rango: '18-29',
+        ...calcularSegmento(a => {
+          const e = this.getAgentAge(a);
+          return e >= 18 && e <= 29;
+        }),
+        observacion: 'Sólido apego a causas ambientales y modernización tecnológica'
+      },
+      {
+        grupo: '30 a 49 años (Adultos Productivos)',
+        rango: '30-49',
+        ...calcularSegmento(a => {
+          const e = this.getAgentAge(a);
+          return e >= 30 && e <= 49;
+        }),
+        observacion: 'Priorizan seguridad en el trayecto, ahorro en transporte y abasto de agua'
+      },
+      {
+        grupo: '50 a 64 años (Adultos Maduros)',
+        rango: '50-64',
+        ...calcularSegmento(a => {
+          const e = this.getAgentAge(a);
+          return e >= 50 && e <= 64;
+        }),
+        observacion: 'Sensibles a afectaciones viales temporales y mantenimiento de colonias'
+      },
+      {
+        grupo: '65+ años (Adultos Mayores)',
+        rango: '65+',
+        ...calcularSegmento(a => {
+          const e = this.getAgentAge(a);
+          return e >= 65;
+        }),
+        observacion: 'Preocupación por rampas peatonales, gratuidad y trato digno'
+      }
     ];
 
-    // 3. Segmentos por Nivel Socioeconómico
+    // 3. Segmentos por Nivel Socioeconómico (NSE)
     const porNSE = [
-      { nivel: 'A/B y C+ (Medio-Alto / Alto)', ...calcularSegmento(a => a.nse === 'A/B' || a.nse === 'C+'), observacion: 'Valoran plusvalía urbana, energías renovables y ordenamiento' },
-      { nivel: 'C (Medio Típico)', ...calcularSegmento(a => a.nse === 'C'), observacion: 'Enfocados en relación costo-beneficio y calidad de servicios' },
-      { nivel: 'D+ y D/E (Bajo / Popular)', ...calcularSegmento(a => a.nse === 'D+' || a.nse === 'D/E'), observacion: 'Impacto directo en gasto diario, agua potable e iluminación en calles' }
+      {
+        nivel: 'A/B y C+ (Medio-Alto / Alto)',
+        estrato: 'A/B_C+',
+        ...calcularSegmento(a => {
+          const n = this.getAgentNSE(a);
+          return n === 'A/B' || n === 'C+';
+        }),
+        observacion: 'Valoran plusvalía urbana, energías renovables y ordenamiento'
+      },
+      {
+        nivel: 'C (Medio Típico)',
+        estrato: 'C',
+        ...calcularSegmento(a => {
+          const n = this.getAgentNSE(a);
+          return n === 'C';
+        }),
+        observacion: 'Enfocados en relación costo-beneficio y calidad de servicios'
+      },
+      {
+        nivel: 'D+ y D/E (Bajo / Popular)',
+        estrato: 'D+_DE',
+        ...calcularSegmento(a => {
+          const n = this.getAgentNSE(a);
+          return n === 'D+' || n === 'D/E';
+        }),
+        observacion: 'Impacto directo en gasto diario, agua potable e iluminación en calles'
+      }
     ];
 
     return {
@@ -242,9 +404,9 @@ class PoliticalStrategistAgent {
    * Selecciona mínimo 6 testimonios representativos garantizando voces críticas (3), neutras (2) y a favor (1-2)
    */
   curateSwarmVoices(agentes, votos) {
-    const aFavor = agentes.filter(a => a.votoFinal === 'A favor');
-    const enContra = agentes.filter(a => a.votoFinal === 'En contra');
-    const neutros = agentes.filter(a => a.votoFinal === 'Neutro');
+    const aFavor = agentes.filter(a => this.normalizeVote(a) === 'A favor');
+    const enContra = agentes.filter(a => this.normalizeVote(a) === 'En contra');
+    const neutros = agentes.filter(a => this.normalizeVote(a) === 'Neutro');
 
     const seleccion = [];
     const tomar = (arr, num) => {

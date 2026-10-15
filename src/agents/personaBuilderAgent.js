@@ -55,16 +55,22 @@ class PersonaBuilderAgent {
       const colonia = colonias[i % colonias.length];
       const postura = this.pickCivicPosture();
       const transporte = this.pickTransportMode(colonia, ocupacion);
+      const grupoEtario = this.getAgeGroup(edad);
+      const estratoNSE = this.getNSEBracket(nse);
+      const sectorSocial = this.formatSectorName(ocupacion, nse, edad);
       const preocupacionFamilia = this.pickFamilyConcern(municipalData.top5Problematicas);
 
       personas.push({
         id,
         nombre,
         genero,
-        edad,
-        grupoEtario: this.getAgeGroup(edad),
-        nse,
+        edad: Number(edad),
+        rangoEdad: grupoEtario,
+        grupoEtario: grupoEtario,
+        nse: String(nse),
+        estratoNSE: estratoNSE,
         ocupacion,
+        sectorSocial,
         colonia,
         posturaCivica: postura.tipo,
         perfilCivicoDesc: postura.desc,
@@ -180,6 +186,38 @@ class PersonaBuilderAgent {
     if (!problematicas || problematicas.length === 0) return 'Economía familiar y empleo';
     const index = Math.floor(Math.random() * problematicas.length);
     return problematicas[index].tema;
+  }
+
+  getNSEBracket(nse) {
+    const n = String(nse).toUpperCase();
+    if (n === 'A/B' || n === 'C+') return 'A/B y C+ (Altos y Medios-Altos)';
+    if (n === 'C') return 'C (Medio Típico)';
+    return 'D+ y D/E (Estratos Populares)';
+  }
+
+  formatSectorName(ocupacion, nse, edad) {
+    const o = (ocupacion || '').toLowerCase();
+    const n = String(nse || '').toUpperCase();
+    const e = Number(edad || 35);
+    if (o.includes('obrero') || o.includes('transporte') || o.includes('combi') || o.includes('viaja a cdmx') || n === 'D+' || n === 'D/E') {
+      return 'Usuarios de Transporte y Obreros';
+    }
+    if (o.includes('tianguis') || o.includes('mercado') || o.includes('abarrotes') || o.includes('comerciante')) {
+      return 'Comerciantes y Tianguistas';
+    }
+    if (n === 'A/B' || n === 'C+' || o.includes('profesionista') || o.includes('corporativo') || o.includes('contador')) {
+      return 'Clase Media y Automovilistas';
+    }
+    if (e <= 29 || o.includes('estudiante')) {
+      return 'Jóvenes y Estudiantes';
+    }
+    if (o.includes('campo') || o.includes('agrícola') || o.includes('turismo') || o.includes('artesano')) {
+      return 'Sector Rural y Turismo';
+    }
+    if (e >= 60 || o.includes('pensionado') || o.includes('jubilado')) {
+      return 'Adultos Mayores y Pensionados';
+    }
+    return 'Comunidad General';
   }
 }
 

@@ -220,19 +220,27 @@ class ChatGenerator {
         usedHashes.add(hash);
       }
 
+      const rangoEdad = this.getAgeBracket(edad);
+      const estratoNSE = this.getNSEBracket(nse);
+
       uniqueChats.push({
         id: `agent-chat-${idx + 1}`,
         numero: idx + 1,
         nombre: nombreCompleto,
-        edad,
+        edad: Number(edad),
+        rangoEdad: rangoEdad,
+        grupoEtario: rangoEdad,
         genero: isMale ? 'M' : 'F',
         ocupacion,
         sectorSocial: this.formatSectorName(sectorKey),
         colonia,
         municipio,
-        nse,
-        voto,
-        entusiasmo,
+        nse: String(nse),
+        estratoNSE: estratoNSE,
+        voto: voto,
+        votoFinal: voto,
+        entusiasmo: Number(entusiasmo),
+        entusiasmoFinal: Number(entusiasmo),
         estiloNarrativo: `Estilo ${estiloNumero}`,
         mensaje: finalMensaje,
         avatarUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(nombreCompleto)}&backgroundColor=e6f4ea,f1f5f9`
@@ -420,6 +428,21 @@ class ChatGenerator {
           return `Convocaremos a los vecinos de ${colonia} este sábado para analizar a detalle el texto de «${citaLiteral}» y fijar una postura colectiva ante el gobierno municipal.`;
         }
     }
+  }
+
+  getAgeBracket(edad) {
+    const e = Number(edad);
+    if (e <= 29) return '18 a 29 años (Jóvenes)';
+    if (e <= 49) return '30 a 49 años (Adultos Productivos)';
+    if (e <= 64) return '50 a 64 años (Adultos Maduros)';
+    return '65+ años (Adultos Mayores)';
+  }
+
+  getNSEBracket(nse) {
+    const n = String(nse).toUpperCase();
+    if (n === 'A/B' || n === 'C+') return 'A/B y C+ (Altos y Medios-Altos)';
+    if (n === 'C') return 'C (Medio Típico)';
+    return 'D+ y D/E (Estratos Populares)';
   }
 
   formatSectorName(key) {

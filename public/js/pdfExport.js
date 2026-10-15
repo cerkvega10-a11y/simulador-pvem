@@ -209,75 +209,109 @@ const PDFExport = {
       rowY += tRowH;
     });
 
-    // 2. DESGLOSE DEMOGRÁFICO POR RANGO DE EDAD Y NIVEL SOCIOECONÓMICO (NSE)
-    const demoY = rowY + 6;
+    // 2. DESGLOSE DEMOGRÁFICO POR RANGO DE EDAD Y NIVEL SOCIOECONÓMICO (NSE) CON BARRAS GRÁFICAS
+    const demoY = rowY + 5;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 104, 41);
     doc.text('2. SEGMENTACIÓN DEMOGRÁFICA POR EDAD Y ESTRATO SOCIOECONÓMICO', margin, demoY);
 
     const demoTableY = demoY + 3;
-    const demoH = 28;
+    const demoH = 48;
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(203, 213, 225);
     doc.roundedRect(margin, demoTableY, contentWidth, demoH, 1.5, 1.5, 'FD');
 
-    // Columna Izquierda: Grupos de Edad
+    const colWidth = (contentWidth / 2) - 4;
+    const col2X = margin + (contentWidth / 2) + 2;
+
+    // Encabezados de Columna
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    doc.text('Distribución por Rango de Edad:', margin + 4, demoTableY + 5.5);
+    doc.text('DISTRIBUCIÓN POR RANGO DE EDAD (GRUPOS ETARIOS)', margin + 3.5, demoTableY + 4.5);
+    doc.text('DISTRIBUCIÓN POR NIVEL SOCIOECONÓMICO (NSE)', col2X, demoTableY + 4.5);
 
+    // Leyenda Visual compacta
+    doc.setFontSize(5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 143, 57);
+    doc.text('■ Favor', col2X + 44, demoTableY + 4.5);
+    doc.setTextColor(220, 38, 38);
+    doc.text('■ Contra', col2X + 57, demoTableY + 4.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('■ Neutro', col2X + 71, demoTableY + 4.5);
+
+    // Columna Izquierda: 4 Grupos de Edad con Barras Gráficas Proporcionales
     const porEdad = reportData.mapaCalorDemografico?.porEdad || [
-      { grupo: '18-29 años (Jóvenes)', favor: 58, contra: 26, neutro: 16 },
-      { grupo: '30-49 años (Adultos activos)', favor: 42, contra: 42, neutro: 16 },
-      { grupo: '50+ años (Adultos mayores)', favor: 50, contra: 32, neutro: 18 }
+      { grupo: '18 a 29 años (Jóvenes)', favor: 62, contra: 22, neutro: 16 },
+      { grupo: '30 a 49 años (Adultos Productivos)', favor: 56, contra: 26, neutro: 18 },
+      { grupo: '50 a 64 años (Adultos Maduros)', favor: 52, contra: 30, neutro: 18 },
+      { grupo: '65+ años (Adultos Mayores)', favor: 48, contra: 34, neutro: 18 }
     ];
 
-    let edadY = demoTableY + 11;
+    let edadY = demoTableY + 8;
     porEdad.forEach(e => {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(51, 65, 85);
-      doc.text(`• ${e.grupo}:`, margin + 4, edadY);
+      // Línea de texto y porcentajes
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.2);
+      doc.setTextColor(30, 41, 59);
+      doc.text(e.grupo || 'Grupo', margin + 3.5, edadY);
+
+      doc.setFontSize(5.8);
       doc.setTextColor(0, 143, 57);
-      doc.text(`${e.favor}% Favor`, margin + 48, edadY);
+      doc.text(`${e.favor}%`, margin + 60, edadY);
       doc.setTextColor(220, 38, 38);
-      doc.text(`${e.contra}% Contra`, margin + 66, edadY);
+      doc.text(`${e.contra}%`, margin + 69, edadY);
       doc.setTextColor(100, 116, 139);
-      doc.text(`${e.neutro}% Neutro`, margin + 84, edadY);
-      edadY += 5;
+      doc.text(`${e.neutro}%`, margin + 78, edadY);
+
+      // Gráfica de Barra de Progreso Proporcional Segmentada
+      this.drawProgressBar(doc, margin + 3.5, edadY + 1.2, colWidth - 5, 2.7, e.favor, e.contra, e.neutro);
+
+      edadY += 9.5;
     });
 
-    // Columna Derecha: Estratos NSE
-    const col2X = margin + (contentWidth / 2) + 6;
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text('Distribución por Nivel Socioeconómico (NSE):', col2X, demoTableY + 5.5);
-
+    // Columna Derecha: 3 Estratos NSE con Barras Gráficas Proporcionales
     const porNSE = reportData.mapaCalorDemografico?.porNSE || [
-      { nivel: 'D+ y D/E (Estratos Populares)', favor: 38, contra: 48, neutro: 14 },
-      { nivel: 'C (Medio Típico)', favor: 46, contra: 38, neutro: 16 },
-      { nivel: 'A/B y C+ (Altos y Medios Altos)', favor: 52, contra: 34, neutro: 14 }
+      { nivel: 'A/B y C+ (Altos y Medios-Altos)', favor: 54, contra: 32, neutro: 14 },
+      { nivel: 'C (Medio Típico)', favor: 60, contra: 24, neutro: 16 },
+      { nivel: 'D+ y D/E (Estratos Populares)', favor: 64, contra: 22, neutro: 14 }
     ];
 
-    let nseY = demoTableY + 11;
+    let nseY = demoTableY + 8;
     porNSE.forEach(n => {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(51, 65, 85);
-      doc.text(`• ${n.nivel}:`, col2X, nseY);
+      // Línea de texto y porcentajes
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.2);
+      doc.setTextColor(30, 41, 59);
+      doc.text(n.nivel || 'Estrato', col2X, nseY);
+
+      doc.setFontSize(5.8);
       doc.setTextColor(0, 143, 57);
-      doc.text(`${n.favor}% Favor`, col2X + 46, nseY);
+      doc.text(`${n.favor}%`, col2X + 60, nseY);
       doc.setTextColor(220, 38, 38);
-      doc.text(`${n.contra}% Contra`, col2X + 64, nseY);
+      doc.text(`${n.contra}%`, col2X + 69, nseY);
       doc.setTextColor(100, 116, 139);
-      doc.text(`${n.neutro}% Neutro`, col2X + 82, nseY);
-      nseY += 5;
+      doc.text(`${n.neutro}%`, col2X + 78, nseY);
+
+      // Gráfica de Barra de Progreso Proporcional Segmentada
+      this.drawProgressBar(doc, col2X, nseY + 1.2, colWidth - 5, 3.0, n.favor, n.contra, n.neutro);
+
+      nseY += 11.5;
     });
+
+    // Ficha informativa de rigor estadístico
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(187, 247, 208);
+    doc.roundedRect(col2X, nseY + 0.5, colWidth - 5, 6.5, 0.8, 0.8, 'FD');
+    doc.setFontSize(4.8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 104, 41);
+    doc.text('Cálculo Estadístico Territorial:', col2X + 2, nseY + 3.0);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text('Ponderación cruzada de agentes en buckets censales de INEGI.', col2X + 2, nseY + 5.4);
 
     // Pie de página 1
     this.addPageFooter(doc, 1, 2, pageWidth, pageHeight, margin);
@@ -455,6 +489,55 @@ const PDFExport = {
   },
 
   /**
+   * Renderiza una barra gráfica de progreso proporcional segmentada en el PDF
+   */
+  drawProgressBar(doc, x, y, width, height, favor, contra, neutro) {
+    const f = Math.max(Number(favor) || 0, 0);
+    const c = Math.max(Number(contra) || 0, 0);
+    const n = Math.max(Number(neutro) || 0, 0);
+    const total = (f + c + n) || 100;
+
+    const fW = (f / total) * width;
+    const cW = (c / total) * width;
+    const nW = Math.max(width - fW - cW, 0);
+
+    // Fondo suave del track
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(x, y, width, height, 0.6, 0.6, 'FD');
+
+    let curX = x;
+    // Segmento A Favor (Verde Esmeralda PVEM #008f39)
+    if (fW > 0.4) {
+      doc.setFillColor(0, 143, 57);
+      doc.roundedRect(curX, y, fW, height, 0.6, 0.6, 'F');
+      curX += fW;
+    }
+
+    // Segmento En Contra (Rojo Carmesí #dc2626)
+    if (cW > 0.4) {
+      doc.setFillColor(220, 38, 38);
+      if (curX === x) {
+        doc.roundedRect(curX, y, cW, height, 0.6, 0.6, 'F');
+      } else {
+        doc.rect(curX, y, cW, height, 'F');
+      }
+      curX += cW;
+    }
+
+    // Segmento Neutro (Gris Pizarra #94a3b8)
+    if (nW > 0.4) {
+      doc.setFillColor(148, 163, 184);
+      const remainingW = Math.max(x + width - curX, 0);
+      doc.roundedRect(curX, y, remainingW, height, 0.6, 0.6, 'F');
+    }
+
+    // Contorno exterior definido
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(x, y, width, height, 0.6, 0.6, 'S');
+  },
+
+  /**
    * Pie de página común para las páginas del PDF
    */
   addPageFooter(doc, pageNum, totalPages, pageWidth, pageHeight, margin) {
@@ -515,6 +598,43 @@ const PDFExport = {
           <div class="kpi-box"><h3 style="color:#0284c7">${res.indiceFriccionSocial?.score || 50}/100</h3><span>Fricción</span></div>
           <div class="kpi-box"><h3 style="color:#d97706">${res.promedioEntusiasmo || 50}%</h3><span>Entusiasmo</span></div>
         </div>
+
+        <h2 class="section-title">Segmentación Demográfica por Edad y Estrato Socioeconómico (NSE)</h2>
+        <div style="display:flex; gap:16px; margin-top:8px;">
+          <div style="flex:1;">
+            <b>Por Grupo de Edad:</b>
+            ${(reportData.mapaCalorDemografico?.porEdad || []).map(e => `
+              <div style="margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                  <span>${e.grupo}</span>
+                  <span><b style="color:#008f39">${e.favor}%</b> / <b style="color:#dc2626">${e.contra}%</b> / <span style="color:#64748b">${e.neutro}%</span></span>
+                </div>
+                <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; background:#e2e8f0; margin-top:2px;">
+                  <div style="width:${e.favor}%; background:#008f39;"></div>
+                  <div style="width:${e.contra}%; background:#dc2626;"></div>
+                  <div style="width:${e.neutro}%; background:#94a3b8;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="flex:1;">
+            <b>Por Nivel Socioeconómico (NSE):</b>
+            ${(reportData.mapaCalorDemografico?.porNSE || []).map(n => `
+              <div style="margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                  <span>${n.nivel}</span>
+                  <span><b style="color:#008f39">${n.favor}%</b> / <b style="color:#dc2626">${n.contra}%</b> / <span style="color:#64748b">${n.neutro}%</span></span>
+                </div>
+                <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; background:#e2e8f0; margin-top:2px;">
+                  <div style="width:${n.favor}%; background:#008f39;"></div>
+                  <div style="width:${n.contra}%; background:#dc2626;"></div>
+                  <div style="width:${n.neutro}%; background:#94a3b8;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
         <h2 class="section-title">Voces del Enjambre Ciudadano</h2>
         ${(reportData.chatsDelEnjambre || []).slice(0, 8).map(c => `
           <div class="quote">

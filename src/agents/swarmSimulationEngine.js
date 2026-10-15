@@ -202,7 +202,9 @@ class SwarmSimulationEngine {
 
     return {
       voto,
+      votoFinal: voto,
       entusiasmo: scoreFavor,
+      entusiasmoFinal: scoreFavor,
       argumentoPrincipal: razon
     };
   }

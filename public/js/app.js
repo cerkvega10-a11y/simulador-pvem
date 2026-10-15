@@ -960,6 +960,15 @@ function onSimulationFinished(report) {
   const friccionBadge = document.getElementById('kpi-friccion-badge');
   if (friccionBadge) friccionBadge.innerText = res.indiceFriccionSocial?.nivel || 'Moderada';
 
+  // 2.5 Segmentación Demográfica y Estrato Socioeconómico (Barras Gráficas Visuales)
+  try {
+    if (report.mapaCalorDemografico) {
+      Components.renderHeatmap('demographic-heatmap-container', report.mapaCalorDemografico);
+    }
+  } catch (e) {
+    console.warn('Advertencia en Segmentación Demográfica:', e);
+  }
+
   // 3. Panel del Agente Auditor de IA (Proof of Reasoning)
   try {
     if (report.proofOfReasoning) {
