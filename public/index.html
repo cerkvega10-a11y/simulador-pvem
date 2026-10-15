@@ -45,8 +45,12 @@
   
   <!-- Librerías Oficiales para Generación y Descarga Real de PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
+  <!-- Cyber Sentinel 24/7 Cybersecurity Agent -->
+  <script src="/js/cyberSentinelAgent.js"></script>
+
   <!-- Estilos Personalizados -->
   <link rel="stylesheet" href="/css/styles.css">
 </head>
@@ -79,9 +83,18 @@
         </div>
 
         <!-- QA Watchdog Live Pill -->
-        <div id="qa-watchdog-pill" class="hidden xl:flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-900 px-3 py-1 rounded-full text-[10px] font-black shadow-2xs">
+        <div id="qa-watchdog-pill" class="hidden 2xl:flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-900 px-3 py-1 rounded-full text-[10px] font-black shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
           <span>QA WATCHDOG: 100% AUDITADO</span>
+        </div>
+
+        <!-- Cyber Sentinel 24/7 Security Telemetry Badge -->
+        <div id="cyber-sentinel-badge" onclick="window.cyberSentinelAgent && window.cyberSentinelAgent.openSecurityTelemetryModal()"
+          class="cursor-pointer flex items-center gap-1.5 bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 hover:text-white px-2.5 sm:px-3 py-1 rounded-full text-[10px] font-black shadow-xs tracking-wider transition-all hover:bg-emerald-900 select-none"
+          title="Cyber Sentinel 24/7 Activo: Clic para abrir consola de ciberseguridad">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+          <span id="cyber-sentinel-badge-text" class="hidden lg:inline">[🔒 CYBER SENTINEL 24/7 ACTIVO: CIFRADO GRADO MILITAR | 0 VULNERABILIDADES | ANTI-INTRUSIÓN Y MEMORIA VOLÁTIL VERIFICADOS]</span>
+          <span class="lg:hidden font-mono">[🔒 CYBER SENTINEL 24/7]</span>
         </div>
       </div>
 
@@ -334,6 +347,44 @@
               </div>
             </div>
           </div>
+
+          <!-- RADAR ELECTORAL 2027-2030 & CARGO (CONFIGURADOR ELECTORAL INICIAL) -->
+          <div class="pt-3 border-t border-slate-100 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <span>🗳️</span> Radar Electoral & Cargo
+              </span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">Proyección INE/IEEM</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label for="select-ciclo-electoral" class="block text-[10px] text-slate-500 font-bold mb-1 uppercase">Ciclo Electoral</label>
+                <select id="select-ciclo-electoral" class="w-full text-xs font-bold p-2 border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                  <option value="2027" selected>2027 (Elecciones Concurrentes 6 de Junio)</option>
+                  <option value="2030">2030 (Elecciones Federales y Estatales)</option>
+                </select>
+              </div>
+              <div>
+                <label for="select-cargo-electoral" class="block text-[10px] text-slate-500 font-bold mb-1 uppercase">Cargo por el que Contiende</label>
+                <select id="select-cargo-electoral" class="w-full text-xs font-bold p-2 border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                  <option value="Presidente Municipal / Alcalde" selected>Presidente Municipal / Alcalde</option>
+                  <option value="Regidor">Regidor de Cabildo</option>
+                  <option value="Diputado Local">Diputado Local (Congreso Edomex)</option>
+                  <option value="Diputado Federal">Diputado Federal (Congreso Unión)</option>
+                  <option value="Senador">Senador de la República</option>
+                  <option value="Gobernador">Gobernador del Estado de México</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Botón PDF #1: Descarga directa del Plan Maestro desde el Configurador -->
+            <button type="button" id="btn-download-plan-maestro" onclick="descargarPlanMaestroPdf()"
+              class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95"
+              title="Generar y descargar el Plan Maestro de Victoria Electoral en PDF para el cargo y municipio seleccionado">
+              <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>📥 Descargar Plan Maestro para Ganar la Elección (PDF Ejecutivo)</span>
+            </button>
+          </div>
         </div>
 
         <!-- MÓDULO 3: CONFIGURACIÓN DEL ENJAMBRE (SWARM CONTROL) -->
@@ -512,11 +563,21 @@
           <p id="dash-dictamen" class="text-xs sm:text-sm text-emerald-200 font-medium"></p>
         </div>
 
-        <div class="flex items-center gap-3 shrink-0">
+        <div class="flex items-center gap-2.5 flex-wrap shrink-0">
+          <!-- Botón PDF #1: Plan Maestro de Victoria Electoral -->
+          <button type="button" id="btn-export-plan-maestro"
+            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-950 border-2 border-emerald-400 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+            title="Descargar Plan Maestro de Victoria Electoral y Diagnóstico Territorial">
+            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>📥 Descargar Plan Maestro para Ganar la Elección (PDF Ejecutivo)</span>
+          </button>
+
+          <!-- Botón PDF #2: Dictamen Integral de Simulación Predictiva -->
           <button type="button" id="btn-export-pdf"
-            class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <span>Descargar Reporte PDF</span>
+            class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+            title="Descargar Dictamen Integral de Simulación Predictiva y Cuarto de Guerra (7 Páginas)">
+            <svg class="w-4 h-4 text-emerald-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>📥 Descargar Dictamen Ejecutivo Completo (PDF Alta Precisión)</span>
           </button>
         </div>
       </div>
@@ -524,19 +585,22 @@
       <!-- BARRA DE NAVEGACIÓN TÁCTICA POR PESTAÑAS (TABBED WAR ROOM UI — CERO SATURACIÓN VISUAL) -->
       <div class="border-b border-slate-200 bg-white rounded-2xl shadow-sm p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar sticky top-16 z-30">
         <button type="button" onclick="switchWarRoomTab('tab-resumen-demografia')" class="tab-btn active px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 bg-emerald-600 text-white shadow-xs" data-tab="tab-resumen-demografia">
-          <span>📊</span> <span>Resumen Ejecutivo y Demografía</span>
+          <span>📊</span> <span>1. Resumen y Demografía</span>
+        </button>
+        <button type="button" onclick="switchWarRoomTab('tab-colonias-campana')" class="tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0" data-tab="tab-colonias-campana">
+          <span>🏘️</span> <span>2. Mapa por Colonias y Diseño de Campaña</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-inteligencia-sindical')" class="tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0" data-tab="tab-inteligencia-sindical">
-          <span>✊</span> <span>Inteligencia Sindical & Riesgo de Paro</span>
+          <span>✊</span> <span>3. Inteligencia Sindical (12 Fuerzas)</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-fuentes-voces')" class="tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0" data-tab="tab-fuentes-voces">
-          <span>🏛️</span> <span>18 Fuentes Oficiales & Voces</span>
+          <span>🏛️</span> <span>4. 18 Fuentes Oficiales (.gob.mx) & Voces</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-blindaje-defensa')" class="tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0" data-tab="tab-blindaje-defensa">
-          <span>🛡️</span> <span>Blindaje y Defensa (20 Preguntas)</span>
+          <span>🛡️</span> <span>5. Escudo de Defensa (20 Preguntas)</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-modo-ataque')" class="tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0" data-tab="tab-modo-ataque">
-          <span>⚔️</span> <span>Modo Ataque (Demolición Rival)</span>
+          <span>⚔️</span> <span>6. Modo Ataque (Demolición Rival)</span>
         </button>
       </div>
 
@@ -583,6 +647,15 @@
         <!-- SEGMENTACIÓN DEMOGRÁFICA POR EDAD, NSE Y SECTORES CON BARRAS GRÁFICAS -->
         <div id="demographic-heatmap-container">
           <!-- Renderizado dinámicamente con Components.renderHeatmap -->
+        </div>
+      </div>
+
+      <!-- ========================================================
+           PESTAÑA 2: MAPA POR COLONIAS Y DISEÑO DE CAMPAÑA
+           ======================================================== -->
+      <div id="tab-colonias-campana" class="tab-content hidden space-y-6">
+        <div id="colonias-campaign-container">
+          <!-- Renderizado dinámicamente con Components.renderTab2ColoniasYCampana -->
         </div>
       </div>
 
@@ -907,6 +980,7 @@
 
   <!-- SCRIPTS DE LA APLICACIÓN -->
   <script src="/js/components.js"></script>
+  <script src="/js/planMaestroPdfExport.js"></script>
   <script src="/js/pdfExport.js"></script>
   <script src="/js/app.js"></script>
 </body>

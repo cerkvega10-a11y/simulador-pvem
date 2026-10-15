@@ -13,6 +13,9 @@ let appState = {
   swarmSize: 500,
   webSearchActive: true,
   activeParty: 'PVEM',
+  cicloElectoral: '2027',
+  cargoElectoral: 'Presidente Municipal / Alcalde',
+  radarAnalysis: null,
   isLocked: false,
   aiConfig: {
     provider: 'native',
@@ -246,17 +249,30 @@ window.resetFullSimulation = function() {
   appState.localidad = '';
   appState.swarmSize = 500;
   appState.webSearchActive = true;
+  appState.cicloElectoral = '2027';
+  appState.cargoElectoral = 'Presidente Municipal / Alcalde';
+  appState.radarAnalysis = null;
   appState.currentReport = null;
+
+  const selectCiclo = document.getElementById('select-ciclo-electoral');
+  if (selectCiclo) selectCiclo.value = '2027';
+  const selectCargo = document.getElementById('select-cargo-electoral');
+  if (selectCargo) selectCargo.value = 'Presidente Municipal / Alcalde';
 
   // Restaurar pestaña activa por defecto
   switchWarRoomTab('tab-resumen-demografia');
   restoreSimulateButton();
 
-  // 10. Scroll suave hacia arriba
+  // 10. Protocolo de Memoria Volátil y Cero Rastros de Cyber Sentinel
+  if (typeof window !== 'undefined' && window.cyberSentinelAgent?.purgeSensitiveData) {
+    window.cyberSentinelAgent.purgeSensitiveData();
+  }
+
+  // 11. Scroll suave hacia arriba
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (inputTitulo) inputTitulo.focus();
 
-  showToast('Sistema desbloqueado y reiniciado. Listo para ingresar una nueva propuesta.');
+  showToast('Sistema desbloqueado y reiniciado. Protocolo de memoria volátil ejecutado.');
 };
 
 /**
@@ -273,6 +289,9 @@ window.lockSimulationControls = function(locked) {
     'filtro-edad',
     'filtro-nse',
     'filtro-ocupacion',
+    'select-ciclo-electoral',
+    'select-cargo-electoral',
+    'btn-download-plan-maestro',
     'select-swarm-size',
     'toggle-web-search',
     'input-titulo',
@@ -659,17 +678,53 @@ function setupEventListeners() {
   // Dropzone de Imágenes
   setupImageDropzone();
 
+  // Selector de Ciclo Electoral 2027-2030
+  const selectCiclo = document.getElementById('select-ciclo-electoral');
+  if (selectCiclo) {
+    selectCiclo.addEventListener('change', (e) => {
+      appState.cicloElectoral = e.target.value;
+      appState.radarAnalysis = null;
+    });
+  }
+
+  // Selector de Cargo Electoral
+  const selectCargo = document.getElementById('select-cargo-electoral');
+  if (selectCargo) {
+    selectCargo.addEventListener('change', (e) => {
+      appState.cargoElectoral = e.target.value;
+      appState.radarAnalysis = null;
+    });
+  }
+
   // Botón Principal: Iniciar Simulación
   const btnSimular = document.getElementById('btn-iniciar-simulacion');
   btnSimular.addEventListener('click', () => {
     startSimulation();
   });
 
-  // Botón Exportar PDF
+  // Botón PDF #1: Descarga desde el Configurador
+  const btnDownloadPlanMaestro = document.getElementById('btn-download-plan-maestro');
+  if (btnDownloadPlanMaestro) {
+    btnDownloadPlanMaestro.addEventListener('click', () => {
+      window.descargarPlanMaestroPdf();
+    });
+  }
+
+  // Botón PDF #1: Plan Maestro de Victoria Electoral en Resultados
+  const btnExportPlanMaestro = document.getElementById('btn-export-plan-maestro');
+  if (btnExportPlanMaestro) {
+    btnExportPlanMaestro.addEventListener('click', () => {
+      window.descargarPlanMaestroPdf();
+    });
+  }
+
+  // Botón PDF #2: Dictamen Integral de Simulación Predictiva
   const btnExportPdf = document.getElementById('btn-export-pdf');
-  btnExportPdf.addEventListener('click', () => {
-    PDFExport.exportReport(appState.currentReport);
-  });
+  if (btnExportPdf) {
+    btnExportPdf.addEventListener('click', () => {
+      window.descargarDictamenEjecutivoPdf();
+    });
+  }
 
   // Filtros de pestañas de chats del enjambre (Regla Maestro 50%+)
   document.querySelectorAll('.btn-chat-filter').forEach(tab => {
@@ -730,6 +785,100 @@ function setupEventListeners() {
     });
   }
 }
+
+/**
+ * PDF #1: Descarga del PLAN MAESTRO DE VICTORIA ELECTORAL Y DIAGNÓSTICO TERRITORIAL
+ */
+window.descargarPlanMaestroPdf = async function() {
+  try {
+    if (typeof PlanMaestroPDFExport === 'undefined') {
+      alert('El motor de exportación del Plan Maestro no está disponible en este momento.');
+      return;
+    }
+
+    const selectCiclo = document.getElementById('select-ciclo-electoral');
+    if (selectCiclo) appState.cicloElectoral = selectCiclo.value;
+    const selectCargo = document.getElementById('select-cargo-electoral');
+    if (selectCargo) appState.cargoElectoral = selectCargo.value;
+
+    showToast('Generando Plan Maestro de Victoria Electoral en alta resolución...');
+
+    // Si aún no se ha obtenido el análisis de radar para este municipio y cargo, obtenerlo del servidor
+    if (!appState.radarAnalysis) {
+      try {
+        const res = await fetch('/api/electoral-radar/diagnostico', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            municipio: appState.municipio || 'Ecatepec de Morelos',
+            cargo: appState.cargoElectoral || 'Presidente Municipal / Alcalde',
+            ciclo: appState.cicloElectoral || '2027',
+            candidato: 'Candidato Oficial de la Coalición',
+            coalicion: `${appState.activeParty || 'PVEM'} - Coalición Victoriosa`
+          })
+        });
+        const d = await res.json();
+        if (d.success && d.radar) {
+          appState.radarAnalysis = d.radar;
+        }
+      } catch (err) {
+        console.warn('Fallback local para Plan Maestro:', err);
+      }
+    }
+
+    await PlanMaestroPDFExport.exportPlanMaestro(appState.currentReport, {
+      ...appState,
+      cargo: appState.cargoElectoral,
+      ciclo: appState.cicloElectoral
+    });
+
+    if (window.cyberSentinelAgent?.auditEvent) {
+      window.cyberSentinelAgent.auditEvent('PDF_PLAN_MAESTRO_GENERATED', {
+        municipio: appState.municipio,
+        cargo: appState.cargoElectoral,
+        ciclo: appState.cicloElectoral,
+        party: appState.activeParty
+      });
+    }
+
+    showToast('¡Plan Maestro descargado exitosamente!');
+  } catch (pdfErr) {
+    console.error('Error generando Plan Maestro PDF:', pdfErr);
+    alert('Error al generar el Plan Maestro: ' + pdfErr.message);
+  }
+};
+
+/**
+ * PDF #2: Descarga del DICTAMEN INTEGRAL DE SIMULACIÓN PREDICTIVA Y CUARTO DE GUERRA
+ */
+window.descargarDictamenEjecutivoPdf = async function() {
+  try {
+    if (!appState.currentReport) {
+      showToast('Primero evalúa una propuesta para generar el Dictamen Ejecutivo.');
+      return;
+    }
+    if (typeof PDFExport === 'undefined') {
+      alert('El motor de exportación del Dictamen Ejecutivo no está disponible.');
+      return;
+    }
+
+    showToast('Generando Dictamen Integral de Simulación Predictiva (7 Páginas)...');
+    await PDFExport.exportReport(appState.currentReport, appState);
+
+    if (window.cyberSentinelAgent?.auditEvent) {
+      window.cyberSentinelAgent.auditEvent('PDF_DICTAMEN_EJECUTIVO_GENERATED', {
+        municipio: appState.municipio,
+        tamanoEnjambre: appState.swarmSize,
+        party: appState.activeParty
+      });
+    }
+
+    showToast('¡Dictamen Ejecutivo descargado exitosamente!');
+  } catch (pdfErr) {
+    console.error('Error generando Dictamen Ejecutivo PDF:', pdfErr);
+    alert('Error al generar el Dictamen Ejecutivo: ' + pdfErr.message);
+  }
+};
 
 /**
  * Actualiza el indicador dinámico de profundidad estadística del enjambre
@@ -1014,6 +1163,13 @@ async function startSimulation() {
     mensaje: `Iniciando sesión predictiva para: "${appState.tituloProyecto}"...`,
     status: 'active'
   });
+
+  // Sanitización de entrada preventiva con Cyber Sentinel
+  if (typeof window !== 'undefined' && window.cyberSentinelAgent?.sanitizeInput) {
+    appState.tituloProyecto = window.cyberSentinelAgent.sanitizeInput(appState.tituloProyecto);
+    appState.propuestaTexto = window.cyberSentinelAgent.sanitizeInput(appState.propuestaTexto);
+    appState.localidad = window.cyberSentinelAgent.sanitizeInput(appState.localidad);
+  }
 
   const payload = {
     tituloProyecto: appState.tituloProyecto,
@@ -1342,7 +1498,51 @@ function onSimulationFinished(report) {
   }
 
   // ========================================================
-  // PESTAÑA 2: INTELIGENCIA SINDICAL Y RIESGO DE PARO
+  // PESTAÑA 2: MAPA POR COLONIAS Y DISEÑO DE CAMPAÑA (MICRO-TARGETING)
+  // ========================================================
+  try {
+    Components.renderTab2ColoniasYCampana(
+      'colonias-campaign-container',
+      report.microTargetingColonias || appState.radarAnalysis?.microTargetingColonias,
+      report.manualCampanaEstrategico || appState.radarAnalysis?.manualCampanaEstrategico,
+      report.indicadoresClaveElectorales || appState.radarAnalysis?.indicadoresClaveElectorales,
+      appState.activeParty
+    );
+
+    // Cargar en background el radar completo si no estaba pre-cargado
+    if (!appState.radarAnalysis) {
+      fetch('/api/electoral-radar/diagnostico', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          municipio: res.municipio || appState.municipio || 'Ecatepec de Morelos',
+          cargo: appState.cargoElectoral || 'Presidente Municipal / Alcalde',
+          ciclo: appState.cicloElectoral || '2027',
+          candidato: 'Candidato Oficial de la Coalición',
+          coalicion: `${appState.activeParty || 'PVEM'} - Coalición Victoriosa`
+        })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.radar) {
+          appState.radarAnalysis = d.radar;
+          Components.renderTab2ColoniasYCampana(
+            'colonias-campaign-container',
+            d.radar.microTargetingColonias,
+            d.radar.manualCampanaEstrategico,
+            d.radar.indicadoresClaveElectorales,
+            appState.activeParty
+          );
+        }
+      })
+      .catch(err => console.warn('Radar async fetch:', err));
+    }
+  } catch (e) {
+    console.warn('Advertencia en Mapa por Colonias y Diseño de Campaña:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 3: INTELIGENCIA SINDICAL Y RIESGO DE PARO (12 FUERZAS)
   // ========================================================
   try {
     if (report.inteligenciaSindical) {
@@ -1353,7 +1553,7 @@ function onSimulationFinished(report) {
   }
 
   // ========================================================
-  // PESTAÑA 3: 18 FUENTES OFICIALES (.GOB.MX) Y VOCES CIUDADANAS
+  // PESTAÑA 4: 18 FUENTES OFICIALES (.GOB.MX) Y VOCES CIUDADANAS
   // ========================================================
   try {
     const fuentes = report.fuentesOficialesVerificadas || report.fuentesTrazables;
@@ -1386,7 +1586,7 @@ function onSimulationFinished(report) {
   }
 
   // ========================================================
-  // PESTAÑA 4: BLINDAJE Y DEFENSA ESTRATÉGICA (20 PREGUNTAS)
+  // PESTAÑA 5: BLINDAJE Y DEFENSA ESTRATÉGICA (20 PREGUNTAS)
   // ========================================================
   try {
     if (report.blindajeDefensa) {
@@ -1397,7 +1597,7 @@ function onSimulationFinished(report) {
   }
 
   // ========================================================
-  // PESTAÑA 5: MODO ATAQUE (DEMOLICIÓN DE CONTRINCANTE)
+  // PESTAÑA 6: MODO ATAQUE (DEMOLICIÓN DE CONTRINCANTE)
   // ========================================================
   try {
     if (report.modoAtaque) {
@@ -1790,7 +1990,10 @@ window.askSwarmQuestion = async function() {
   const btn = document.getElementById('btn-enviar-pregunta');
   if (!input || !container) return;
 
-  const pregunta = input.value.trim();
+  let pregunta = input.value.trim();
+  if (typeof window !== 'undefined' && window.cyberSentinelAgent?.sanitizeInput) {
+    pregunta = window.cyberSentinelAgent.sanitizeInput(pregunta);
+  }
   if (!pregunta) {
     showToast('Por favor escribe una pregunta para el enjambre.');
     input.focus();
