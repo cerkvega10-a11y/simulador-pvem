@@ -662,11 +662,11 @@
 
       const badgeText = document.getElementById('cyber-sentinel-badge-text');
       if (badgeText) {
-        badgeText.innerText = '[🔒 CYBER SENTINEL 24/7 ACTIVO: CIFRADO GRADO MILITAR | 0 VULNERABILIDADES | ANTI-INTRUSIÓN Y MEMORIA VOLÁTIL VERIFICADOS]';
+        badgeText.innerText = 'PURGA DE MEMORIA';
       }
 
-      // Asegurar visibilidad y estilos esmeralda
-      badgeEl.className = 'cursor-pointer flex items-center gap-1.5 bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 hover:text-white px-2.5 sm:px-3 py-1 rounded-full text-[10px] font-black shadow-xs tracking-wider transition-all hover:bg-emerald-900 select-none';
+      // Asegurar visibilidad y estilos esmeralda (una sola línea, sin desbordes)
+      badgeEl.className = 'cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 hover:text-white px-3 py-1.5 rounded-full text-[11px] font-black shadow-xs tracking-wide transition-all hover:bg-emerald-900 select-none';
     }
 
     /**

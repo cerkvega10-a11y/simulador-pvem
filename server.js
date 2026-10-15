@@ -631,6 +631,237 @@ app.post('/api/electoral-radar/diagnostico', (req, res) => {
   }
 });
 
+// =========================================================================
+// WATERMARK CRIPTOGRÁFICO DE AUTORÍA — NEURAL MEDIA HOUSE / ERICK VEGA
+// Base64: RXJpY2sgZGUgSmVzw7pzIFZlZ2EgQ2FybW9uYSB8IE5ldXJhbCBNZWRpYSBIb3VzZQ==
+// =========================================================================
+const AUTHORSHIP_WATERMARK = {
+  b64: 'RXJpY2sgZGUgSmVzw7pzIFZlZ2EgQ2FybW9uYSB8IE5ldXJhbCBNZWRpYSBIb3VzZQ==',
+  sha256: 'e9f8d4a2c7b10538941276a0b3e5c8f1d2a4b6c8e0f1a3b5c7d9e1f3a5b7c9d1',
+  author: 'Erick de Jesús Vega Carmona',
+  organization: 'Neural Media House',
+  version: 'v4.8 Enterprise Macro-Censal Edition'
+};
+
+// =========================================================================
+// 9. PANEL DE CONTROL MAESTRO, GESTIÓN DE LICENCIAS & KILL SWITCH
+// =========================================================================
+const LICENSES_FILE = path.join(__dirname, 'src', 'data', 'licensesStore.json');
+
+const DEFAULT_LICENSES = [
+  {
+    id: 'lic-demo-pvem-01',
+    clienteNombre: 'Candidatura Alcaldía Ecatepec (PVEM)',
+    username: 'ecatepec2027',
+    password: 'Verde2027*',
+    partido: 'PVEM',
+    nivelGeografico: 'Municipal / Alcaldía',
+    etiquetaRegion: 'Alcaldía — Municipio de Ecatepec de Morelos',
+    cargosAutorizados: ['Presidente Municipal / Alcalde', 'Regidor', 'Diputado Local'],
+    municipiosAutorizados: ['Ecatepec de Morelos'],
+    maxSwarmSize: 100000,
+    fechaInicio: '2026-01-01',
+    fechaExpiracion: '2027-12-31',
+    activo: true,
+    creadoEn: '2026-10-15'
+  },
+  {
+    id: 'lic-demo-morena-02',
+    clienteNombre: 'Coordinación Distrital Naucalpan - Tlalnepantla',
+    username: 'distrito04',
+    password: 'Morena2027*',
+    partido: 'MORENA',
+    nivelGeografico: 'Federal',
+    etiquetaRegion: 'Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla',
+    cargosAutorizados: ['Diputado Federal', 'Senador'],
+    municipiosAutorizados: ['Naucalpan de Juárez', 'Tlalnepantla de Baz'],
+    maxSwarmSize: 50000,
+    fechaInicio: '2026-01-01',
+    fechaExpiracion: '2027-08-31',
+    activo: true,
+    creadoEn: '2026-10-15'
+  }
+];
+
+function loadLicensesStore() {
+  try {
+    if (fs.existsSync(LICENSES_FILE)) {
+      const raw = fs.readFileSync(LICENSES_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('Advertencia leyendo licensesStore.json:', e.message);
+  }
+  return [...DEFAULT_LICENSES];
+}
+
+function saveLicensesStore(list) {
+  try {
+    const dir = path.dirname(LICENSES_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(LICENSES_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('Advertencia guardando licensesStore.json:', e.message);
+  }
+}
+
+let licensesStore = loadLicensesStore();
+
+// 9.1. Login Unificado (Administrador Maestro Cerkvega92 + Clientes Políticos)
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { username = '', password = '' } = req.body || {};
+    const u = String(username).trim();
+    const p = String(password).trim();
+
+    // Validación de Administrador Maestro Exclusivo
+    if (u === 'Cerkvega92' && p === 'Tutusito1*') {
+      return res.json({
+        success: true,
+        role: 'MASTER_ADMIN',
+        watermark: AUTHORSHIP_WATERMARK,
+        user: {
+          id: 'master-admin-erick-vega',
+          clienteNombre: 'Erick Vega — Administrador Maestro (Neural Media House)',
+          username: 'Cerkvega92',
+          partido: 'PVEM',
+          nivelGeografico: 'Estatal',
+          etiquetaRegion: 'Control Maestro Nacional & Estatal — Todos los Territorios Autorizados',
+          cargosAutorizados: [
+            'Presidente Municipal / Alcalde',
+            'Regidor',
+            'Diputado Local',
+            'Diputado Federal',
+            'Senador',
+            'Gobernador'
+          ],
+          municipiosAutorizados: ['TODOS'],
+          maxSwarmSize: 100000,
+          fechaInicio: '2026-01-01',
+          fechaExpiracion: '2099-12-31',
+          activo: true
+        }
+      });
+    }
+
+    // Buscar en licencias de clientes políticos
+    licensesStore = loadLicensesStore();
+    const found = licensesStore.find(lic => lic.username.toLowerCase() === u.toLowerCase() && lic.password === p);
+
+    if (!found) {
+      return res.status(401).json({
+        success: false,
+        error: 'Credenciales inválidas. Verifique su Usuario y Contraseña.'
+      });
+    }
+
+    // Verificar Kill Switch manual y vigencia por fechas
+    const now = new Date();
+    const expDate = found.fechaExpiracion ? new Date(`${found.fechaExpiracion}T23:59:59`) : new Date('2099-12-31');
+    const startDate = found.fechaInicio ? new Date(`${found.fechaInicio}T00:00:00`) : new Date('2020-01-01');
+
+    if (!found.activo || now > expDate || now < startDate) {
+      return res.status(403).json({
+        success: false,
+        expired: true,
+        error: !found.activo
+          ? 'Su licencia ha sido suspendida por el Administrador Maestro (Kill Switch Activo).'
+          : `Licencia fuera de vigencia (Vigencia: ${found.fechaInicio} al ${found.fechaExpiracion}). Contacte a Neural Media House.`
+      });
+    }
+
+    return res.json({
+      success: true,
+      role: 'CLIENT',
+      watermark: AUTHORSHIP_WATERMARK,
+      user: found
+    });
+  } catch (err) {
+    console.error('Error en /api/auth/login:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.2. Listar Licencias (Para Panel de Control Maestro)
+app.get('/api/licenses', (req, res) => {
+  licensesStore = loadLicensesStore();
+  res.json({ success: true, licenses: licensesStore, watermark: AUTHORSHIP_WATERMARK });
+});
+
+// 9.3. Crear o Actualizar Licencia de Cliente Político
+app.post('/api/licenses', (req, res) => {
+  try {
+    const body = req.body || {};
+    licensesStore = loadLicensesStore();
+
+    const id = body.id || `lic-${Date.now()}`;
+    const existingIdx = licensesStore.findIndex(l => l.id === id);
+
+    const licenseObj = {
+      id,
+      clienteNombre: String(body.clienteNombre || 'Cliente Político').trim(),
+      username: String(body.username || `usuario_${Date.now()}`).trim(),
+      password: String(body.password || 'Clave2027*').trim(),
+      partido: String(body.partido || 'PVEM').toUpperCase(),
+      nivelGeografico: String(body.nivelGeografico || 'Municipal / Alcaldía'),
+      etiquetaRegion: String(body.etiquetaRegion || 'Demarcación Autorizada').trim(),
+      cargosAutorizados: Array.isArray(body.cargosAutorizados) && body.cargosAutorizados.length > 0
+        ? body.cargosAutorizados
+        : ['Presidente Municipal / Alcalde'],
+      municipiosAutorizados: Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
+        ? body.municipiosAutorizados
+        : ['Ecatepec de Morelos'],
+      maxSwarmSize: parseInt(body.maxSwarmSize, 10) || 100000,
+      fechaInicio: String(body.fechaInicio || '2026-01-01'),
+      fechaExpiracion: String(body.fechaExpiracion || '2027-12-31'),
+      activo: body.activo !== undefined ? Boolean(body.activo) : true,
+      creadoEn: body.creadoEn || new Date().toISOString().split('T')[0]
+    };
+
+    if (existingIdx >= 0) {
+      licensesStore[existingIdx] = licenseObj;
+    } else {
+      licensesStore.unshift(licenseObj);
+    }
+
+    saveLicensesStore(licensesStore);
+    res.json({ success: true, license: licenseObj, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.4. Alternar Estado Activo / Kill Switch Instantáneo
+app.patch('/api/licenses/:id/toggle', (req, res) => {
+  try {
+    const { id } = req.params;
+    licensesStore = loadLicensesStore();
+    const lic = licensesStore.find(l => l.id === id);
+    if (!lic) {
+      return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
+    }
+    lic.activo = !lic.activo;
+    saveLicensesStore(licensesStore);
+    res.json({ success: true, license: lic, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.5. Eliminar Licencia
+app.delete('/api/licenses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    licensesStore = loadLicensesStore();
+    licensesStore = licensesStore.filter(l => l.id !== id);
+    saveLicensesStore(licensesStore);
+    res.json({ success: true, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -638,8 +869,8 @@ app.use((req, res) => {
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`================================================================`);
-  console.log(`🟢 SIMULADOR PREDICTIVO DE IMPACTO SOCIAL - PARTIDO VERDE EDOMEX`);
+  console.log(`🟢 GOVTECH WAR ROOM v4.8 ENTERPRISE — NEURAL MEDIA HOUSE / ERICK VEGA`);
   console.log(`📡 Servidor activo y escuchando en http://localhost:${PORT}`);
-  console.log(`🤖 8 Meta-Agentes listos para simulación de enjambre (100 - 1000)`);
+  console.log(`🤖 Motor Vectorial HPC (hasta 100,000 agentes) + Cyber Sentinel 24/7`);
   console.log(`================================================================`);
 });

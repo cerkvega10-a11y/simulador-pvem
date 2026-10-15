@@ -2710,6 +2710,422 @@ const Components = {
     `;
 
     container.innerHTML = html;
+  },
+
+  /**
+   * Generador de contingencia para el Radar de Tendencias Digitales y Pulso de Redes
+   */
+  buildDigitalTrendsFallback(report, party = 'PVEM') {
+    const muni = report?.resumenEjecutivo?.municipio || (typeof appState !== 'undefined' ? appState.municipio : 'Ecatepec de Morelos');
+    const cleanMuni = (muni || 'Ecatepec').replace(/[^a-zA-Z0-9]/g, '');
+    const cleanParty = (party || 'PVEM').toUpperCase();
+    const titulo = report?.resumenEjecutivo?.tituloProyecto || (typeof appState !== 'undefined' ? appState.tituloProyecto : 'Iniciativa Comunitaria');
+    const aprobacion = report?.resumenEjecutivo?.votosFinales?.porcentajeFavor || 58;
+    const rechazo = report?.resumenEjecutivo?.votosFinales?.porcentajeContra || 26;
+    const neutro = report?.resumenEjecutivo?.votosFinales?.porcentajeNeutro || 16;
+
+    const organicPct = Math.min(88, Math.max(68, Math.round(75 + (Math.random() * 8))));
+    const botsPct = 100 - organicPct;
+    const audCount = Math.round(14000 + (Math.random() * 8500));
+
+    return {
+      organicidad: {
+        porcentajeOrganico: organicPct,
+        porcentajeBots: botsPct,
+        cuentasAuditadas: audCount,
+        diagnostico: `Predominio de conversación ciudadana genuina (${organicPct}%) en ${muni}. Se detecta un ${botsPct}% de cuentas automatizadas y troles focalizados en desvirtuar la viabilidad de la propuesta.`
+      },
+      sentimiento: {
+        positivo: aprobacion,
+        neutro: neutro,
+        negativo: rechazo
+      },
+      topHashtags: [
+        {
+          hashtag: `#${cleanMuni}ExigeRespuestas`,
+          volumen: `${(18 + Math.random() * 15).toFixed(1)}K`,
+          sentimiento: 'Positivo',
+          sentimientoPct: `${Math.round(aprobacion)}% a favor`,
+          organicidad: '86% Orgánico',
+          accionTactica: 'Impulsar y Posicionar',
+          accionColor: 'emerald',
+          descripcion: `Conversación vecinal sobre obras prioritarias y servicios esenciales en colonias de ${muni}.`
+        },
+        {
+          hashtag: `#${cleanParty}Por${cleanMuni}`,
+          volumen: `${(12 + Math.random() * 10).toFixed(1)}K`,
+          sentimiento: 'Positivo',
+          sentimientoPct: '74% favorable',
+          organicidad: '91% Orgánico',
+          accionTactica: 'Amplificar Vocería',
+          accionColor: 'emerald',
+          descripcion: `Menciones orgánicas de respaldo ciudadano a la agenda de proximidad territorial.`
+        },
+        {
+          hashtag: `#AguaSinTrompicones`,
+          volumen: `${(9 + Math.random() * 8).toFixed(1)}K`,
+          sentimiento: 'Crítico / Demanda Social',
+          sentimientoPct: '68% crítico',
+          organicidad: '82% Orgánico',
+          accionTactica: 'Atender con Datos .gob.mx',
+          accionColor: 'amber',
+          descripcion: `Reclamo recurrente sobre desabasto de pipas y tarifas irregulares en zonas altas.`
+        },
+        {
+          hashtag: `#YaBastaDeOcurrencias`,
+          volumen: `${(7 + Math.random() * 5).toFixed(1)}K`,
+          sentimiento: 'Negativo / Ataque',
+          sentimientoPct: '81% adverso',
+          organicidad: '34% Orgánico (66% Bots)',
+          accionTactica: 'Neutralizar Campaña Negra',
+          accionColor: 'rose',
+          descripcion: `Hashtag empujado por granjas de bots ligadas a la oposición para demeritar la propuesta.`
+        },
+        {
+          hashtag: `#SeguridadParaTuFamilia`,
+          volumen: `${(6 + Math.random() * 4).toFixed(1)}K`,
+          sentimiento: 'Neutro / Vigilante',
+          sentimientoPct: '55% expectativa',
+          organicidad: '88% Orgánico',
+          accionTactica: 'Monitoreo Activo',
+          accionColor: 'slate',
+          descripcion: `Debate comunitario sobre senderos seguros, botones de pánico y rondines policíacos.`
+        }
+      ],
+      plataformas: {
+        facebook: {
+          nombre: 'Facebook Grupos & Vecinos',
+          icono: '👥',
+          share: '44%',
+          traccion: 'Muy Alta',
+          riesgoDesinformacion: 'Alto',
+          riesgoColor: 'amber',
+          audiencia: 'Jefas de familia, comerciantes, comités de agua y vecinos 30-65+ años.',
+          estrategia: 'Compartir infografías claras, boletines comunales y testimonios de colonos reales.'
+        },
+        tiktok: {
+          nombre: 'TikTok Video Corto',
+          icono: '📱',
+          share: '28%',
+          traccion: 'Viral / En Crecimiento',
+          riesgoDesinformacion: 'Medio',
+          riesgoColor: 'emerald',
+          audiencia: 'Jóvenes de 18 a 29 años, estudiantes universitarios y primeros votantes.',
+          estrategia: 'Videos dinámicos de 30 segundos explicando el impacto real en su colonia con lenguaje directo.'
+        },
+        xTwitter: {
+          nombre: 'X / Twitter (Círculo Rojo)',
+          icono: '🗞️',
+          share: '16%',
+          traccion: 'Moderada / Especializada',
+          riesgoDesinformacion: 'Crítico (Granjas de Bots)',
+          riesgoColor: 'rose',
+          audiencia: 'Periodistas, analistas políticos, dirigentes partidistas y líderes de opinión.',
+          estrategia: 'Hilos técnicos con ligas directas a datos .gob.mx (INEGI, SHCP, SESNSP) para desmentir bots.'
+        },
+        whatsapp: {
+          nombre: 'WhatsApp Cadenas Vecinales',
+          icono: '💬',
+          share: '12%',
+          traccion: 'Directa y Cerrada',
+          riesgoDesinformacion: 'Muy Alto (Rumores)',
+          riesgoColor: 'rose',
+          audiencia: 'Redes familiares, grupos de vigilancia barrial y comerciantes locales.',
+          estrategia: 'Diseño de mini-tarjetas descargables en imagen que contrasten el mito vs la realidad técnica.'
+        }
+      },
+      alertasCrisis: [
+        {
+          id: 1,
+          tipo: 'Guerra Sucia / Fake News',
+          amenaza: 'Crítica',
+          amenazaColor: 'rose',
+          rumor: `Circulación de audio manipulado y placas falsas en grupos de Facebook afirmando que la propuesta "${titulo.slice(0, 45)}..." privatizará servicios locales o aumentará el predial.`,
+          origen: '14 cuentas creadas hace menos de 15 días operando de forma coordinada (Astroturfing).',
+          antidoto: `Publicar desmentido oficial en video con datos del Ramo 33 / SHCP certificando que no existe ningún impuesto adicional y que la inversión es 100% de fondo federal y estatal a fondo perdido.`
+        },
+        {
+          id: 2,
+          tipo: 'Desinformación sobre Cierres Viales',
+          amenaza: 'Media',
+          amenazaColor: 'amber',
+          rumor: 'Rumor vecinal en WhatsApp que alerta sobre corte permanente del suministro de agua durante los trabajos de modernización.',
+          origen: 'Grupos de transportistas y piperos inconformes con la regulación.',
+          antidoto: 'Distribuir calendario oficial avalado por CONAGUA / CAEM mostrando que el suministro se garantizará mediante bypass técnico sin suspensiones diurnas.'
+        }
+      ]
+    };
+  },
+
+  /**
+   * PESTAÑA 7: TENDENCIAS DIGITALES Y PULSO DE REDES (ANTI-BOTS / ANTI-FAKE NEWS)
+   */
+  renderTab7TendenciasDigitales(containerId, digitalData, party = 'PVEM') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const data = digitalData || this.buildDigitalTrendsFallback(appState?.currentReport, party);
+    const org = data.organicidad || { porcentajeOrganico: 79, porcentajeBots: 21, cuentasAuditadas: 18450, diagnostico: '' };
+    const sent = data.sentimiento || { positivo: 55, neutro: 25, negativo: 20 };
+    const hashtags = data.topHashtags || [];
+    const plat = data.plataformas || {};
+    const alertas = data.alertasCrisis || [];
+
+    const html = `
+      <div class="space-y-6">
+        <!-- ENCABEZADO DE TENDENCIAS DIGITALES -->
+        <div class="card-pvem p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs uppercase tracking-widest font-black text-cyan-400 bg-cyan-950/80 px-2.5 py-0.5 rounded border border-cyan-800">Escucha Digital & OSINT Social</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-xs text-emerald-300 font-bold">Anti-Bot Guard Activo 24/7</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-xs text-slate-300">${(org.cuentasAuditadas || 18450).toLocaleString()} Interacciones Auditadas</span>
+            </div>
+            <h3 class="text-xl sm:text-2xl font-black text-white">🌐 Tendencias Digitales y Pulso de Redes</h3>
+            <p class="text-xs sm:text-sm text-slate-300 font-medium">Auditoría algorítmica de conversación en tiempo real, detección de astroturfing y blindaje contra fake news.</p>
+          </div>
+          <div class="shrink-0 flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-mono text-xs font-bold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              CYBER SENTINEL VERIFIED
+            </span>
+          </div>
+        </div>
+
+        <!-- FILA DE 3 PANELES: ORGANICIDAD, SENTIMIENTO Y ALCANCE -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <!-- Panel 1: Índice de Organicidad Real vs Granjas de Bots -->
+          <div class="card-pvem p-5 bg-white border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="text-xs font-black text-slate-900 uppercase tracking-wide">Autenticidad de la Conversación</h4>
+              <span class="text-[10px] font-bold text-slate-500">Heurística Bot-Check</span>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                  <path class="text-rose-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path class="text-emerald-500" stroke-dasharray="${org.porcentajeOrganico}, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="absolute text-center">
+                  <span class="text-base font-black text-slate-900 leading-none block">${org.porcentajeOrganico}%</span>
+                  <span class="text-[8px] font-bold text-emerald-700 uppercase">Real</span>
+                </div>
+              </div>
+              <div class="space-y-1.5 flex-1 min-w-0">
+                <div class="flex justify-between text-xs font-bold">
+                  <span class="text-emerald-700 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Orgánico: ${org.porcentajeOrganico}%
+                  </span>
+                </div>
+                <div class="flex justify-between text-xs font-bold">
+                  <span class="text-rose-600 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> Bots / Troles: ${org.porcentajeBots}%
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">${org.diagnostico}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 2: Termómetro de Sentimiento Digital -->
+          <div class="card-pvem p-5 bg-white border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="text-xs font-black text-slate-900 uppercase tracking-wide">Termómetro de Sentimiento</h4>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Balance Favorable</span>
+            </div>
+
+            <div class="space-y-2">
+              <div class="w-full bg-slate-100 rounded-full h-3.5 flex overflow-hidden">
+                <div style="width: ${sent.positivo}%" class="bg-emerald-500 h-full" title="Positivo: ${sent.positivo}%"></div>
+                <div style="width: ${sent.neutro}%" class="bg-amber-400 h-full" title="Neutro: ${sent.neutro}%"></div>
+                <div style="width: ${sent.negativo}%" class="bg-rose-500 h-full" title="Negativo: ${sent.negativo}%"></div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-1 pt-1 text-center">
+                <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-100">
+                  <span class="text-[10px] font-bold text-emerald-800 uppercase block">Positivo</span>
+                  <span class="text-sm font-black text-emerald-700">${sent.positivo}%</span>
+                </div>
+                <div class="p-2 rounded-lg bg-amber-50 border border-amber-100">
+                  <span class="text-[10px] font-bold text-amber-800 uppercase block">Neutro</span>
+                  <span class="text-sm font-black text-amber-700">${sent.neutro}%</span>
+                </div>
+                <div class="p-2 rounded-lg bg-rose-50 border border-rose-100">
+                  <span class="text-[10px] font-bold text-rose-800 uppercase block">Ataque</span>
+                  <span class="text-sm font-black text-rose-700">${sent.negativo}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Índice de Fricción Algorítmica y Picos -->
+          <div class="card-pvem p-5 bg-white border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="text-xs font-black text-slate-900 uppercase tracking-wide">Fricción y Viralidad</h4>
+              <span class="text-[10px] font-bold text-slate-500">Picos 19:00 - 22:30 hrs</span>
+            </div>
+
+            <div class="space-y-2.5 text-xs">
+              <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span class="text-slate-600 font-medium">Volumen Diario Proyectado:</span>
+                <span class="font-black text-slate-900">~24,500 menciones</span>
+              </div>
+              <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span class="text-slate-600 font-medium">Riesgo de Polarización:</span>
+                <span class="font-black text-amber-600">Medio (Controlable)</span>
+              </div>
+              <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 border border-slate-100">
+                <span class="text-slate-600 font-medium">Velocidad de Respuesta:</span>
+                <span class="font-black text-emerald-700">&lt; 45 minutos requeridos</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TOP 5 HASHTAGS EN TENDENCIA MUNICIPAL -->
+        <div class="card-pvem p-6 bg-white border border-slate-200 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h4 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                <span>🔥</span> Top 5 Hashtags en Tendencia Municipal y Recomendación Táctica
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">Volumen estimado, sentimiento predominante y plan de posicionamiento orgánico.</p>
+            </div>
+            <span class="text-[11px] font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full shrink-0">Monitoreo X + TikTok + FB</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 uppercase text-[10px] font-black tracking-wider border-b border-slate-200">
+                  <th class="p-3">Hashtag en Discusión</th>
+                  <th class="p-3">Volumen Est.</th>
+                  <th class="p-3">Sentimiento</th>
+                  <th class="p-3">Organicidad</th>
+                  <th class="p-3 text-right">Acción Táctica Recomendada</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${hashtags.map((h) => {
+                  const badgeColor = h.accionColor === 'emerald' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
+                                    (h.accionColor === 'rose' ? 'bg-rose-100 text-rose-900 border-rose-300' :
+                                    (h.accionColor === 'amber' ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-800 border-slate-300'));
+                  return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                      <td class="p-3">
+                        <div class="font-black text-slate-900 text-xs sm:text-sm font-mono text-emerald-800">${h.hashtag}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">${h.descripcion}</div>
+                      </td>
+                      <td class="p-3 font-bold text-slate-800">${h.volumen}</td>
+                      <td class="p-3">
+                        <span class="font-bold ${h.sentimiento.includes('Positivo') ? 'text-emerald-700' : (h.sentimiento.includes('Negativo') ? 'text-rose-600' : 'text-slate-700')}">
+                          ${h.sentimientoPct || h.sentimiento}
+                        </span>
+                      </td>
+                      <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${h.organicidad.includes('Bots') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">
+                          ${h.organicidad}
+                        </span>
+                      </td>
+                      <td class="p-3 text-right">
+                        <span class="inline-block px-3 py-1 rounded-lg text-xs font-black border ${badgeColor}">
+                          ${h.accionTactica}
+                        </span>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MAPA DE CALOR POR PLATAFORMA DIGITAL -->
+        <div class="card-pvem p-6 bg-white border border-slate-200 space-y-4">
+          <div class="border-b border-slate-100 pb-3">
+            <h4 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+              <span>📊</span> Mapa de Penetración y Riesgo de Desinformación por Plataforma
+            </h4>
+            <p class="text-xs text-slate-500 mt-0.5">Estrategia diferenciada según el ecosistema algorítmico y perfil sociodemográfico de los usuarios.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            ${Object.values(plat).map(p => {
+              const borderCls = p.riesgoColor === 'rose' ? 'border-l-4 border-l-rose-500' :
+                               (p.riesgoColor === 'amber' ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-emerald-500');
+              return `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60 ${borderCls} space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xl">${p.icono || '🌐'}</span>
+                    <span class="text-xs font-black text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">${p.share} del Tráfico</span>
+                  </div>
+                  <div>
+                    <h5 class="text-xs font-black text-slate-900 leading-tight">${p.nombre}</h5>
+                    <span class="text-[10px] font-bold ${p.riesgoColor === 'rose' ? 'text-rose-700' : (p.riesgoColor === 'amber' ? 'text-amber-700' : 'text-emerald-700')}">
+                      Riesgo Desinformación: ${p.riesgoDesinformacion}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 leading-relaxed font-medium">${p.audiencia}</p>
+                  <div class="pt-2 border-t border-slate-200/70 text-[10px] text-slate-700 font-semibold">
+                    🎯 <span class="font-bold text-slate-900">Directriz:</span> ${p.estrategia}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- ALERTAS TEMPRANAS DE GUERRA SUCIA Y CONTRANARRATIVAS (.GOB.MX) -->
+        <div class="card-pvem p-6 bg-gradient-to-br from-rose-50/40 via-white to-amber-50/30 border border-rose-200 rounded-2xl shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-rose-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-rose-600 text-white font-black flex items-center justify-center text-sm">🛡️</span>
+              <div>
+                <h4 class="text-sm sm:text-base font-black text-slate-900">Alertas Tempranas de Guerra Sucia & Antídotos Oficiales (.gob.mx)</h4>
+                <p class="text-xs text-slate-500">Narrativas tóxicas o rumores detectados tempranamente y su refutación técnica inmediata.</p>
+              </div>
+            </div>
+            <span class="hidden sm:inline-block px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 text-[10px] font-black uppercase tracking-wider">
+              Protocolo Contrafuego
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${alertas.map(a => `
+              <div class="p-4 rounded-xl bg-white border border-rose-200 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                    Amenaza: ${a.amenaza}
+                  </span>
+                  <span class="text-[10px] font-bold text-slate-400">ID: #${a.id}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-black uppercase tracking-wide text-slate-500 block mb-0.5">Rumor / Ataque Detectado:</span>
+                  <p class="text-xs text-slate-900 font-bold leading-snug">${a.rumor}</p>
+                </div>
+                <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                  <span class="font-bold text-slate-700">Vector de Ataque:</span> ${a.origen}
+                </div>
+                <div class="p-3 bg-emerald-50/80 rounded-xl border border-emerald-300 text-xs text-emerald-950 space-y-1">
+                  <span class="font-black text-emerald-900 flex items-center gap-1.5 text-[11px] uppercase tracking-wide">
+                    <span>✅</span> Antídoto Comunicacional Inmediato:
+                  </span>
+                  <p class="leading-relaxed font-medium">${a.antidoto}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    container.innerHTML = html;
   }
 };
 

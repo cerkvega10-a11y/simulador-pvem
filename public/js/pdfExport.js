@@ -1093,17 +1093,17 @@
       curY += atkBoxH + 4;
       doc.setFillColor(party.lightBg[0], party.lightBg[1], party.lightBg[2]);
       doc.setDrawColor(party.primary[0], party.primary[1], party.primary[2]);
-      doc.roundedRect(margin, curY, contentWidth, 12, 1, 1, 'FD');
+      doc.roundedRect(margin, curY, contentWidth, 13.5, 1, 1, 'FD');
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('CERTIFICACIÓN INSTITUCIONAL DE RIGOR PREDICTIVO — ESTADO DE MÉXICO', margin + 3.5, curY + 4.5);
+      doc.text('CERTIFICACIÓN INSTITUCIONAL — DESARROLLADO POR NEURAL MEDIA HOUSE / ERICK VEGA', margin + 3.5, curY + 4.2);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.6);
+      doc.setFontSize(5.2);
       doc.setTextColor(30, 41, 59);
-      doc.text('Este documento predictivo de 7 páginas fue procesado por el Simulador Social Swarm AI. Garantiza 0% sesgo de complacencia, datos cruzados de 18 fuentes oficiales .gob.mx y blindaje legal pleno.', margin + 3.5, curY + 8.5);
+      doc.text('GovTech War Room v4.5 Enterprise Macro-Censal Edition. Dirección de Proyecto: Erick Vega. Procesamiento por enjambre sintético de hasta 100,000 agentes, datos cruzados de 18 fuentes oficiales .gob.mx, auditoría QA Watchdog y blindaje Cyber Sentinel 24/7.', margin + 3.5, curY + 8.2);
     },
 
     // -------------------------------------------------------------------------
@@ -1138,22 +1138,29 @@
       doc.line(margin, footerY, margin + contentWidth, footerY);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(5.2);
+      doc.setFontSize(5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text(`[QA WATCHDOG CERTIFIED • 100% AUDITADO • ZERO-HALLUCINATION]`, margin, footerY + 4);
+      doc.text(`[QA WATCHDOG CERTIFIED • 100% AUDITADO • ZERO-HALLUCINATION]`, margin, footerY + 3.5);
 
       doc.setTextColor(71, 85, 105);
       doc.setFont('helvetica', 'normal');
-      doc.text(`[CYBER SENTINEL: FIRMA CRIPTOGRÁFICA ISO/IEC 27001 • INTEGRIDAD GOVTECH VITAL]`, margin + 85, footerY + 4);
+      doc.text(`[CYBER SENTINEL: FIRMA CRIPTOGRÁFICA ISO/IEC 27001 • INTEGRIDAD GOVTECH VITAL]`, margin + 85, footerY + 3.5);
 
+      // Créditos Oficiales de Autoría Institucional
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(4.8);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Desarrollado por Neural Media House | Dirección de Proyecto: Erick Vega | GovTech War Room v4.5 Enterprise`, margin, footerY + 6.6);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(4.5);
       doc.setTextColor(148, 163, 184);
-      doc.text(`HASH: ${cryptoHash}  |  SWARM AI PREDICTIVE PLATFORM`, margin, footerY + 7.5);
+      doc.text(`HASH: ${cryptoHash}  |  SWARM AI PREDICTIVE PLATFORM 2027-2030`, margin, footerY + 9.5);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.2);
       doc.setTextColor(15, 23, 42);
-      doc.text(`Página ${currentPage} de ${totalPages}`, margin + contentWidth - 18, footerY + 7.5);
+      doc.text(`Página ${currentPage} de ${totalPages}`, margin + contentWidth - 18, footerY + 9.5);
     },
 
     drawPartyVectorBadge(doc, x, y, party) {

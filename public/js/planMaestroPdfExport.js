@@ -1091,23 +1091,30 @@
 
       // Sello QA Watchdog & Cyber Sentinel
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(5.2);
+      doc.setFontSize(5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text(`[QA WATCHDOG CERTIFIED • 100% AUDITADO • ZERO-HALLUCINATION]`, margin, footerY + 4);
+      doc.text(`[QA WATCHDOG CERTIFIED • 100% AUDITADO • ZERO-HALLUCINATION]`, margin, footerY + 3.5);
 
       doc.setTextColor(71, 85, 105);
       doc.setFont('helvetica', 'normal');
-      doc.text(`[CYBER SENTINEL: FIRMA CRIPTOGRÁFICA ISO/IEC 27001 • INTEGRIDAD GOVTECH VITAL]`, margin + 85, footerY + 4);
+      doc.text(`[CYBER SENTINEL: FIRMA CRIPTOGRÁFICA ISO/IEC 27001 • INTEGRIDAD GOVTECH VITAL]`, margin + 85, footerY + 3.5);
+
+      // Créditos Oficiales de Autoría Institucional
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(4.8);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Desarrollado por Neural Media House | Dirección de Proyecto: Erick Vega | GovTech War Room v4.5 Enterprise`, margin, footerY + 6.6);
 
       // Hash Criptográfico y Paginación
-      doc.setFontSize(4.8);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(4.5);
       doc.setTextColor(148, 163, 184);
-      doc.text(`HASH: ${cryptoHash}  |  SISTEMA ENJAMBRE AI EDOMEX`, margin, footerY + 7.5);
+      doc.text(`HASH: ${cryptoHash}  |  SISTEMA ENJAMBRE AI EDOMEX 2027-2030`, margin, footerY + 9.5);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.2);
       doc.setTextColor(15, 23, 42);
-      doc.text(`Página ${currentPage} de ${totalPages}`, margin + contentWidth - 18, footerY + 7.5);
+      doc.text(`Página ${currentPage} de ${totalPages}`, margin + contentWidth - 18, footerY + 9.5);
     },
 
     drawDataRow(doc, x, y, label, val, isBold = false) {

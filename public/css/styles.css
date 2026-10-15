@@ -28,12 +28,24 @@
   --pvem-border: #e2e8f0;
 }
 
-body {
+html, body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--pvem-neutral-dark);
   background-color: #f8fafc;
   margin: 0;
   padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+.tab-content {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Glassmorphism & Cards */
@@ -43,6 +55,7 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   border-radius: 1rem;
   transition: all 0.2s ease-in-out;
+  max-width: 100%;
 }
 
 .card-pvem:hover {
