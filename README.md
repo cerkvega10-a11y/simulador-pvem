@@ -3,6 +3,8 @@
 
 Plataforma web de acceso público y abierto (**Zero-Auth / Sin login**) diseñada para evaluar propuestas de obra pública, iniciativas legislativas, proyectos sociales y programas ambientales mediante un **Enjambre de Agentes de Inteligencia Artificial (Swarm Intelligence)** configurable entre **100 y 1,000 agentes ciudadanos sintéticos**, contextualizados con investigación socio-demográfica del INEGI, CONEVAL y fuentes web en tiempo real del **Estado de México** y sus 125 municipios.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/cerkvega10-a11y/simulador-pvem)
+
 ---
 
 ## 🏛️ Identidad y Propósito
