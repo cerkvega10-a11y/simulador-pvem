@@ -316,11 +316,11 @@ window.lockSimulationControls = function(locked) {
  * Muestra solo una pestaña a la vez con animación fluida.
  */
 window.switchWarRoomTab = function(tabId) {
-  // 1. Alternar estilos de botones
+  // 1. Alternar estilos de botones respetando la colorimetría del partido activo
   const buttons = document.querySelectorAll('.tab-btn');
   buttons.forEach(btn => {
     if (btn.getAttribute('data-tab') === tabId) {
-      btn.className = 'tab-btn active px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 bg-emerald-600 text-white shadow-xs';
+      btn.className = 'tab-btn active px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 shadow-xs';
     } else {
       btn.className = 'tab-btn px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 shrink-0';
     }
@@ -341,52 +341,161 @@ window.switchWarRoomTab = function(tabId) {
 
 /**
  * SELECTOR MULTIPARTIDISTA Y TEMAS WHITE-LABEL (PVEM, MORENA, PAN, PRI, MC, PT)
+ * Cambia dinámicamente el logo de la página principal, colorimetría, favicons y textos
  */
 window.onPartyThemeChange = function(partyCode) {
-  appState.activeParty = partyCode || 'PVEM';
+  const pCode = (partyCode || 'PVEM').toUpperCase();
+  appState.activeParty = pCode;
 
+  // 1. Alternar clase CSS en body para disparar la paleta de colores oficial
   const partyThemes = ['theme-pvem', 'theme-morena', 'theme-pan', 'theme-pri', 'theme-mc', 'theme-pt'];
   partyThemes.forEach(th => document.body.classList.remove(th));
   
-  const currentClass = `theme-${(partyCode || 'pvem').toLowerCase()}`;
+  const currentClass = `theme-${pCode.toLowerCase()}`;
   document.body.classList.add(currentClass);
 
-  const titleSystem = document.getElementById('header-system-title');
-  const titleParty = document.getElementById('header-party-title');
-
-  const partyInfo = {
+  // 2. Metadatos Oficiales de Marca, Colorimetría e Identidad
+  const partyMetadata = {
     PVEM: {
-      title: 'Comité Directivo Estado de México',
-      system: 'SISTEMA ENJAMBRE AI — PARTIDO VERDE'
+      name: 'Partido Verde Ecologista Estado de México',
+      shortName: 'PVEM',
+      badgeLetter: 'PV',
+      badgeText: '🌿 Inteligencia Artificial y Participación Ciudadana Predictiva',
+      systemTitle: 'SISTEMA ENJAMBRE AI — PARTIDO VERDE',
+      headerTitle: 'Comité Directivo Estado de México',
+      heroTitle: 'Partido Verde Ecologista Estado de México',
+      logoSrc: '/assets/logo-pvem.svg',
+      logoAlt: 'Partido Verde Ecologista de México',
+      docTitle: 'Simulador Predictivo de Impacto Social — Partido Verde Ecologista Estado de México'
     },
     MORENA: {
-      title: 'Coordinación Estatal Estado de México',
-      system: 'SISTEMA CUARTO DE GUERRA AI — MORENA'
+      name: 'Movimiento Regeneración Nacional — Estado de México',
+      shortName: 'MORENA',
+      badgeLetter: 'MOR',
+      badgeText: '🦅 Transformación Social y Escucha Ciudadana Predictiva',
+      systemTitle: 'SISTEMA CUARTO DE GUERRA AI — MORENA',
+      headerTitle: 'Coordinación Estatal Estado de México',
+      heroTitle: 'MORENA — La Esperanza del Estado de México',
+      logoSrc: '/assets/logo-morena.svg',
+      logoAlt: 'MORENA - La esperanza de México',
+      docTitle: 'Simulador Predictivo de Impacto Social — MORENA Estado de México'
     },
     PAN: {
-      title: 'Comité Directivo Estatal Edomex',
-      system: 'SISTEMA INTELIGENCIA ELECTORAL AI — PAN'
+      name: 'Partido Acción Nacional — Estado de México',
+      shortName: 'PAN',
+      badgeLetter: 'PAN',
+      badgeText: '🔵 Humanismo Político e Inteligencia Ciudadana Predictiva',
+      systemTitle: 'SISTEMA INTELIGENCIA ELECTORAL AI — PAN',
+      headerTitle: 'Comité Directivo Estatal Edomex',
+      heroTitle: 'Partido Acción Nacional — Estado de México',
+      logoSrc: '/assets/logo-pan.svg',
+      logoAlt: 'Partido Acción Nacional',
+      docTitle: 'Simulador Predictivo de Impacto Social — PAN Estado de México'
     },
     PRI: {
-      title: 'Comité Directivo Estatal Edomex',
-      system: 'SISTEMA OPERACIÓN TERRITORIAL AI — PRI'
+      name: 'Partido Revolucionario Institucional — Estado de México',
+      shortName: 'PRI',
+      badgeLetter: 'PRI',
+      badgeText: '🔴 Operación Territorial y Diagnóstico Comunitario Predictivo',
+      systemTitle: 'SISTEMA OPERACIÓN TERRITORIAL AI — PRI',
+      headerTitle: 'Comité Directivo Estatal Edomex',
+      heroTitle: 'Partido Revolucionario Institucional — Estado de México',
+      logoSrc: '/assets/logo-pri.svg',
+      logoAlt: 'Partido Revolucionario Institucional',
+      docTitle: 'Simulador Predictivo de Impacto Social — PRI Estado de México'
     },
     MC: {
-      title: 'Coordinación Ciudadana Edomex',
-      system: 'SISTEMA ESCUCHA CIUDADANA AI — MOVIMIENTO CIUDADANO'
+      name: 'Movimiento Ciudadano — Estado de México',
+      shortName: 'MC',
+      badgeLetter: 'MC',
+      badgeText: '🟠 Participación Ciudadana en Movimiento y Simulación Social',
+      systemTitle: 'SISTEMA ESCUCHA CIUDADANA AI — MOVIMIENTO CIUDADANO',
+      headerTitle: 'Coordinación Ciudadana Edomex',
+      heroTitle: 'Movimiento Ciudadano — Estado de México',
+      logoSrc: '/assets/logo-mc.svg',
+      logoAlt: 'Movimiento Ciudadano',
+      docTitle: 'Simulador Predictivo de Impacto Social — Movimiento Ciudadano'
     },
     PT: {
-      title: 'Comisión Coordinadora Estatal Edomex',
-      system: 'SISTEMA PODER POPULAR AI — PARTIDO DEL TRABAJO'
+      name: 'Partido del Trabajo — Estado de México',
+      shortName: 'PT',
+      badgeLetter: 'PT',
+      badgeText: '⭐ Poder Popular y Diagnóstico Obrero-Campesino Predictivo',
+      systemTitle: 'SISTEMA PODER POPULAR AI — PARTIDO DEL TRABAJO',
+      headerTitle: 'Comisión Coordinadora Estatal Edomex',
+      heroTitle: 'Partido del Trabajo — Estado de México',
+      logoSrc: '/assets/logo-pt.svg',
+      logoAlt: 'Partido del Trabajo',
+      docTitle: 'Simulador Predictivo de Impacto Social — Partido del Trabajo'
     }
   };
 
-  const info = partyInfo[partyCode] || partyInfo.PVEM;
-  if (titleParty) titleParty.innerText = info.title;
-  if (titleSystem) titleSystem.innerText = info.system;
+  const meta = partyMetadata[pCode] || partyMetadata.PVEM;
 
-  renderPresetsList(partyCode);
+  // 3. Reemplazo del Logo de la Página Principal con animación suave
+  const logoEl = document.getElementById('main-party-logo');
+  if (logoEl) {
+    logoEl.style.opacity = '0';
+    setTimeout(() => {
+      logoEl.src = meta.logoSrc;
+      logoEl.alt = meta.logoAlt;
+      logoEl.style.opacity = '1';
+    }, 150);
+  }
+
+  // 4. Actualizar Favicon del navegador
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) {
+    favicon.href = meta.logoSrc;
+  }
+
+  // 5. Actualizar Título del Documento
+  document.title = meta.docTitle;
+
+  // 6. Actualizar Textos Institucionales en Barra Superior
+  const titleSystem = document.getElementById('header-system-title');
+  const titleParty = document.getElementById('header-party-title');
+  if (titleParty) titleParty.innerText = meta.headerTitle;
+  if (titleSystem) titleSystem.innerText = meta.systemTitle;
+
+  // 7. Actualizar Hero Badge y Título Principal
+  const heroBadgeText = document.getElementById('hero-badge-text');
+  if (heroBadgeText) heroBadgeText.innerText = meta.badgeText;
+  const heroPartyTitle = document.getElementById('hero-party-title');
+  if (heroPartyTitle) heroPartyTitle.innerText = meta.heroTitle;
+
+  // 8. Actualizar Footer Institucional
+  const footerBadge = document.getElementById('footer-party-badge');
+  if (footerBadge) footerBadge.innerText = meta.badgeLetter;
+  const footerTitle = document.getElementById('footer-party-title');
+  if (footerTitle) footerTitle.innerText = `Simulador Predictivo de Impacto Social — ${meta.heroTitle}`;
+
+  // 9. Sincronizar el selector de entorno si la llamada fue programática
+  const selectParty = document.getElementById('select-party-theme');
+  if (selectParty && selectParty.value !== pCode) {
+    selectParty.value = pCode;
+  }
+
+  // 10. Re-renderizar presets para mostrar los correspondientes al partido activo
+  renderPresetsList(pCode);
+
+  // 11. Refrescar estado visual de botones rápidos del tamaño del enjambre
+  updateSwarmQuickButtons(appState.swarmSize || 500);
 };
+
+/**
+ * Actualiza el estilo activo de los botones rápidos de tamaño de enjambre
+ */
+function updateSwarmQuickButtons(num) {
+  document.querySelectorAll('.btn-swarm-quick').forEach(btn => {
+    const bVal = parseInt(btn.getAttribute('data-val'), 10);
+    if (bVal === num) {
+      btn.className = 'btn-swarm-quick active-pill py-1.5 rounded-lg text-white transition-all shadow-xs font-black';
+    } else {
+      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200 font-bold';
+    }
+  });
+}
 
 /**
  * CONFIGURACIÓN DE TAMAÑO EXACTO DEL ENJAMBRE (50 A 10,000 AGENTES)
@@ -404,15 +513,7 @@ window.setExactSwarmSize = function(val) {
   const slider = document.getElementById('swarm-slider');
   if (slider) slider.value = num;
 
-  document.querySelectorAll('.btn-swarm-quick').forEach(btn => {
-    const bVal = parseInt(btn.getAttribute('data-val'), 10);
-    if (bVal === num) {
-      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-emerald-600 text-white transition-all border border-emerald-700 shadow-xs font-black';
-    } else {
-      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 font-bold';
-    }
-  });
-
+  updateSwarmQuickButtons(num);
   updateSwarmDepthIndicator(num);
 };
 

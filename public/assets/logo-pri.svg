@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 130" fill="none">
+  <!-- Emblema PRI Círculo Tricolor Oficial (Verde #006847, Blanco, Rojo #CE1126) -->
+  <g transform="translate(15, 12)">
+    <clipPath id="pri-circle-cut">
+      <circle cx="52.5" cy="52.5" r="52.5" />
+    </clipPath>
+    <g clip-path="url(#pri-circle-cut)">
+      <rect x="0" y="0" width="35" height="105" fill="#006847" />
+      <rect x="35" y="0" width="35" height="105" fill="#ffffff" />
+      <rect x="70" y="0" width="35" height="105" fill="#CE1126" />
+      <text x="52.5" y="65" font-family="'Impact', 'Arial Black', sans-serif" font-size="36" fill="#000000" text-anchor="middle" letter-spacing="1">PRI</text>
+    </g>
+    <circle cx="52.5" cy="52.5" r="51" stroke="#cbd5e1" stroke-width="2" fill="none" />
+  </g>
+  <!-- Tipografía Oficial PRI -->
+  <g transform="translate(140, 24)">
+    <text x="0" y="32" font-family="'Montserrat', 'Inter', sans-serif" font-weight="900" font-size="27" fill="#CE1126" letter-spacing="0.5">PARTIDO REVOLUCIONARIO</text>
+    <text x="0" y="58" font-family="'Montserrat', 'Inter', sans-serif" font-weight="900" font-size="23" fill="#006847" letter-spacing="2">INSTITUCIONAL</text>
+    <rect x="0" y="68" width="375" height="4" fill="#CE1126" rx="2" />
+    <text x="0" y="90" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="17" fill="#0f172a" letter-spacing="2">ESTADO DE MÉXICO</text>
+  </g>
+</svg>

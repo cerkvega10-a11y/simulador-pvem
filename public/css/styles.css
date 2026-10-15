@@ -1,11 +1,26 @@
-/* Estilos Personalizados - Simulador Predictivo Partido Verde Edomex */
+/* Estilos Personalizados - Simulador Predictivo Multipartidista Edomex */
 
 :root {
-  --pvem-primary: #008f39;
-  --pvem-primary-dark: #006829;
-  --pvem-primary-light: #e6f6ec;
-  --pvem-accent: #84cc16;
-  --pvem-accent-light: #f7fee7;
+  --party-primary: #008f39;
+  --party-primary-dark: #006829;
+  --party-primary-light: #ecfdf5;
+  --party-accent: #84cc16;
+  --party-hero-from: #f0fdf4;
+  --party-hero-to: #ecfdf5;
+  --party-hero-border: #bbf7d0;
+  --party-badge-bg: #ecfdf5;
+  --party-badge-text: #065f46;
+  --party-badge-border: #a7f3d0;
+  --party-btn-gradient: linear-gradient(135deg, #008f39 0%, #006829 100%);
+  --party-dash-gradient: linear-gradient(135deg, #00471c 0%, #062b14 100%);
+  --party-glow: rgba(0, 143, 57, 0.2);
+  --party-header-border: #a7f3d0;
+  --party-sub-color: #15803d;
+
+  --pvem-primary: var(--party-primary);
+  --pvem-primary-dark: var(--party-primary-dark);
+  --pvem-primary-light: var(--party-primary-light);
+  --pvem-accent: var(--party-accent);
   --pvem-warning: #eab308;
   --pvem-danger: #ef4444;
   --pvem-neutral-dark: #0f172a;
@@ -31,17 +46,21 @@ body {
 }
 
 .card-pvem:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 143, 57, 0.08), 0 4px 6px -4px rgba(0, 143, 57, 0.05);
+  box-shadow: 0 10px 15px -3px var(--party-glow), 0 4px 6px -4px var(--party-glow);
 }
 
-/* Gradient verde institucional */
+/* Gradient dinámico según el partido seleccionado */
 .bg-gradient-pvem {
-  background: linear-gradient(135deg, #008f39 0%, #006b2b 100%);
+  background: var(--party-btn-gradient) !important;
 }
 
 .bg-gradient-hero {
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f8fafc 100%);
-  border-bottom: 2px solid #bbf7d0;
+  background: linear-gradient(135deg, var(--party-hero-from) 0%, var(--party-hero-to) 50%, #ffffff 100%) !important;
+  border-bottom: 2px solid var(--party-hero-border) !important;
+}
+
+.text-pvem {
+  color: var(--party-primary) !important;
 }
 
 /* Indicadores de Pulso / Estado */
@@ -248,7 +267,7 @@ main {
 }
 
 .tab-btn.active {
-  background-color: var(--pvem-primary);
+  background-color: var(--party-primary) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
@@ -269,55 +288,194 @@ main {
 }
 
 /* ========================================================
-   TEMAS MULTIPARTIDISTAS (WHITE-LABEL THEMES)
+   TEMAS MULTIPARTIDISTAS OFICIALES (WHITE-LABEL THEMES)
+   COLORIMETRÍA OFICIAL EXTRAÍDA DE REGISTROS ELECTORALES
    ======================================================== */
 
 body.theme-pvem {
-  --party-primary: #00A859;
-  --party-primary-dark: #008f39;
+  --party-primary: #008f39;
+  --party-primary-dark: #006829;
+  --party-primary-light: #ecfdf5;
   --party-accent: #84cc16;
-  --party-bg-badge: #ecfdf5;
-  --party-text-badge: #065f46;
+  --party-hero-from: #f0fdf4;
+  --party-hero-to: #ecfdf5;
+  --party-hero-border: #bbf7d0;
+  --party-badge-bg: #ecfdf5;
+  --party-badge-text: #065f46;
+  --party-badge-border: #a7f3d0;
+  --party-btn-gradient: linear-gradient(135deg, #008f39 0%, #006829 100%);
+  --party-dash-gradient: linear-gradient(135deg, #00471c 0%, #062b14 100%);
+  --party-glow: rgba(0, 143, 57, 0.2);
+  --party-header-border: #a7f3d0;
+  --party-sub-color: #15803d;
 }
 
 body.theme-morena {
-  --party-primary: #621132;
-  --party-primary-dark: #490d25;
-  --party-accent: #B38E5D;
-  --party-bg-badge: #fdf2f8;
-  --party-text-badge: #831843;
+  --party-primary: #B3282D;
+  --party-primary-dark: #6E151A;
+  --party-primary-light: #fdf2f2;
+  --party-accent: #D19F57;
+  --party-hero-from: #fff5f5;
+  --party-hero-to: #fdf2f2;
+  --party-hero-border: #fecdd3;
+  --party-badge-bg: #fff1f2;
+  --party-badge-text: #881337;
+  --party-badge-border: #fecdd3;
+  --party-btn-gradient: linear-gradient(135deg, #B3282D 0%, #6E151A 100%);
+  --party-dash-gradient: linear-gradient(135deg, #4A0E13 0%, #1a0507 100%);
+  --party-glow: rgba(179, 40, 45, 0.25);
+  --party-header-border: #fecdd3;
+  --party-sub-color: #881337;
 }
 
 body.theme-pan {
-  --party-primary: #0056A3;
-  --party-primary-dark: #00417c;
-  --party-accent: #38bdf8;
-  --party-bg-badge: #f0f9ff;
-  --party-text-badge: #0369a1;
+  --party-primary: #0033A0;
+  --party-primary-dark: #002277;
+  --party-primary-light: #eff6ff;
+  --party-accent: #0072CE;
+  --party-hero-from: #f0f7ff;
+  --party-hero-to: #e0f0fe;
+  --party-hero-border: #bae6fd;
+  --party-badge-bg: #e0f2fe;
+  --party-badge-text: #0369a1;
+  --party-badge-border: #7dd3fc;
+  --party-btn-gradient: linear-gradient(135deg, #0033A0 0%, #002277 100%);
+  --party-dash-gradient: linear-gradient(135deg, #001A5E 0%, #0b1320 100%);
+  --party-glow: rgba(0, 51, 160, 0.25);
+  --party-header-border: #bae6fd;
+  --party-sub-color: #0369a1;
 }
 
 body.theme-pri {
-  --party-primary: #DA291C;
-  --party-primary-dark: #b91c1c;
+  --party-primary: #CE1126;
+  --party-primary-dark: #8B0B19;
+  --party-primary-light: #fef2f2;
   --party-accent: #006847;
-  --party-bg-badge: #fef2f2;
-  --party-text-badge: #991b1b;
+  --party-hero-from: #fef2f2;
+  --party-hero-to: #f0fdf4;
+  --party-hero-border: #fecaca;
+  --party-badge-bg: #fef2f2;
+  --party-badge-text: #991b1b;
+  --party-badge-border: #fca5a5;
+  --party-btn-gradient: linear-gradient(135deg, #CE1126 0%, #8B0B19 100%);
+  --party-dash-gradient: linear-gradient(135deg, #5C0B12 0%, #152219 100%);
+  --party-glow: rgba(206, 17, 38, 0.25);
+  --party-header-border: #fecaca;
+  --party-sub-color: #991b1b;
 }
 
 body.theme-mc {
-  --party-primary: #FF6B00;
-  --party-primary-dark: #ea580c;
-  --party-accent: #fbbf24;
-  --party-bg-badge: #fff7ed;
-  --party-text-badge: #9a3412;
+  --party-primary: #FF8200;
+  --party-primary-dark: #D96B0B;
+  --party-primary-light: #fff7ed;
+  --party-accent: #FFA333;
+  --party-hero-from: #fff7ed;
+  --party-hero-to: #ffedd5;
+  --party-hero-border: #fed7aa;
+  --party-badge-bg: #ffedd5;
+  --party-badge-text: #9a3412;
+  --party-badge-border: #fdba74;
+  --party-btn-gradient: linear-gradient(135deg, #FF8200 0%, #D96B0B 100%);
+  --party-dash-gradient: linear-gradient(135deg, #7C2D12 0%, #1c1917 100%);
+  --party-glow: rgba(255, 130, 0, 0.25);
+  --party-header-border: #fed7aa;
+  --party-sub-color: #c2410c;
 }
 
 body.theme-pt {
-  --party-primary: #E30613;
-  --party-primary-dark: #b91c1c;
+  --party-primary: #DA291C;
+  --party-primary-dark: #991B1B;
+  --party-primary-light: #fef2f2;
   --party-accent: #FFD100;
-  --party-bg-badge: #fef2f2;
-  --party-text-badge: #991b1b;
+  --party-hero-from: #fef2f2;
+  --party-hero-to: #fffbeb;
+  --party-hero-border: #fde68a;
+  --party-badge-bg: #fef2f2;
+  --party-badge-text: #991b1b;
+  --party-badge-border: #fca5a5;
+  --party-btn-gradient: linear-gradient(135deg, #DA291C 0%, #991B1B 100%);
+  --party-dash-gradient: linear-gradient(135deg, #7F1D1D 0%, #0f172a 100%);
+  --party-glow: rgba(218, 41, 28, 0.25);
+  --party-header-border: #fde68a;
+  --party-sub-color: #b91c1c;
+}
+
+/* Reglas de Aplicación Dinámica Universal */
+#hero-badge {
+  background-color: var(--party-badge-bg) !important;
+  color: var(--party-badge-text) !important;
+  border-color: var(--party-badge-border) !important;
+}
+
+#header-system-title {
+  color: var(--party-sub-color) !important;
+}
+
+#footer-party-badge {
+  background-color: var(--party-primary) !important;
+}
+
+#qa-watchdog-pill {
+  background-color: var(--party-primary-light) !important;
+  border-color: var(--party-badge-border) !important;
+  color: var(--party-badge-text) !important;
+}
+
+#qa-watchdog-pill span:first-child {
+  background-color: var(--party-primary) !important;
+}
+
+#btn-refresh-simulation {
+  border-color: var(--party-primary) !important;
+  background-color: var(--party-primary-light) !important;
+  color: var(--party-sub-color) !important;
+}
+
+#btn-refresh-simulation:hover {
+  filter: brightness(0.96);
+}
+
+#btn-export-pdf {
+  background-color: var(--party-primary) !important;
+  color: #ffffff !important;
+}
+
+#btn-export-pdf:hover {
+  filter: brightness(1.1);
+}
+
+#nav-model-badge {
+  background-color: var(--party-badge-bg) !important;
+  color: var(--party-badge-text) !important;
+}
+
+#global-progress-bar {
+  background: var(--party-btn-gradient) !important;
+}
+
+#results-dashboard-section > .card-pvem:first-child {
+  background: var(--party-dash-gradient) !important;
+}
+
+.btn-swarm-quick.active-pill {
+  background-color: var(--party-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--party-primary-dark) !important;
+}
+
+.tab-btn.active {
+  background-color: var(--party-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px -1px var(--party-glow), 0 2px 4px -2px var(--party-glow) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--party-primary) !important;
+  outline-color: var(--party-primary) !important;
+}
+
+#main-party-logo {
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Acordeón de 20 Preguntas de Defensa */

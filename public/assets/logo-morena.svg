@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 130" fill="none">
+  <!-- Emblema MORENA Guinda Oficial Pantone 1805 C (#B3282D) -->
+  <g transform="translate(15, 12)">
+    <rect width="105" height="105" rx="26" fill="#B3282D" />
+    <!-- Águila Juarista / Silueta Patriótica Republicana -->
+    <path d="M52.5 22 C 55 22, 68 34, 76 38 C 72 48, 64 56, 52.5 58 C 41 56, 33 48, 29 38 C 37 34, 50 22, 52.5 22 Z" fill="#ffffff" />
+    <path d="M52.5 58 L68 84 L52.5 76 L37 84 Z" fill="#D19F57" />
+    <circle cx="52.5" cy="40" r="5" fill="#B3282D" />
+  </g>
+  <!-- Tipografía Institucional MORENA -->
+  <g transform="translate(140, 24)">
+    <text x="0" y="36" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="44" fill="#B3282D" letter-spacing="-1">morena</text>
+    <text x="0" y="60" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="15" fill="#6E151A" letter-spacing="3.2">LA ESPERANZA DE MÉXICO</text>
+    <rect x="0" y="68" width="375" height="4" fill="#D19F57" rx="2" />
+    <text x="0" y="90" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="17" fill="#2A0A0E" letter-spacing="2">ESTADO DE MÉXICO</text>
+  </g>
+</svg>

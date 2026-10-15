@@ -15,7 +15,8 @@ const PDFExport = {
     const res = reportData.resumenEjecutivo || {};
     const municipio = res.municipio || 'Estado_de_Mexico';
     const municipioSanitizado = municipio.replace(/[\s/\\?%*:|"<>]+/g, '_');
-    const fileName = `Reporte_Predictivo_PartidoVerde_${municipioSanitizado}.pdf`;
+    const partyKey = ((typeof window !== 'undefined' && window.appState?.activeParty) || reportData.resumenEjecutivo?.partido || 'PVEM').toUpperCase();
+    const fileName = `Reporte_Predictivo_${partyKey}_${municipioSanitizado}.pdf`;
 
     // 1. Verificar si jsPDF está disponible en el navegador
     const jsPDFConstructor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
@@ -69,32 +70,32 @@ const PDFExport = {
         sub: 'REPORTE PREDICTIVO DE IMPACTO SOCIAL • ENJAMBRE MULTI-AGENTE (SWARM AI)'
       },
       MORENA: {
-        primary: [137, 36, 44],
-        dark: [104, 26, 32],
+        primary: [179, 40, 45],
+        dark: [110, 21, 26],
         title: 'MORENA — COORDINACIÓN ESTATAL ESTADO DE MÉXICO',
         sub: 'SISTEMA CUARTO DE GUERRA POLÍTICO • SIMULACIÓN PREDICTIVA DE ENJAMBRE AI'
       },
       PAN: {
-        primary: [0, 68, 148],
-        dark: [0, 48, 110],
+        primary: [0, 51, 160],
+        dark: [0, 34, 119],
         title: 'PARTIDO ACCIÓN NACIONAL — COMITÉ DIRECTIVO ESTATAL EDOMEX',
         sub: 'SISTEMA INTELIGENCIA ELECTORAL AI • AUDITORÍA SOCIAL MULTI-AGENTE'
       },
       PRI: {
-        primary: [218, 37, 29],
-        dark: [0, 104, 55],
+        primary: [206, 17, 38],
+        dark: [0, 104, 71],
         title: 'PARTIDO REVOLUCIONARIO INSTITUCIONAL — ESTADO DE MÉXICO',
         sub: 'OPERACIÓN POLÍTICA TERRITORIAL • ENJAMBRE CIUDADANO PREDICTIVO'
       },
       MC: {
         primary: [255, 130, 0],
-        dark: [204, 100, 0],
+        dark: [217, 107, 11],
         title: 'MOVIMIENTO CIUDADANO — COORDINACIÓN ESTATAL EDOMEX',
         sub: 'ESCUCHA CIUDADANA Y SOCIAL • PLATAFORMA DE INTELIGENCIA PREDICTIVA'
       },
       PT: {
-        primary: [204, 0, 0],
-        dark: [153, 0, 0],
+        primary: [218, 41, 28],
+        dark: [153, 27, 27],
         title: 'PARTIDO DEL TRABAJO — COMISIÓN COORDINADORA EDOMEX',
         sub: 'PODER POPULAR Y GREMIAL • SIMULADOR DE IMPACTO SOCIAL SWARM AI'
       }

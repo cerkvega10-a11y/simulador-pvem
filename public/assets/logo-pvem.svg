@@ -1,21 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" fill="none">
-  <!-- Símbolo Emblema Tucán / Hoja Verde -->
-  <g transform="translate(10, 10)">
-    <!-- Círculo fondo esmeralda -->
-    <rect width="100" height="100" rx="24" fill="#008f39"/>
-    <!-- Hoja / Pico estilizado Tucán PVEM -->
-    <path d="M25 75 C 25 35, 60 25, 80 25 C 75 45, 60 65, 30 75 Z" fill="#ffffff" />
-    <path d="M40 70 C 40 45, 65 38, 78 30 C 72 50, 60 62, 42 70 Z" fill="#84cc16" />
-    <circle cx="38" cy="40" r="4.5" fill="#008f39" />
-    <!-- Trazos dinámicos de plumaje / eco -->
-    <path d="M45 78 C 65 78, 82 62, 85 45 C 80 68, 60 82, 35 82 Z" fill="#facc15" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 130" fill="none">
+  <!-- Ícono Tucán PVEM -->
+  <g transform="translate(15, 12)">
+    <rect width="105" height="105" rx="26" fill="#008f39" />
+    <!-- Cabeza Blanca del Tucán -->
+    <path d="M26 78 C 24 50, 48 30, 78 30 C 72 45, 60 62, 34 78 Z" fill="#ffffff" />
+    <!-- Ojo -->
+    <circle cx="38" cy="46" r="3.5" fill="#008f39" />
+    <!-- Pico Verde Lima -->
+    <path d="M42 74 C 44 48, 66 38, 86 34 C 76 58, 62 70, 44 74 Z" fill="#78BE20" />
+    <!-- Acento Amarillo -->
+    <path d="M38 84 C 54 84, 76 72, 82 56 C 74 76, 52 86, 36 84 Z" fill="#FFC72C" />
   </g>
-
-  <!-- Tipografía Institucional -->
-  <g transform="translate(125, 28)">
-    <text x="0" y="24" font-family="'Inter', 'Montserrat', 'Segoe UI', sans-serif" font-weight="900" font-size="26" fill="#008f39" letter-spacing="1.2">PARTIDO VERDE</text>
-    <text x="0" y="48" font-family="'Inter', 'Montserrat', 'Segoe UI', sans-serif" font-weight="700" font-size="16" fill="#15803d" letter-spacing="3">ECOLOGISTA DE MÉXICO</text>
-    <rect x="0" y="56" width="350" height="3" fill="#84cc16" rx="1.5" />
-    <text x="0" y="74" font-family="'Inter', 'Montserrat', 'Segoe UI', sans-serif" font-weight="800" font-size="14" fill="#0f172a" letter-spacing="2">ESTADO DE MÉXICO</text>
+  <!-- Texto Oficial PVEM -->
+  <g transform="translate(140, 24)">
+    <text x="0" y="32" font-family="'Montserrat', 'Inter', Arial, sans-serif" font-weight="900" font-size="32" fill="#008f39" letter-spacing="0.5">PARTIDO VERDE</text>
+    <text x="0" y="58" font-family="'Montserrat', 'Inter', Arial, sans-serif" font-weight="700" font-size="18" fill="#008f39" letter-spacing="2.8">ECOLOGISTA DE MÉXICO</text>
+    <rect x="0" y="68" width="375" height="4" fill="#84cc16" rx="2" />
+    <text x="0" y="90" font-family="'Montserrat', 'Inter', Arial, sans-serif" font-weight="800" font-size="17" fill="#1e1e24" letter-spacing="2">ESTADO DE MÉXICO</text>
   </g>
 </svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 130" fill="none">
+  <!-- Emblema PAN Azul Institucional Pantone Reflex Blue (#0033A0) -->
+  <g transform="translate(15, 12)">
+    <rect width="105" height="105" rx="52.5" fill="#0033A0" />
+    <circle cx="52.5" cy="52.5" r="46" stroke="#ffffff" stroke-width="3" fill="none" />
+    <text x="52.5" y="65" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="34" fill="#ffffff" text-anchor="middle" letter-spacing="1">PAN</text>
+  </g>
+  <!-- Tipografía Oficial PAN -->
+  <g transform="translate(140, 24)">
+    <text x="0" y="32" font-family="'Montserrat', 'Inter', sans-serif" font-weight="900" font-size="30" fill="#0033A0" letter-spacing="0.5">PARTIDO ACCIÓN NACIONAL</text>
+    <text x="0" y="58" font-family="'Montserrat', 'Inter', sans-serif" font-weight="700" font-size="16" fill="#002B49" letter-spacing="3">POR UN MÉXICO MEJOR</text>
+    <rect x="0" y="68" width="375" height="4" fill="#0072CE" rx="2" />
+    <text x="0" y="90" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="17" fill="#0A1E3F" letter-spacing="2">ESTADO DE MÉXICO</text>
+  </g>
+</svg>

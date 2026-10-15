@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 130" fill="none">
+  <!-- Emblema PT Rojo Oficial Pantone 180 C (#DA291C) y Amarillo Oro (#FFD100) -->
+  <g transform="translate(15, 12)">
+    <rect width="105" height="105" rx="26" fill="#DA291C" />
+    <!-- Estrella Amarilla de 5 picos -->
+    <path d="M52.5 22 L59.5 44 L82 44 L64 57 L70 78 L52.5 65 L35 78 L41 57 L23 44 L45.5 44 Z" fill="#FFD100" />
+    <text x="52.5" y="96" font-family="'Impact', 'Arial Black', sans-serif" font-size="28" fill="#ffffff" text-anchor="middle" letter-spacing="1">PT</text>
+  </g>
+  <!-- Tipografía Oficial PT -->
+  <g transform="translate(140, 24)">
+    <text x="0" y="32" font-family="'Montserrat', 'Inter', sans-serif" font-weight="900" font-size="34" fill="#DA291C" letter-spacing="0.5">PARTIDO DEL TRABAJO</text>
+    <text x="0" y="58" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="17" fill="#991B1B" letter-spacing="3">TODO EL PODER AL PUEBLO</text>
+    <rect x="0" y="68" width="375" height="4" fill="#FFD100" rx="2" />
+    <text x="0" y="90" font-family="'Montserrat', 'Inter', sans-serif" font-weight="800" font-size="17" fill="#0F172A" letter-spacing="2">ESTADO DE MÉXICO</text>
+  </g>
+</svg>
