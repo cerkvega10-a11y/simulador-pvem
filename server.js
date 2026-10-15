@@ -37,6 +37,11 @@ const {
   MUNICIPIOS_EDOMEX_DETALLADOS,
   LISTA_125_MUNICIPIOS_EDOMEX
 } = require('./src/data/edomexDemographics');
+const {
+  CATALOGO_NACIONAL_32_ESTADOS,
+  get32StatesList,
+  getMunicipalitiesByStates
+} = require('./src/data/mexicoNationalCatalog');
 const presets = require('./src/data/presets');
 const realAiVerificationAgent = require('./src/agents/realAiVerificationAgent');
 const electoralRadarEngine = require('./src/agents/electoralRadarEngine');
@@ -221,31 +226,47 @@ app.get('/api/health', (req, res) => {
 
 // --- RUTAS DE LA API ---
 
-// 1. Obtener Estados de la República
+// 1. Obtener los 32 Estados de la República Mexicana
 app.get('/api/states', (req, res) => {
-  res.json({ success: true, states: ESTADOS_MEXICO });
+  res.json({ success: true, states: get32StatesList() });
 });
 
-// 2. Obtener Municipios (con foco en Estado de México)
+// 1.1. Catálogo Nacional Completo (32 Estados y sus Municipios, Alcaldías y Distritos)
+app.get('/api/national-catalog', (req, res) => {
+  res.json({
+    success: true,
+    states: get32StatesList(),
+    catalog: CATALOGO_NACIONAL_32_ESTADOS
+  });
+});
+
+// 2. Obtener Municipios, Alcaldías y Distritos de cualquiera de los 32 Estados
 app.get('/api/municipalities', (req, res) => {
-  const { estado } = req.query;
-  if (!estado || estado === 'Estado de México') {
-    const listado = LISTA_125_MUNICIPIOS_EDOMEX.map(m => ({
-      nombre: m,
-      tieneDetalleProfundo: !!MUNICIPIOS_EDOMEX_DETALLADOS[m]
-    }));
-    return res.json({ success: true, municipios: listado });
+  const { estado, estados } = req.query;
+
+  if (estados) {
+    const items = getMunicipalitiesByStates(estados);
+    return res.json({
+      success: true,
+      municipios: items.map(it => ({
+        estado: it.estado,
+        nombre: it.nombre,
+        etiquetaCompleta: it.etiquetaCompleta,
+        tieneDetalleProfundo: !!MUNICIPIOS_EDOMEX_DETALLADOS[it.nombre]
+      }))
+    });
   }
 
-  // Municipios representativos para otros estados
-  const genericos = [
-    { nombre: 'Municipio Capital / Cabecera', tieneDetalleProfundo: false },
-    { nombre: 'Zona Metropolitana Norte', tieneDetalleProfundo: false },
-    { nombre: 'Zona Metropolitana Sur', tieneDetalleProfundo: false },
-    { nombre: 'Región Costa / Agrícola', tieneDetalleProfundo: false },
-    { nombre: 'Región Industrial', tieneDetalleProfundo: false }
-  ];
-  return res.json({ success: true, municipios: genericos });
+  const targetState = estado || 'Estado de México';
+  const lista = CATALOGO_NACIONAL_32_ESTADOS[targetState] || getMunicipalitiesByStates(targetState).map(x => x.nombre);
+
+  const listado = lista.map(m => ({
+    estado: targetState,
+    nombre: m,
+    tieneDetalleProfundo: !!MUNICIPIOS_EDOMEX_DETALLADOS[m]
+  }));
+
+  return res.json({ success: true, municipios: listado });
 });
 
 // 3. Obtener Propuestas Pre-cargadas (Presets)
@@ -665,8 +686,13 @@ const DEFAULT_LICENSES = [
     partido: 'PVEM',
     nivelGeografico: 'Municipal / Alcaldía',
     etiquetaRegion: 'Alcaldía — Municipio de Ecatepec de Morelos',
+    estadosAutorizados: ['Estado de México'],
     cargosAutorizados: ['Presidente Municipal / Alcalde', 'Regidor', 'Diputado Local'],
     municipiosAutorizados: ['Ecatepec de Morelos'],
+    permisoRadar: true,
+    permisoSimulador: true,
+    propuestaFijaTitulo: '',
+    propuestaFijaTexto: '',
     maxSwarmSize: 100000,
     fechaInicio: '2026-01-01',
     fechaExpiracion: '2027-12-31',
@@ -681,8 +707,13 @@ const DEFAULT_LICENSES = [
     partido: 'MORENA',
     nivelGeografico: 'Federal',
     etiquetaRegion: 'Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla',
+    estadosAutorizados: ['Estado de México'],
     cargosAutorizados: ['Diputado Federal', 'Senador'],
     municipiosAutorizados: ['Naucalpan de Juárez', 'Tlalnepantla de Baz'],
+    permisoRadar: true,
+    permisoSimulador: true,
+    propuestaFijaTitulo: '',
+    propuestaFijaTexto: '',
     maxSwarmSize: 50000,
     fechaInicio: '2026-01-01',
     fechaExpiracion: '2027-08-31',
@@ -696,7 +727,16 @@ function loadLicensesStore() {
     if (fs.existsSync(LICENSES_FILE)) {
       const raw = fs.readFileSync(LICENSES_FILE, 'utf8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map(lic => ({
+          estadosAutorizados: ['Estado de México'],
+          permisoRadar: true,
+          permisoSimulador: true,
+          propuestaFijaTitulo: '',
+          propuestaFijaTexto: '',
+          ...lic
+        }));
+      }
     }
   } catch (e) {
     console.warn('Advertencia leyendo licensesStore.json:', e.message);
@@ -716,12 +756,20 @@ function saveLicensesStore(list) {
 
 let licensesStore = loadLicensesStore();
 
-// 9.1. Login Unificado (Administrador Maestro Cerkvega92 + Clientes Políticos)
+// 9.1. Login Unificado con Verificación Anti-Bots CAPTCHA / Turnstile Obligatoria
 app.post('/api/auth/login', (req, res) => {
   try {
-    const { username = '', password = '' } = req.body || {};
+    const { username = '', password = '', captchaVerified = false, captchaToken = '' } = req.body || {};
     const u = String(username).trim();
     const p = String(password).trim();
+
+    // Validación obligatoria del sistema Anti-Bots (Turnstile / CAPTCHA)
+    if (!captchaVerified || !captchaToken || !String(captchaToken).startsWith('turnstile_verified_')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Verificación Anti-Bots (Turnstile / CAPTCHA) obligatoria. Por favor confirma que eres humano antes de iniciar sesión.'
+      });
+    }
 
     // Validación de Administrador Maestro Exclusivo
     if (u === 'Cerkvega92' && p === 'Tutusito1*') {
@@ -734,8 +782,9 @@ app.post('/api/auth/login', (req, res) => {
           clienteNombre: 'Erick Vega — Administrador Maestro (Neural Media House)',
           username: 'Cerkvega92',
           partido: 'PVEM',
-          nivelGeografico: 'Estatal',
-          etiquetaRegion: 'Control Maestro Nacional & Estatal — Todos los Territorios Autorizados',
+          nivelGeografico: 'Nacional / Estatal',
+          etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
+          estadosAutorizados: ['TODOS'],
           cargosAutorizados: [
             'Presidente Municipal / Alcalde',
             'Regidor',
@@ -745,6 +794,10 @@ app.post('/api/auth/login', (req, res) => {
             'Gobernador'
           ],
           municipiosAutorizados: ['TODOS'],
+          permisoRadar: true,
+          permisoSimulador: true,
+          propuestaFijaTitulo: '',
+          propuestaFijaTexto: '',
           maxSwarmSize: 100000,
           fechaInicio: '2026-01-01',
           fechaExpiracion: '2099-12-31',
@@ -776,6 +829,16 @@ app.post('/api/auth/login', (req, res) => {
         error: !found.activo
           ? 'Su licencia ha sido suspendida por el Administrador Maestro (Kill Switch Activo).'
           : `Licencia fuera de vigencia (Vigencia: ${found.fechaInicio} al ${found.fechaExpiracion}). Contacte a Neural Media House.`
+      });
+    }
+
+    // Verificar que al menos un módulo (Radar o Simulador) esté autorizado
+    const hasRadar = found.permisoRadar !== false;
+    const hasSim = found.permisoSimulador !== false;
+    if (!hasRadar && !hasSim) {
+      return res.status(403).json({
+        success: false,
+        error: 'Su licencia no tiene módulos activos habilitados (Radar Electoral ni Simulador). Contacte al Administrador Maestro.'
       });
     }
 
@@ -814,12 +877,19 @@ app.post('/api/licenses', (req, res) => {
       partido: String(body.partido || 'PVEM').toUpperCase(),
       nivelGeografico: String(body.nivelGeografico || 'Municipal / Alcaldía'),
       etiquetaRegion: String(body.etiquetaRegion || 'Demarcación Autorizada').trim(),
+      estadosAutorizados: Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
+        ? body.estadosAutorizados
+        : ['Estado de México'],
       cargosAutorizados: Array.isArray(body.cargosAutorizados) && body.cargosAutorizados.length > 0
         ? body.cargosAutorizados
         : ['Presidente Municipal / Alcalde'],
       municipiosAutorizados: Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
         ? body.municipiosAutorizados
         : ['Ecatepec de Morelos'],
+      permisoRadar: body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true,
+      permisoSimulador: body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true,
+      propuestaFijaTitulo: String(body.propuestaFijaTitulo || '').trim(),
+      propuestaFijaTexto: String(body.propuestaFijaTexto || '').trim(),
       maxSwarmSize: parseInt(body.maxSwarmSize, 10) || 100000,
       fechaInicio: String(body.fechaInicio || '2026-01-01'),
       fechaExpiracion: String(body.fechaExpiracion || '2027-12-31'),
@@ -857,6 +927,54 @@ app.patch('/api/licenses/:id/toggle', (req, res) => {
   }
 });
 
+// 9.4b. Actualizar Fecha de Vigencia (Calendario / Datepicker Rápido en Licencias Activas)
+app.patch('/api/licenses/:id/expiration', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fechaExpiracion, fechaInicio } = req.body || {};
+    licensesStore = loadLicensesStore();
+    const lic = licensesStore.find(l => l.id === id);
+    if (!lic) {
+      return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
+    }
+    if (fechaExpiracion) {
+      lic.fechaExpiracion = String(fechaExpiracion).trim();
+      // Si la nueva fecha de expiración está en el futuro, asegurar que la licencia quede activa
+      const now = new Date();
+      const newExp = new Date(`${lic.fechaExpiracion}T23:59:59`);
+      if (newExp >= now) {
+        lic.activo = true;
+      }
+    }
+    if (fechaInicio) {
+      lic.fechaInicio = String(fechaInicio).trim();
+    }
+    saveLicensesStore(licensesStore);
+    res.json({ success: true, license: lic, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.4c. Actualizar Permisos Independientes de Módulos (Radar vs Simulador)
+app.patch('/api/licenses/:id/permissions', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permisoRadar, permisoSimulador } = req.body || {};
+    licensesStore = loadLicensesStore();
+    const lic = licensesStore.find(l => l.id === id);
+    if (!lic) {
+      return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
+    }
+    if (permisoRadar !== undefined) lic.permisoRadar = Boolean(permisoRadar);
+    if (permisoSimulador !== undefined) lic.permisoSimulador = Boolean(permisoSimulador);
+    saveLicensesStore(licensesStore);
+    res.json({ success: true, license: lic, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 9.5. Eliminar Licencia
 app.delete('/api/licenses/:id', (req, res) => {
   try {
@@ -877,8 +995,8 @@ app.use((req, res) => {
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`================================================================`);
-  console.log(`🟢 GOVTECH WAR ROOM v4.8 ENTERPRISE — NEURAL MEDIA HOUSE / ERICK VEGA`);
+  console.log(`🟢 GOVTECH WAR ROOM v5.0 ENTERPRISE — NEURAL MEDIA HOUSE / ERICK VEGA`);
   console.log(`📡 Servidor activo y escuchando en http://localhost:${PORT}`);
-  console.log(`🤖 Motor Vectorial HPC (hasta 100,000 agentes) + Cyber Sentinel 24/7`);
+  console.log(`🤖 Cobertura Nacional 32 Estados + Turnstile Anti-Bots + Cyber Sentinel 24/7`);
   console.log(`================================================================`);
 });

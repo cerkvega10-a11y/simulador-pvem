@@ -98,7 +98,7 @@
         </button>
 
         <!-- Botón Permanente: 🗳️ Radar Electoral 2027-2030 (Abre Ventana Especializada de Plan Maestro) -->
-        <button type="button" onclick="openRadarElectoralModal()"
+        <button type="button" id="btn-header-radar-electoral" onclick="openRadarElectoralModal()"
           class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow-xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-emerald-400"
           title="Abrir Ventana Especializada de Radar Electoral 2027-2030 y Plan Maestro de Victoria en PDF">
           <span>🗳️</span>
@@ -389,7 +389,7 @@
           </div>
 
           <!-- ACCESO EXCLUSIVO A VENTANA DE RADAR ELECTORAL 2027-2030 & PLAN MAESTRO -->
-          <div class="pt-3 border-t border-slate-100">
+          <div id="card-radar-electoral-banner" class="pt-3 border-t border-slate-100">
             <div class="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-2 border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center text-sm font-bold shrink-0">🗳️</div>
@@ -1022,7 +1022,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button type="button" onclick="closeRadarElectoralModal()" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-xs sm:text-sm font-bold transition-all">
+          <button type="button" id="btn-radar-go-war-room" onclick="closeRadarElectoralModal()" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-xs sm:text-sm font-bold transition-all">
             ← <span class="hidden sm:inline">Ir al War Room Táctico (Vista 2)</span><span class="sm:hidden">Volver</span>
           </button>
           <button type="button" onclick="logoutSession()" class="px-3 py-2 rounded-lg bg-rose-900/60 hover:bg-rose-800/80 border border-rose-400/50 text-rose-100 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5" title="Cerrar Sesión y volver al Portal Neutral">
@@ -1038,14 +1038,14 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
             <h3 class="text-base sm:text-lg font-black text-slate-900">1. Configura tu Candidatura, Cargo Autorizado y Propuesta</h3>
-            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Los cargos y demarcaciones disponibles están vinculados a los permisos de tu licencia activa.</p>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Los estados, cargos y demarcaciones disponibles están vinculados a los permisos de tu licencia activa.</p>
           </div>
           <span id="radar-license-capacity-pill" class="text-[11px] font-black bg-emerald-50 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-full self-start sm:self-center">
             Capacidad Autorizada: Hasta 100,000 Agentes
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label for="select-ciclo-electoral" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Ciclo Electoral</label>
             <select id="select-ciclo-electoral" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -1065,7 +1065,13 @@
             </select>
           </div>
           <div>
-            <label for="radar-select-municipio" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Demarcación / Municipio Autorizado</label>
+            <label for="radar-select-estado" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Estado Autorizado</label>
+            <select id="radar-select-estado" onchange="onRadarStateChange(this.value)" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="Estado de México" selected>Estado de México</option>
+            </select>
+          </div>
+          <div>
+            <label for="radar-select-municipio" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Municipio / Alcaldía / Distrito</label>
             <select id="radar-select-municipio" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="Ecatepec de Morelos" selected>Ecatepec de Morelos</option>
             </select>
@@ -1095,7 +1101,7 @@
           <button type="button" id="btn-download-plan-maestro" onclick="descargarPlanMaestroPdf()" class="py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
             <span>📥</span><span>Descargar Plan Maestro (PDF)</span>
           </button>
-          <button type="button" onclick="transferRadarToWarRoom()" class="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+          <button type="button" id="btn-radar-transfer-war-room" onclick="transferRadarToWarRoom()" class="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
             <span>🚀</span><span>Simular en War Room (Vista 2)</span>
           </button>
         </div>
@@ -1108,7 +1114,7 @@
         </div>
       </div>
 
-      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v4.9 Enterprise — Desarrollado por <b>Neural Media House / Erick de Jesús Vega Carmona</b></p>
+      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v5.0 Enterprise — Desarrollado por <b>Neural Media House / Erick de Jesús Vega Carmona</b></p>
     </div>
   </div>
 
@@ -1121,7 +1127,7 @@
         <button type="button" onclick="closePlatformInfoModal()" class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 text-lg font-bold">✕</button>
         <span class="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-300 bg-indigo-500/15 border border-indigo-400/40 px-2.5 py-0.5 rounded-full mb-2">ℹ️ Información de la Plataforma</span>
         <h3 class="text-lg sm:text-2xl font-black leading-tight pr-10">GovTech War Room — Simulador Predictivo Electoral y de Políticas Públicas</h3>
-        <p class="text-indigo-300 text-sm font-bold mt-1">v4.9 Enterprise Macro-Censal Edition</p>
+        <p class="text-indigo-300 text-sm font-bold mt-1">v5.0 Enterprise Macro-Censal Edition</p>
       </div>
 
       <div class="p-5 sm:p-6 space-y-5">
@@ -1139,7 +1145,7 @@
         <div>
           <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Descripción Institucional</span>
           <p class="text-sm text-slate-700 leading-relaxed">
-            Sistema avanzado de inteligencia de datos, enjambre sintético de alta densidad (hasta 100,000 agentes) y anclaje estricto a repositorios oficiales del Estado Mexicano (.gob.mx), diseñado para la estrategia táctica, blindaje de propuestas, análisis sindical y micro-targeting territorial rumbo a los procesos electorales 2027-2030.
+            Sistema avanzado de inteligencia de datos, cobertura nacional de los 32 Estados de la República Mexicana, enjambre sintético de alta densidad (hasta 100,000 agentes) y anclaje estricto a repositorios oficiales del Estado Mexicano (.gob.mx), diseñado para la estrategia táctica, blindaje de propuestas, análisis sindical y micro-targeting territorial rumbo a los procesos electorales 2027-2030.
           </p>
         </div>
 
@@ -1160,7 +1166,7 @@
 
   <!-- =====================================================================
        PORTAL NEUTRAL DE BIENVENIDA Y ACCESO OBLIGATORIO (PRIMERA VISTA)
-       Cero colores partidistas • Estética corporativa minimalista
+       Cero colores partidistas • Cero autocargado • Turnstile Anti-Bots
        ===================================================================== -->
   <div id="modal-auth-login" class="fixed inset-0 bg-slate-50 z-50 flex flex-col items-center justify-between p-4 sm:p-8 overflow-y-auto">
     <!-- Barra superior minimalista neutra -->
@@ -1184,7 +1190,7 @@
           Plataforma de Inteligencia Predictiva y Simulación Social
         </h1>
         <p class="text-xs sm:text-sm text-slate-500 font-medium">
-          Sistema de Micro-Targeting Territorial, Enjambre Sintético y Análisis Estadístico Oficial (.gob.mx)
+          Sistema Nacional de Micro-Targeting Territorial (32 Estados), Enjambre Sintético y Análisis Oficial (.gob.mx)
         </p>
       </div>
 
@@ -1193,28 +1199,55 @@
         <div class="bg-slate-900 text-white px-6 py-4 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h2 class="text-sm font-black uppercase tracking-wider text-white">Iniciar Sesión / Acceso a Licencia</h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">Introduce tus credenciales asignadas para desbloquear el sistema</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Introduce tus credenciales asignadas manualmente para acceder</p>
           </div>
           <span class="text-lg">🔐</span>
         </div>
 
-        <!-- Formulario de Acceso -->
-        <form onsubmit="handleAuthLogin(event)" class="p-6 space-y-4">
+        <!-- Formulario de Acceso Limpio (Cero Autocompletado + Turnstile Anti-Bots) -->
+        <form onsubmit="handleAuthLogin(event)" autocomplete="off" class="p-6 space-y-4">
           <div id="auth-error-box" class="hidden p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold leading-relaxed"></div>
 
           <div>
             <label for="auth-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Usuario</label>
-            <input type="text" id="auth-username" required autocomplete="username" placeholder="Ingresa tu usuario autorizado..."
+            <input type="text" id="auth-username" name="govtech_user_manual" value="" required autocomplete="off" spellcheck="false" placeholder="Ingresa tu usuario..."
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
           </div>
 
           <div>
             <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Contraseña</label>
-            <input type="password" id="auth-password" required autocomplete="current-password" placeholder="••••••••••••"
+            <input type="password" id="auth-password" name="govtech_pass_manual" value="" required autocomplete="new-password" placeholder="••••••••••••"
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
           </div>
 
-          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-indigo-950 text-white font-black text-sm tracking-wide shadow-md transition-all active:scale-95 cursor-pointer">
+          <!-- COMPONENTE DE VERIFICACIÓN ANTI-BOTS (TURNSTILE / CAPTCHA OBLIGATORIO) -->
+          <div class="pt-1">
+            <div id="turnstile-widget-box" onclick="triggerTurnstileVerification(event)"
+              class="w-full p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-300 flex items-center justify-between gap-3 cursor-pointer select-none transition-all shadow-2xs">
+              <div class="flex items-center gap-3">
+                <div id="turnstile-checkbox-ui" class="w-6 h-6 rounded-md border-2 border-slate-400 bg-white flex items-center justify-center transition-all shrink-0">
+                  <span id="turnstile-spinner" class="hidden w-3.5 h-3.5 border-2 border-slate-800 border-t-transparent rounded-full animate-spin"></span>
+                  <svg id="turnstile-check-icon" class="hidden w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <div>
+                  <span id="turnstile-status-text" class="text-xs font-bold text-slate-800 block">Verifica que eres humano</span>
+                  <span id="turnstile-subtext" class="text-[10px] text-slate-500 block">Protección Anti-Bots Obligatoria</span>
+                </div>
+              </div>
+              <div class="text-right shrink-0 border-l border-slate-200 pl-3">
+                <div class="flex items-center justify-end gap-1 text-[10px] font-black text-slate-700 tracking-tight">
+                  <span>🛡️</span><span>TURNSTILE</span>
+                </div>
+                <span class="text-[9px] text-slate-400 block font-medium">Cyber Sentinel</span>
+              </div>
+            </div>
+            <input type="hidden" id="auth-captcha-token" value="">
+          </div>
+
+          <button type="submit" id="btn-auth-submit" disabled
+            class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-indigo-950 text-white font-black text-sm tracking-wide shadow-md transition-all active:scale-95 opacity-50 cursor-not-allowed">
             Iniciar Sesión / Acceso a Licencia →
           </button>
         </form>
@@ -1240,10 +1273,10 @@
           <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-lg shadow-xs">👑</div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-base sm:text-lg font-black text-white">Panel de Control Maestro — Gestión de Licencias White-Label</h2>
+              <h2 class="text-base sm:text-lg font-black text-white">Panel de Control Maestro — Gestión Nacional de Licencias (32 Estados)</h2>
               <span class="text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">Admin: Cerkvega92</span>
             </div>
-            <p class="text-xs text-slate-400">Control milimétrico de clientes políticos, partidos, cargos autorizados, demarcaciones, vigencia y Kill Switch</p>
+            <p class="text-xs text-slate-400">Selector Nacional de 32 Estados y Municipios, Permisos Independientes Radar vs. Simulador, Datepicker de Vigencias y Kill Switch</p>
           </div>
         </div>
 
@@ -1276,19 +1309,19 @@
 
           <div>
             <label class="block font-bold text-slate-700 uppercase mb-1">Nombre del Cliente / Campaña Política</label>
-            <input type="text" id="lic-cliente-nombre" required placeholder="Ej. Candidatura Senaduría Estado de México"
+            <input type="text" id="lic-cliente-nombre" required placeholder="Ej. Candidatura Alcaldía Monterrey / Senaduría NL"
               class="w-full px-3 py-2 rounded-lg border border-slate-300 font-semibold text-slate-900">
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-bold text-slate-700 uppercase mb-1">Usuario Manual</label>
-              <input type="text" id="lic-username" required placeholder="Ej. cliente_edomex"
+              <input type="text" id="lic-username" required autocomplete="off" placeholder="Ej. cliente_mty2027"
                 class="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900">
             </div>
             <div>
               <label class="block font-bold text-slate-700 uppercase mb-1">Contraseña Manual</label>
-              <input type="text" id="lic-password" required placeholder="Ej. Campana2027*"
+              <input type="text" id="lic-password" required autocomplete="off" placeholder="Ej. Campana2027*"
                 class="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900">
             </div>
           </div>
@@ -1331,9 +1364,39 @@
             </div>
           </div>
 
+          <!-- PERMISOS INDEPENDIENTES DE MÓDULOS: RADAR ELECTORAL (VISTA 1) VS SIMULADOR (VISTA 2) -->
+          <div class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
+            <span class="block font-black text-indigo-950 uppercase text-[11px]">A. Permisos Independientes de Módulos (Vistas Autorizadas):</span>
+            <div class="space-y-2">
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
+                <input type="checkbox" id="lic-permiso-radar" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">🗳️ Acceso al Módulo de Radar Electoral y Selector de Cargo (Vista 1)</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite diagnosticar colonias, elegir cargos autorizados y descargar el PDF del Plan Maestro.</span>
+                </div>
+              </label>
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
+                <input type="checkbox" id="lic-permiso-simulador" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">📊 Acceso al Simulador Táctico y 7 Pestañas (Vista 2)</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite simular propuestas en el enjambre sintético, ver las 7 pestañas y descargar el Dictamen PDF.</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Parámetros Fijos Preconfigurados (Opcional cuando se desmarca Radar Electoral) -->
+            <div id="lic-fixed-proposal-box" class="hidden pt-2 border-t border-indigo-200 space-y-2">
+              <span class="block text-[10px] font-black uppercase text-indigo-900">⚙️ Parámetros Fijos Preconfigurados para el Simulador (Sin Radar):</span>
+              <input type="text" id="lic-propuesta-fija-titulo" placeholder="Título fijo preconfigurado (opcional)..."
+                class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800">
+              <textarea id="lic-propuesta-fija-texto" rows="2" placeholder="Texto de propuesta fija preconfigurada para el cliente (opcional)..."
+                class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-800"></textarea>
+            </div>
+          </div>
+
           <!-- Casillas de Múltiples Cargos Autorizados (Checkboxes de Puestos) -->
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span class="block font-black text-slate-800 uppercase text-[11px]">A. Casillas de Cargos Autorizados en Radar Electoral:</span>
+            <span class="block font-black text-slate-800 uppercase text-[11px]">B. Casillas de Cargos Autorizados:</span>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               <label class="flex items-center gap-2 cursor-pointer font-semibold text-slate-700">
                 <input type="checkbox" name="lic_cargo" value="Presidente Municipal / Alcalde" checked class="rounded text-emerald-600">
@@ -1362,60 +1425,80 @@
             </div>
           </div>
 
-          <!-- Selección Múltiple de Regiones y Etiqueta Fija -->
-          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-            <span class="block font-black text-slate-800 uppercase text-[11px]">B. Enfoque Geográfico y Demarcaciones Autorizadas:</span>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <!-- JERARQUÍA GEOGRÁFICA DINÁMICA NACIONAL: 32 ESTADOS -> MUNICIPIOS / ALCALDÍAS / DISTRITOS -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <span class="block font-black text-slate-800 uppercase text-[11px]">C. Selector Nacional de los 32 Estados y Demarcaciones:</span>
+
+            <!-- Paso 1: Selección de uno o múltiples Estados (32 Estados) -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[10px] font-bold text-slate-700 uppercase">1. Selecciona uno o múltiples Estados (32 Entidades):</label>
+                <label class="flex items-center gap-1 text-[11px] font-black text-emerald-800 cursor-pointer">
+                  <input type="checkbox" id="lic-todos-estados" onchange="toggleAllLicenseStates(this.checked)" class="rounded text-emerald-600">
+                  <span>Los 32 Estados (Nacional)</span>
+                </label>
+              </div>
+              <input type="text" id="lic-search-estado" oninput="filterLicenseStatesList(this.value)" placeholder="🔍 Filtrar estado (ej. Nuevo León, Jalisco, CDMX, Edomex)..."
+                class="w-full px-2.5 py-1 mb-1.5 rounded border border-slate-300 bg-white text-xs">
+              <div id="lic-estados-checkbox-list" class="max-h-32 overflow-y-auto bg-white border border-slate-200 rounded-lg p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                <!-- Rellenado dinámicamente con los 32 estados -->
+              </div>
+            </div>
+
+            <!-- Paso 2: Selección de Municipios, Alcaldías y/o Distritos de los Estados seleccionados -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[10px] font-bold text-slate-700 uppercase">2. Municipios, Alcaldías y Distritos del Estado(s):</label>
+                <label class="flex items-center gap-1 text-[11px] font-black text-emerald-800 cursor-pointer">
+                  <input type="checkbox" id="lic-todos-municipios" onchange="toggleAllLicenseMunicipalities(this.checked)" class="rounded text-emerald-600">
+                  <span>Autorizar TODOS</span>
+                </label>
+              </div>
+              <input type="text" id="lic-search-muni" oninput="filterLicenseMunicipalitiesList(this.value)" placeholder="🔍 Buscar municipio, alcaldía o distrito..."
+                class="w-full px-2.5 py-1 mb-1.5 rounded border border-slate-300 bg-white text-xs">
+              <div id="lic-municipios-checkbox-list" class="max-h-40 overflow-y-auto bg-white border border-slate-200 rounded-lg p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                <!-- Rellenado dinámicamente según los estados seleccionados -->
+              </div>
+            </div>
+
+            <!-- Paso 3: Nivel Geográfico y Etiqueta Personalizada -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200">
               <div>
-                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Nivel Geográfico</label>
+                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">3. Nivel Geográfico</label>
                 <select id="lic-nivel-geo" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">
                   <option value="Municipal / Alcaldía">Municipal / Alcaldía</option>
+                  <option value="Distrital (Local / Federal)">Distrital (Local / Federal)</option>
                   <option value="Estatal">Estatal (Gubernatura / Congreso)</option>
-                  <option value="Federal">Federal (Distritos / Senaduría)</option>
+                  <option value="Federal / Nacional">Federal / Nacional</option>
                 </select>
               </div>
               <div>
                 <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Etiqueta de Región Asignada</label>
-                <input type="text" id="lic-etiqueta-region" required placeholder="Ej. Distrito Federal 04 - Naucalpan"
+                <input type="text" id="lic-etiqueta-region" required placeholder="Ej. Distrito Electoral Federal 04 - Monterrey"
                   class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">
-              </div>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[10px] font-bold text-slate-600 uppercase">Municipios / Demarcaciones Permitidas:</label>
-                <label class="flex items-center gap-1 text-[11px] font-black text-emerald-800 cursor-pointer">
-                  <input type="checkbox" id="lic-todos-municipios" onchange="toggleAllLicenseMunicipalities(this.checked)" class="rounded text-emerald-600">
-                  <span>Autorizar TODOS los Municipios</span>
-                </label>
-              </div>
-              <input type="text" id="lic-search-muni" oninput="filterLicenseMunicipalitiesList(this.value)" placeholder="🔍 Buscar municipio..."
-                class="w-full px-2.5 py-1 mb-1.5 rounded border border-slate-300 bg-white text-xs">
-              <div id="lic-municipios-checkbox-list" class="max-h-36 overflow-y-auto bg-white border border-slate-200 rounded-lg p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
-                <!-- Rellenado dinámicamente con los municipios -->
               </div>
             </div>
           </div>
 
-          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all">
+          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer">
             💾 Guardar y Activar Licencia White-Label
           </button>
         </form>
       </div>
 
-      <!-- Columna Derecha: Tabla de Licencias Activas y Kill Switch (7 cols) -->
+      <!-- Columna Derecha: Tabla de Licencias Activas, Calendario de Vigencia y Kill Switch (7 cols) -->
       <div class="lg:col-span-7 bg-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-200 space-y-4 self-start">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
-            <h3 class="text-base font-black text-slate-900">🔑 Licencias de Clientes Políticos Registradas</h3>
-            <p class="text-xs text-slate-500">Modifica contraseñas al instante, aplica el Kill Switch o previsualiza la sesión personalizada del cliente.</p>
+            <h3 class="text-base font-black text-slate-900">🔑 Clientes / Licencias Registradas y Control de Vigencias</h3>
+            <p class="text-xs text-slate-500">Alarga o acorta la vigencia con el calendario interactivo (Datepicker), configura permisos Radar/Simulador o activa el Kill Switch al instante.</p>
           </div>
           <button type="button" onclick="activateMasterFullAccess()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0">
             🔓 Restaurar Vista Maestra Total
           </button>
         </div>
 
-        <div id="master-licenses-list" class="space-y-3">
+        <div id="master-licenses-list" class="space-y-3.5">
           <!-- Renderizado dinámicamente -->
         </div>
       </div>
@@ -1423,10 +1506,10 @@
     </div>
   </div>
 
-  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v4.9.0) -->
-  <script src="/js/components.js?v=4.9.0"></script>
-  <script src="/js/planMaestroPdfExport.js?v=4.9.0"></script>
-  <script src="/js/pdfExport.js?v=4.9.0"></script>
-  <script src="/js/app.js?v=4.9.0"></script>
+  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.0.0) -->
+  <script src="/js/components.js?v=5.0.0"></script>
+  <script src="/js/planMaestroPdfExport.js?v=5.0.0"></script>
+  <script src="/js/pdfExport.js?v=5.0.0"></script>
+  <script src="/js/app.js?v=5.0.0"></script>
 </body>
 </html>

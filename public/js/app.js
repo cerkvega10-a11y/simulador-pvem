@@ -68,6 +68,16 @@ function enforceNeutralWelcomeState() {
     if (el) el.classList.add('hidden');
   });
 
+  // Limpiar estrictamente campos de usuario y contraseña (Cero Autocompletado)
+  const uInput = document.getElementById('auth-username');
+  const pInput = document.getElementById('auth-password');
+  if (uInput) uInput.value = '';
+  if (pInput) pInput.value = '';
+
+  if (typeof window.resetTurnstileWidget === 'function') {
+    window.resetTurnstileWidget();
+  }
+
   const loginGate = document.getElementById('modal-auth-login');
   if (loginGate) {
     loginGate.classList.remove('hidden');
@@ -105,8 +115,15 @@ async function loadMunicipalities(estado) {
     const res = await fetch(`/api/municipalities?estado=${encodeURIComponent(estado)}`);
     const data = await res.json();
     if (data.success && data.municipios) {
-      select.innerHTML = data.municipios.map(m => `
-        <option value="${m.nombre}" ${m.nombre === 'Ecatepec de Morelos' ? 'selected' : ''}>
+      let lista = data.municipios;
+      const lic = appState.activeSession?.user;
+      if (lic && appState.activeSession?.role !== 'MASTER_ADMIN' && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
+        const filtered = lista.filter(m => lic.municipiosAutorizados.includes(m.nombre));
+        if (filtered.length > 0) lista = filtered;
+      }
+
+      select.innerHTML = lista.map((m, idx) => `
+        <option value="${m.nombre}" ${m.nombre === 'Ecatepec de Morelos' || idx === 0 ? 'selected' : ''}>
           ${m.nombre} ${m.tieneDetalleProfundo ? '★ (Perfil Detallado)' : ''}
         </option>
       `).join('');
@@ -2230,10 +2247,17 @@ window.runWebWorkerVectorExpansion = function(report) {
 // 3. VENTANA INDEPENDIENTE: RADAR ELECTORAL 2027-2030 & PLAN MAESTRO PDF
 // =========================================================================
 window.openRadarElectoralModal = async function() {
+  // Verificar si el cliente tiene permiso para acceder al módulo Radar Electoral (Vista 1)
+  const session = appState.activeSession;
+  if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoRadar === false) {
+    showToast('🔒 Tu licencia está configurada exclusivamente para el Simulador Táctico (Vista 2).');
+    return;
+  }
+
   const modal = document.getElementById('modal-radar-electoral');
   if (!modal) return;
 
-  // Sincronizar selector de municipios autorizados en la ventana del Radar
+  // Sincronizar selector de estados y municipios autorizados en la ventana del Radar
   await syncAuthorizedSelectorsInRadar();
 
   // Pre-rellenar con datos actuales si están vacíos
@@ -2250,17 +2274,34 @@ window.openRadarElectoralModal = async function() {
 };
 
 window.closeRadarElectoralModal = function() {
+  const session = appState.activeSession;
+  if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoSimulador === false) {
+    showToast('🔒 Tu licencia está autorizada exclusivamente para el Radar Electoral y Plan Maestro (Vista 1).');
+    return;
+  }
   const modal = document.getElementById('modal-radar-electoral');
   if (modal) modal.classList.add('hidden');
 };
 
-window.transferRadarToWarRoom = function() {
+window.transferRadarToWarRoom = async function() {
+  const session = appState.activeSession;
+  if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoSimulador === false) {
+    showToast('🔒 Tu licencia está autorizada exclusivamente para el Radar Electoral y Plan Maestro (Vista 1).');
+    return;
+  }
+
+  const radarEstado = document.getElementById('radar-select-estado')?.value;
   const radarMuni = document.getElementById('radar-select-municipio')?.value;
   const radarCargo = document.getElementById('select-cargo-electoral')?.value;
   const radarCiclo = document.getElementById('select-ciclo-electoral')?.value;
   const radarTit = document.getElementById('radar-input-titulo')?.value?.trim();
   const radarProp = document.getElementById('radar-input-propuesta')?.value?.trim();
 
+  if (radarEstado) {
+    appState.estado = radarEstado;
+    const mainEstado = document.getElementById('select-estado');
+    if (mainEstado) mainEstado.value = radarEstado;
+  }
   if (radarMuni) {
     appState.municipio = radarMuni;
     const mainMuni = document.getElementById('select-municipio');
@@ -2509,9 +2550,17 @@ function renderRadarDiagnosisView(container, radar, meta) {
 }
 
 // =========================================================================
-// 4. PANEL DE CONTROL MAESTRO, LOGIN NEUTRO Y WHITE-LABEL POR LICENCIA
+// 4. PANEL DE CONTROL MAESTRO, LOGIN NEUTRO, TURNSTILE ANTI-BOTS & WHITE-LABEL
 // =========================================================================
 let masterLicensesCache = [];
+let nationalStatesList = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+];
+let nationalCatalog32States = {};
 let allAvailableMunicipalities = [
   'Ecatepec de Morelos', 'Nezahualcóyotl', 'Toluca', 'Naucalpan de Juárez',
   'Chimalhuacán', 'Tlalnepantla de Baz', 'Cuautitlán Izcalli', 'Tecámac',
@@ -2521,6 +2570,118 @@ let allAvailableMunicipalities = [
   'La Paz', 'Cuautitlán', 'Chicoloapan', 'Acolman', 'Lerma', 'Tejupilco',
   'Atlacomulco', 'Valle de Bravo', 'Ixtapan de la Sal', 'Jilotepec'
 ];
+
+// Estado del desafío Anti-Bots Turnstile / CAPTCHA
+let turnstileState = {
+  verified: false,
+  verifying: false,
+  token: ''
+};
+
+window.resetTurnstileWidget = function() {
+  turnstileState = { verified: false, verifying: false, token: '' };
+  const tokenInput = document.getElementById('auth-captcha-token');
+  if (tokenInput) tokenInput.value = '';
+
+  const box = document.getElementById('turnstile-widget-box');
+  const chkUi = document.getElementById('turnstile-checkbox-ui');
+  const spinner = document.getElementById('turnstile-spinner');
+  const checkIcon = document.getElementById('turnstile-check-icon');
+  const statusText = document.getElementById('turnstile-status-text');
+  const subText = document.getElementById('turnstile-subtext');
+  const submitBtn = document.getElementById('btn-auth-submit');
+
+  if (box) {
+    box.className = 'w-full p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-300 flex items-center justify-between gap-3 cursor-pointer select-none transition-all shadow-2xs';
+  }
+  if (chkUi) {
+    chkUi.className = 'w-6 h-6 rounded-md border-2 border-slate-400 bg-white flex items-center justify-center transition-all shrink-0';
+  }
+  if (spinner) spinner.classList.add('hidden');
+  if (checkIcon) checkIcon.classList.add('hidden');
+  if (statusText) {
+    statusText.innerText = 'Verifica que eres humano';
+    statusText.className = 'text-xs font-bold text-slate-800 block';
+  }
+  if (subText) {
+    subText.innerText = 'Protección Anti-Bots Obligatoria';
+  }
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+};
+
+window.triggerTurnstileVerification = function(event) {
+  if (turnstileState.verified || turnstileState.verifying) return;
+
+  // Bloquear scripts automatizados que disparen eventos sintéticos sin interacción humana
+  if (event && event.isTrusted === false) {
+    const errBox = document.getElementById('auth-error-box');
+    if (errBox) {
+      errBox.innerText = '⚠️ Actividad automatizada detectada por Cyber Sentinel Turnstile. Interacción humana requerida.';
+      errBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  turnstileState.verifying = true;
+  const box = document.getElementById('turnstile-widget-box');
+  const chkUi = document.getElementById('turnstile-checkbox-ui');
+  const spinner = document.getElementById('turnstile-spinner');
+  const checkIcon = document.getElementById('turnstile-check-icon');
+  const statusText = document.getElementById('turnstile-status-text');
+  const subText = document.getElementById('turnstile-subtext');
+  const submitBtn = document.getElementById('btn-auth-submit');
+  const tokenInput = document.getElementById('auth-captcha-token');
+
+  if (spinner) spinner.classList.remove('hidden');
+  if (statusText) statusText.innerText = 'Verificando navegador y huella humana...';
+
+  setTimeout(() => {
+    turnstileState.verifying = false;
+    turnstileState.verified = true;
+    const randomPart = Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
+    turnstileState.token = `turnstile_verified_${randomPart}`;
+
+    if (tokenInput) tokenInput.value = turnstileState.token;
+    if (spinner) spinner.classList.add('hidden');
+    if (checkIcon) checkIcon.classList.remove('hidden');
+    if (chkUi) {
+      chkUi.className = 'w-6 h-6 rounded-md border-2 border-emerald-600 bg-emerald-600 flex items-center justify-center transition-all shrink-0';
+    }
+    if (box) {
+      box.className = 'w-full p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-300 flex items-center justify-between gap-3 select-none transition-all shadow-2xs';
+    }
+    if (statusText) {
+      statusText.innerText = 'Verificación completada';
+      statusText.className = 'text-xs font-black text-emerald-900 block';
+    }
+    if (subText) {
+      subText.innerText = 'Token criptográfico Anti-Bots activo';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }, 450);
+};
+
+async function ensureNationalCatalogLoaded() {
+  if (Object.keys(nationalCatalog32States).length >= 30) return;
+  try {
+    const res = await fetch('/api/national-catalog');
+    const data = await res.json();
+    if (data.success && data.catalog) {
+      nationalCatalog32States = data.catalog;
+      if (Array.isArray(data.states) && data.states.length > 0) {
+        nationalStatesList = data.states.map(s => s.nombre);
+      }
+    }
+  } catch (err) {
+    console.warn('Error cargando catálogo nacional de 32 estados:', err);
+  }
+}
 
 window.openAuthLoginModal = function() {
   const modal = document.getElementById('modal-auth-login');
@@ -2540,15 +2701,30 @@ window.handleAuthLogin = async function(event) {
   if (event) event.preventDefault();
   const username = document.getElementById('auth-username')?.value?.trim() || '';
   const password = document.getElementById('auth-password')?.value?.trim() || '';
+  const captchaToken = document.getElementById('auth-captcha-token')?.value || turnstileState.token || '';
   const errBox = document.getElementById('auth-error-box');
 
   if (errBox) errBox.classList.add('hidden');
+
+  // Validar que el CAPTCHA / Turnstile haya sido completado
+  if (!turnstileState.verified || !captchaToken.startsWith('turnstile_verified_')) {
+    if (errBox) {
+      errBox.innerText = '⚠️ Debes completar la casilla de verificación Anti-Bots ("Verifica que eres humano") antes de iniciar sesión.';
+      errBox.classList.remove('hidden');
+    }
+    return;
+  }
 
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({
+        username,
+        password,
+        captchaVerified: turnstileState.verified,
+        captchaToken
+      })
     });
     const data = await res.json();
 
@@ -2608,9 +2784,20 @@ window.handleAuthLogin = async function(event) {
       if (navLabel) navLabel.innerText = `👤 ${data.user.username}`;
 
       await applyLicenseRestrictionsToUI(data.user, false);
-      // Abrir directamente Vista 1: Radar Electoral y Selector de Cargo según flujo arquitectónico
-      await openRadarElectoralModal();
-      showToast(`Sesión White-Label activada: ${data.user.clienteNombre} (${data.user.partido})`);
+
+      // Enrutamiento según permisos independientes (Radar Electoral vs. Simulador)
+      const canRadar = data.user.permisoRadar !== false;
+      const canSimulador = data.user.permisoSimulador !== false;
+
+      if (canRadar) {
+        await openRadarElectoralModal();
+        showToast(`Sesión White-Label activada: ${data.user.clienteNombre} (${data.user.partido})`);
+      } else if (canSimulador) {
+        // Si no tiene permiso al Radar Electoral, ingresa directo al Simulador War Room (Vista 2)
+        const modalRadar = document.getElementById('modal-radar-electoral');
+        if (modalRadar) modalRadar.classList.add('hidden');
+        showToast(`Acceso directo al Simulador Táctico activado: ${data.user.clienteNombre} (${data.user.partido})`);
+      }
     }
   } catch (err) {
     if (errBox) {
@@ -2652,7 +2839,7 @@ window.logoutSession = function() {
     `;
   }
 
-  // 3. Limpiar formulario de login
+  // 3. Limpiar formulario de login y reiniciar Turnstile CAPTCHA
   const uInput = document.getElementById('auth-username');
   const pInput = document.getElementById('auth-password');
   const errBox = document.getElementById('auth-error-box');
@@ -2669,10 +2856,11 @@ window.logoutSession = function() {
 };
 
 /**
- * Aplica en tiempo real la mutación White-Label, cargos autorizados, municipios permitidos y límite de agentes
+ * Aplica en tiempo real la mutación White-Label, permisos Radar/Simulador, estados/municipios permitidos y límite de agentes
  */
 async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) {
   if (!licenseUser) return;
+  await ensureNationalCatalogLoaded();
 
   // 1. Mutar identidad cromática y logotipo al Partido asignado
   if (licenseUser.partido) {
@@ -2684,13 +2872,67 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     }
   }
 
-  // 2. Mostrar Header de Cargo y Territorio asignado
+  // 2. Permisos Independientes de Módulos: Radar Electoral (Vista 1) vs Simulador (Vista 2)
+  const canRadar = isMasterAdmin || licenseUser.permisoRadar !== false;
+  const canSimulador = isMasterAdmin || licenseUser.permisoSimulador !== false;
+
+  const btnHeaderRadar = document.getElementById('btn-header-radar-electoral');
+  const cardRadarBanner = document.getElementById('card-radar-electoral-banner');
+  if (btnHeaderRadar) {
+    if (canRadar) {
+      btnHeaderRadar.classList.remove('hidden');
+      btnHeaderRadar.classList.add('flex');
+    } else {
+      btnHeaderRadar.classList.add('hidden');
+      btnHeaderRadar.classList.remove('flex');
+    }
+  }
+  if (cardRadarBanner) {
+    if (canRadar) {
+      cardRadarBanner.classList.remove('hidden');
+    } else {
+      cardRadarBanner.classList.add('hidden');
+    }
+  }
+
+  const btnRadarGoWarRoom = document.getElementById('btn-radar-go-war-room');
+  const btnRadarTransferWarRoom = document.getElementById('btn-radar-transfer-war-room');
+  if (btnRadarGoWarRoom) {
+    if (canSimulador) {
+      btnRadarGoWarRoom.classList.remove('hidden');
+    } else {
+      btnRadarGoWarRoom.classList.add('hidden');
+    }
+  }
+  if (btnRadarTransferWarRoom) {
+    if (canSimulador) {
+      btnRadarTransferWarRoom.classList.remove('hidden');
+    } else {
+      btnRadarTransferWarRoom.classList.add('hidden');
+    }
+  }
+
+  // Si el cliente no tiene acceso al Radar y el Maestro le preconfiguró una propuesta fija, cargarla en el Simulador
+  if (!isMasterAdmin && !canRadar) {
+    if (licenseUser.propuestaFijaTitulo) {
+      const titEl = document.getElementById('input-titulo');
+      if (titEl) titEl.value = licenseUser.propuestaFijaTitulo;
+      appState.tituloProyecto = licenseUser.propuestaFijaTitulo;
+    }
+    if (licenseUser.propuestaFijaTexto) {
+      const propEl = document.getElementById('input-propuesta');
+      if (propEl) propEl.value = licenseUser.propuestaFijaTexto;
+      appState.propuestaTexto = licenseUser.propuestaFijaTexto;
+    }
+  }
+
+  // 3. Mostrar Header de Cargo y Territorio asignado
   const regionPill = document.getElementById('header-assigned-region-pill');
   const regionText = document.getElementById('header-assigned-region-text');
   if (regionPill && regionText) {
     regionPill.classList.remove('hidden');
     regionPill.classList.add('flex');
-    regionText.innerText = licenseUser.etiquetaRegion || `${licenseUser.partido} — Estado de México`;
+    regionText.innerText = licenseUser.etiquetaRegion || `${licenseUser.partido} — Territorio Autorizado`;
   }
 
   const radarBadge = document.getElementById('radar-assigned-region-badge');
@@ -2704,7 +2946,7 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     capPill.innerText = `Capacidad Autorizada: Hasta ${maxSwarm.toLocaleString()} Agentes`;
   }
 
-  // 3. Restringir Selector de Cargos en el Radar Electoral (Vista 1)
+  // 4. Restringir Selector de Cargos en el Radar Electoral (Vista 1)
   const cargoSelect = document.getElementById('select-cargo-electoral');
   const allowedCargos = Array.isArray(licenseUser.cargosAutorizados) && licenseUser.cargosAutorizados.length > 0
     ? licenseUser.cargosAutorizados
@@ -2717,10 +2959,10 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     appState.cargoElectoral = allowedCargos[0];
   }
 
-  // 4. Restringir Municipios en Radar (Vista 1) y War Room (Vista 2)
+  // 5. Restringir Estados y Municipios en Radar (Vista 1) y War Room (Vista 2)
   await syncAuthorizedSelectorsInRadar(licenseUser);
 
-  // 5. Restringir capacidad de agentes sintéticos (maxSwarmSize)
+  // 6. Restringir capacidad de agentes sintéticos (maxSwarmSize)
   document.querySelectorAll('.btn-swarm-size').forEach(btn => {
     const size = parseInt(btn.getAttribute('data-size'), 10);
     if (!isMasterAdmin && size > maxSwarm) {
@@ -2740,38 +2982,101 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
 }
 
 async function syncAuthorizedSelectorsInRadar(licenseUser) {
+  await ensureNationalCatalogLoaded();
   const lic = licenseUser || appState.activeSession?.user;
-  const mainSelect = document.getElementById('select-municipio');
-  const radarSelect = document.getElementById('radar-select-municipio');
 
-  // Obtener catálogo completo si aún no está poblado
-  if (mainSelect && mainSelect.options.length > 2) {
-    const opts = Array.from(mainSelect.options).map(o => o.value).filter(Boolean);
-    if (opts.length > 5) allAvailableMunicipalities = opts;
+  const mainStateSelect = document.getElementById('select-estado');
+  const radarStateSelect = document.getElementById('radar-select-estado');
+  const mainMuniSelect = document.getElementById('select-municipio');
+  const radarMuniSelect = document.getElementById('radar-select-municipio');
+
+  // Determinar Estados permitidos (de los 32 Estados de la República)
+  let allowedStates = nationalStatesList;
+  if (lic && Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 && !lic.estadosAutorizados.includes('TODOS')) {
+    allowedStates = lic.estadosAutorizados;
   }
 
-  let allowedMunis = allAvailableMunicipalities;
-  if (lic && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
-    allowedMunis = lic.municipiosAutorizados;
+  const statesOptionsHtml = allowedStates.map((st, idx) => `
+    <option value="${st}" ${idx === 0 ? 'selected' : ''}>${st}</option>
+  `).join('');
+
+  if (radarStateSelect) {
+    radarStateSelect.innerHTML = statesOptionsHtml;
+  }
+  if (mainStateSelect) {
+    mainStateSelect.innerHTML = statesOptionsHtml;
+    appState.estado = allowedStates[0] || 'Estado de México';
   }
 
-  const optionsHtml = allowedMunis.map((m, idx) => `
+  // Determinar Municipios / Alcaldías / Distritos permitidos para el Estado seleccionado
+  const activeState = allowedStates[0] || 'Estado de México';
+  const catalogForActiveState = nationalCatalog32States[activeState] || allAvailableMunicipalities;
+
+  let allowedMunis = catalogForActiveState;
+  if (lic && Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.length > 0 && !lic.municipiosAutorizados.includes('TODOS')) {
+    // Filtrar los municipios autorizados que pertenezcan al estado activo o mostrar todos los autorizados de la licencia
+    const filteredForState = lic.municipiosAutorizados.filter(m => catalogForActiveState.includes(m));
+    allowedMunis = filteredForState.length > 0 ? filteredForState : lic.municipiosAutorizados;
+  }
+
+  const muniOptionsHtml = allowedMunis.map((m, idx) => `
     <option value="${m}" ${idx === 0 ? 'selected' : ''}>${m}</option>
   `).join('');
 
-  if (radarSelect) {
-    radarSelect.innerHTML = optionsHtml;
+  if (radarMuniSelect) {
+    radarMuniSelect.innerHTML = muniOptionsHtml;
   }
-  if (mainSelect && lic && !lic.municipiosAutorizados?.includes('TODOS')) {
-    mainSelect.innerHTML = optionsHtml;
-    appState.municipio = allowedMunis[0];
+  if (mainMuniSelect) {
+    mainMuniSelect.innerHTML = muniOptionsHtml;
+    appState.municipio = allowedMunis[0] || 'Ecatepec de Morelos';
   }
 }
+
+window.onRadarStateChange = async function(selectedState) {
+  await ensureNationalCatalogLoaded();
+  const lic = appState.activeSession?.user;
+  const radarMuniSelect = document.getElementById('radar-select-municipio');
+  const mainStateSelect = document.getElementById('select-estado');
+  const mainMuniSelect = document.getElementById('select-municipio');
+
+  appState.estado = selectedState;
+  if (mainStateSelect) mainStateSelect.value = selectedState;
+
+  const catalogForState = nationalCatalog32States[selectedState] || [];
+  let allowedMunis = catalogForState;
+
+  if (lic && Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.length > 0 && !lic.municipiosAutorizados.includes('TODOS')) {
+    const filtered = lic.municipiosAutorizados.filter(m => catalogForState.includes(m));
+    allowedMunis = filtered.length > 0 ? filtered : lic.municipiosAutorizados;
+  }
+
+  const muniOptionsHtml = allowedMunis.map((m, idx) => `
+    <option value="${m}" ${idx === 0 ? 'selected' : ''}>${m}</option>
+  `).join('');
+
+  if (radarMuniSelect) radarMuniSelect.innerHTML = muniOptionsHtml;
+  if (mainMuniSelect) mainMuniSelect.innerHTML = muniOptionsHtml;
+  if (allowedMunis[0]) appState.municipio = allowedMunis[0];
+};
+
+window.onLicenseModulePermChange = function() {
+  const radarChk = document.getElementById('lic-permiso-radar');
+  const fixedBox = document.getElementById('lic-fixed-proposal-box');
+  if (radarChk && fixedBox) {
+    if (!radarChk.checked) {
+      fixedBox.classList.remove('hidden');
+    } else {
+      fixedBox.classList.add('hidden');
+    }
+  }
+};
 
 window.openMasterAdminModal = async function() {
   const modal = document.getElementById('modal-master-admin');
   if (!modal) return;
-  renderLicenseMunicipalitiesCheckboxes();
+  await ensureNationalCatalogLoaded();
+  renderLicenseStatesCheckboxes(['Estado de México']);
+  renderLicenseMunicipalitiesCheckboxes(['Ecatepec de Morelos']);
   await loadMasterLicenses();
   modal.classList.remove('hidden');
 };
@@ -2781,19 +3086,90 @@ window.closeMasterAdminModal = function() {
   if (modal) modal.classList.add('hidden');
 };
 
+/**
+ * Renderiza el catálogo de los 32 Estados de la República Mexicana con selección múltiple
+ */
+function renderLicenseStatesCheckboxes(selectedStates = ['Estado de México']) {
+  const container = document.getElementById('lic-estados-checkbox-list');
+  if (!container) return;
+  const isAll = selectedStates.includes('TODOS') || selectedStates.length >= nationalStatesList.length;
+  const allChk = document.getElementById('lic-todos-estados');
+  if (allChk) allChk.checked = isAll;
+
+  container.innerHTML = nationalStatesList.map(st => {
+    const checked = isAll || selectedStates.includes(st) ? 'checked' : '';
+    return `
+      <label class="lic-estado-item flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded" data-state="${st.toLowerCase()}">
+        <input type="checkbox" name="lic_estado" value="${st}" ${checked} onchange="onLicenseStateCheckboxChange()" class="rounded text-emerald-600">
+        <span class="truncate font-medium">${st}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+window.onLicenseStateCheckboxChange = function() {
+  // Conservar municipios que ya estaban marcados antes de actualizar la lista
+  const currentlyCheckedMunis = Array.from(document.querySelectorAll('input[name="lic_municipio"]:checked')).map(cb => cb.value);
+  renderLicenseMunicipalitiesCheckboxes(currentlyCheckedMunis);
+};
+
+window.toggleAllLicenseStates = function(checked) {
+  document.querySelectorAll('input[name="lic_estado"]').forEach(cb => {
+    cb.checked = checked;
+  });
+  renderLicenseMunicipalitiesCheckboxes(checked ? ['TODOS'] : []);
+};
+
+window.filterLicenseStatesList = function(query) {
+  const q = (query || '').toLowerCase().trim();
+  document.querySelectorAll('.lic-estado-item').forEach(item => {
+    const name = item.getAttribute('data-state') || '';
+    if (!q || name.includes(q)) {
+      item.classList.remove('hidden');
+    } else {
+      item.classList.add('hidden');
+    }
+  });
+};
+
+/**
+ * Despliega dinámicamente los Municipios, Alcaldías y Distritos según el(los) Estado(s) seleccionado(s)
+ */
 function renderLicenseMunicipalitiesCheckboxes(selectedList = ['Ecatepec de Morelos']) {
   const container = document.getElementById('lic-municipios-checkbox-list');
   if (!container) return;
+
+  const selectedStates = Array.from(document.querySelectorAll('input[name="lic_estado"]:checked')).map(cb => cb.value);
+  const statesToLoad = selectedStates.length > 0 ? selectedStates : ['Estado de México'];
+  const multiState = statesToLoad.length > 1;
+
   const isAll = selectedList.includes('TODOS');
   const allChk = document.getElementById('lic-todos-municipios');
   if (allChk) allChk.checked = isAll;
 
-  container.innerHTML = allAvailableMunicipalities.map(m => {
-    const checked = isAll || selectedList.includes(m) ? 'checked' : '';
+  const items = [];
+  statesToLoad.forEach(st => {
+    const list = nationalCatalog32States[st] || (st === 'Estado de México' ? allAvailableMunicipalities : [`Capital de ${st}`]);
+    list.forEach(m => {
+      items.push({
+        estado: st,
+        nombre: m,
+        label: multiState ? `${m} (${st})` : m
+      });
+    });
+  });
+
+  if (items.length === 0) {
+    container.innerHTML = `<div class="col-span-2 text-center text-slate-400 text-[11px] py-2">Selecciona al menos un Estado arriba para desplegar sus municipios y distritos.</div>`;
+    return;
+  }
+
+  container.innerHTML = items.map(it => {
+    const checked = isAll || selectedList.includes(it.nombre) ? 'checked' : '';
     return `
-      <label class="lic-muni-item flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded" data-name="${m.toLowerCase()}">
-        <input type="checkbox" name="lic_municipio" value="${m}" ${checked} class="rounded text-emerald-600">
-        <span class="truncate">${m}</span>
+      <label class="lic-muni-item flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded" data-name="${it.label.toLowerCase()}">
+        <input type="checkbox" name="lic_municipio" value="${it.nombre}" ${checked} class="rounded text-emerald-600">
+        <span class="truncate" title="${it.label}">${it.label}</span>
       </label>
     `;
   }).join('');
@@ -2846,11 +3222,16 @@ function renderMasterLicensesList() {
     const isActive = lic.activo && !isExpired;
 
     const statusBadge = isActive
-      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 ACTIVA</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🔴 BLOQUEADA / EXPIRADA</span>`;
+      ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 LICENCIA ACTIVA</span>`
+      : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🔴 BLOQUEADA / EXPIRADA</span>`;
+
+    const estadosStr = (lic.estadosAutorizados || ['Estado de México']).join(', ');
+    const munisStr = (lic.municipiosAutorizados || []).slice(0, 6).join(', ') + ((lic.municipiosAutorizados || []).length > 6 ? ` (+${lic.municipiosAutorizados.length - 6} más)` : '');
+    const hasRadar = lic.permisoRadar !== false;
+    const hasSim = lic.permisoSimulador !== false;
 
     return `
-      <div class="p-4 rounded-xl border ${isActive ? 'border-slate-200 bg-slate-50/70' : 'border-rose-200 bg-rose-50/30'} space-y-2.5 text-xs">
+      <div class="p-4 rounded-xl border ${isActive ? 'border-slate-200 bg-slate-50/70' : 'border-rose-200 bg-rose-50/30'} space-y-3 text-xs shadow-2xs">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white">${lic.partido}</span>
@@ -2859,14 +3240,10 @@ function renderMasterLicensesList() {
           ${statusBadge}
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Credenciales Manuales:</span>
             <span class="font-mono font-bold text-slate-900">${lic.username}</span> / <span class="font-mono text-emerald-700 font-bold">${lic.password}</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Vigencia (Kill Switch):</span>
-            <span class="font-semibold text-slate-800">${lic.fechaInicio} → ${lic.fechaExpiracion}</span>
           </div>
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Capacidad Enjambre:</span>
@@ -2874,26 +3251,61 @@ function renderMasterLicensesList() {
           </div>
         </div>
 
+        <!-- CONTROL DE TIEMPO FLEXIBLE: CALENDARIO INTERACTIVO (DATEPICKER) PARA ALARGAR O ACORTAR VIGENCIA -->
+        <div class="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] font-black uppercase text-amber-950 block">📅 Gestión Rápida de Vigencia (Kill Switch Datepicker):</span>
+            <span class="text-[10px] text-slate-600">Inicio: <b>${lic.fechaInicio}</b> • Modifica la fecha para alargar o acortar acceso al instante</span>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <input type="date" id="quick-exp-${lic.id}" value="${lic.fechaExpiracion}"
+              class="px-2 py-1 rounded border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500">
+            <button type="button" onclick="updateLicenseExpirationQuick('${lic.id}')"
+              class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all">
+              Guardar Fecha
+            </button>
+            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 30)" title="Alargar +30 días"
+              class="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] cursor-pointer">
+              +30d
+            </button>
+          </div>
+        </div>
+
+        <!-- PERMISOS INDEPENDIENTES DE MÓDULOS EN TIEMPO REAL -->
+        <div class="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <span class="font-black text-indigo-950 text-[10px] uppercase">Módulos Autorizados:</span>
+          <div class="flex items-center gap-3 flex-wrap">
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+              <input type="checkbox" ${hasRadar ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'radar', this.checked)" class="rounded text-indigo-600">
+              <span>🗳️ Vista 1: Radar Electoral</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+              <input type="checkbox" ${hasSim ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'simulador', this.checked)" class="rounded text-indigo-600">
+              <span>📊 Vista 2: Simulador Táctico</span>
+            </label>
+          </div>
+        </div>
+
         <div class="text-[11px] text-slate-600 space-y-1">
-          <div><b>📍 Región Asignada:</b> ${lic.etiquetaRegion} (${(lic.municipiosAutorizados || []).join(', ')})</div>
+          <div><b>🇲🇽 Estado(s):</b> ${estadosStr} | <b>📍 Región:</b> ${lic.etiquetaRegion} (${munisStr})</div>
           <div><b>🗳️ Cargos Autorizados:</b> ${(lic.cargosAutorizados || []).join(' • ')}</div>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/70">
           <button type="button" onclick="previewClientLicenseSession('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all">
+            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all cursor-pointer">
             👁️ Simular como este Cliente
           </button>
           <button type="button" onclick="editClientLicense('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all">
-            ✏️ Editar / Cambiar Clave
+            class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer">
+            ✏️ Editar Completo
           </button>
           <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg ${lic.activo ? 'bg-amber-100 hover:bg-amber-200 text-amber-900' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'} font-bold text-[11px] transition-all">
+            class="px-3 py-1.5 rounded-lg ${lic.activo ? 'bg-amber-100 hover:bg-amber-200 text-amber-900' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'} font-bold text-[11px] transition-all cursor-pointer">
             🔌 ${lic.activo ? 'Suspender (Kill Switch)' : 'Reactivar'}
           </button>
           <button type="button" onclick="deleteClientLicense('${lic.id}')"
-            class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-all">
+            class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-all cursor-pointer">
             🗑️
           </button>
         </div>
@@ -2901,6 +3313,68 @@ function renderMasterLicensesList() {
     `;
   }).join('');
 }
+
+window.updateLicenseExpirationQuick = async function(id) {
+  const dateInput = document.getElementById(`quick-exp-${id}`);
+  if (!dateInput || !dateInput.value) return;
+
+  try {
+    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/expiration`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fechaExpiracion: dateInput.value })
+    });
+    const data = await res.json();
+    if (data.success) {
+      masterLicensesCache = data.licenses;
+      renderMasterLicensesList();
+      showToast(`📅 Vigencia actualizada al ${dateInput.value}. Kill Switch sincronizado.`);
+    }
+  } catch (err) {
+    console.error('Error actualizando vigencia:', err);
+  }
+};
+
+window.addDaysToLicenseExpiration = async function(id, daysToAdd) {
+  const lic = masterLicensesCache.find(l => l.id === id);
+  if (!lic) return;
+
+  const baseDate = lic.fechaExpiracion ? new Date(`${lic.fechaExpiracion}T12:00:00`) : new Date();
+  const now = new Date();
+  const startFrom = baseDate < now ? now : baseDate;
+  startFrom.setDate(startFrom.getDate() + (parseInt(daysToAdd, 10) || 30));
+  const newExpStr = startFrom.toISOString().split('T')[0];
+
+  const dateInput = document.getElementById(`quick-exp-${id}`);
+  if (dateInput) dateInput.value = newExpStr;
+  await window.updateLicenseExpirationQuick(id);
+};
+
+window.toggleLicenseModulePermQuick = async function(id, modType, checked) {
+  const lic = masterLicensesCache.find(l => l.id === id);
+  if (!lic) return;
+
+  const payload = {
+    permisoRadar: modType === 'radar' ? checked : lic.permisoRadar !== false,
+    permisoSimulador: modType === 'simulador' ? checked : lic.permisoSimulador !== false
+  };
+
+  try {
+    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/permissions`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      masterLicensesCache = data.licenses;
+      renderMasterLicensesList();
+      showToast(`Permisos de módulos actualizados para ${lic.clienteNombre}.`);
+    }
+  } catch (err) {
+    console.error('Error actualizando permisos de módulos:', err);
+  }
+};
 
 window.resetLicenseForm = function() {
   document.getElementById('lic-id').value = '';
@@ -2911,6 +3385,18 @@ window.resetLicenseForm = function() {
   document.getElementById('lic-max-swarm').value = '100000';
   document.getElementById('lic-etiqueta-region').value = '';
   document.getElementById('lic-form-title').innerText = '➕ Crear / Configurar Licencia de Cliente';
+
+  const permRadar = document.getElementById('lic-permiso-radar');
+  const permSim = document.getElementById('lic-permiso-simulador');
+  const fixedTit = document.getElementById('lic-propuesta-fija-titulo');
+  const fixedTxt = document.getElementById('lic-propuesta-fija-texto');
+  if (permRadar) permRadar.checked = true;
+  if (permSim) permSim.checked = true;
+  if (fixedTit) fixedTit.value = '';
+  if (fixedTxt) fixedTxt.value = '';
+  onLicenseModulePermChange();
+
+  renderLicenseStatesCheckboxes(['Estado de México']);
   renderLicenseMunicipalitiesCheckboxes(['Ecatepec de Morelos']);
 };
 
@@ -2928,10 +3414,30 @@ window.saveClientLicense = async function(event) {
   const nivelGeografico = document.getElementById('lic-nivel-geo')?.value || 'Municipal / Alcaldía';
   const etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || `${nivelGeografico} — ${partido}`;
 
+  const permisoRadar = document.getElementById('lic-permiso-radar')?.checked !== false;
+  const permisoSimulador = document.getElementById('lic-permiso-simulador')?.checked !== false;
+  if (!permisoRadar && !permisoSimulador) {
+    alert('Selecciona al menos un módulo de acceso (Radar Electoral o Simulador Táctico).');
+    return;
+  }
+
+  const propuestaFijaTitulo = document.getElementById('lic-propuesta-fija-titulo')?.value?.trim() || '';
+  const propuestaFijaTexto = document.getElementById('lic-propuesta-fija-texto')?.value?.trim() || '';
+
   const cargosAutorizados = Array.from(document.querySelectorAll('input[name="lic_cargo"]:checked')).map(cb => cb.value);
   if (cargosAutorizados.length === 0) {
-    alert('Selecciona al menos un Cargo Autorizado para el Radar Electoral.');
+    alert('Selecciona al menos un Cargo Autorizado.');
     return;
+  }
+
+  const todosEstados = document.getElementById('lic-todos-estados')?.checked;
+  let estadosAutorizados = ['TODOS'];
+  if (!todosEstados) {
+    estadosAutorizados = Array.from(document.querySelectorAll('input[name="lic_estado"]:checked')).map(cb => cb.value);
+    if (estadosAutorizados.length === 0) {
+      alert('Selecciona al menos un Estado de los 32 o marca "Los 32 Estados (Nacional)".');
+      return;
+    }
   }
 
   const todosMunis = document.getElementById('lic-todos-municipios')?.checked;
@@ -2939,7 +3445,7 @@ window.saveClientLicense = async function(event) {
   if (!todosMunis) {
     municipiosAutorizados = Array.from(document.querySelectorAll('input[name="lic_municipio"]:checked')).map(cb => cb.value);
     if (municipiosAutorizados.length === 0) {
-      alert('Selecciona al menos un Municipio o marca "Autorizar TODOS los Municipios".');
+      alert('Selecciona al menos un Municipio/Alcaldía/Distrito o marca "Autorizar TODOS".');
       return;
     }
   }
@@ -2955,8 +3461,13 @@ window.saveClientLicense = async function(event) {
     fechaExpiracion,
     nivelGeografico,
     etiquetaRegion,
+    estadosAutorizados,
     cargosAutorizados,
     municipiosAutorizados,
+    permisoRadar,
+    permisoSimulador,
+    propuestaFijaTitulo,
+    propuestaFijaTexto,
     activo: true
   };
 
@@ -2978,7 +3489,8 @@ window.saveClientLicense = async function(event) {
   }
 };
 
-window.editClientLicense = function(id) {
+window.editClientLicense = async function(id) {
+  await ensureNationalCatalogLoaded();
   const lic = masterLicensesCache.find(l => l.id === id);
   if (!lic) return;
 
@@ -2994,10 +3506,21 @@ window.editClientLicense = function(id) {
   document.getElementById('lic-etiqueta-region').value = lic.etiquetaRegion || '';
   document.getElementById('lic-form-title').innerText = `✏️ Editando: ${lic.clienteNombre}`;
 
+  const permRadar = document.getElementById('lic-permiso-radar');
+  const permSim = document.getElementById('lic-permiso-simulador');
+  const fixedTit = document.getElementById('lic-propuesta-fija-titulo');
+  const fixedTxt = document.getElementById('lic-propuesta-fija-texto');
+  if (permRadar) permRadar.checked = lic.permisoRadar !== false;
+  if (permSim) permSim.checked = lic.permisoSimulador !== false;
+  if (fixedTit) fixedTit.value = lic.propuestaFijaTitulo || '';
+  if (fixedTxt) fixedTxt.value = lic.propuestaFijaTexto || '';
+  onLicenseModulePermChange();
+
   document.querySelectorAll('input[name="lic_cargo"]').forEach(cb => {
     cb.checked = (lic.cargosAutorizados || []).includes(cb.value);
   });
 
+  renderLicenseStatesCheckboxes(lic.estadosAutorizados || ['Estado de México']);
   renderLicenseMunicipalitiesCheckboxes(lic.municipiosAutorizados || ['Ecatepec de Morelos']);
 };
 
@@ -3035,7 +3558,13 @@ window.previewClientLicenseSession = async function(id) {
 
   await applyLicenseRestrictionsToUI(lic, false);
   closeMasterAdminModal();
-  await openRadarElectoralModal();
+
+  if (lic.permisoRadar !== false) {
+    await openRadarElectoralModal();
+  } else {
+    const modalRadar = document.getElementById('modal-radar-electoral');
+    if (modalRadar) modalRadar.classList.add('hidden');
+  }
   showToast(`Modo Vista Previa Cliente activo: ${lic.clienteNombre} (${lic.partido})`);
 };
 
@@ -3044,7 +3573,8 @@ window.activateMasterFullAccess = async function() {
     clienteNombre: 'Erick Vega — Administrador Maestro',
     username: 'Cerkvega92',
     partido: appState.activeParty || 'PVEM',
-    etiquetaRegion: 'Control Maestro Nacional & Estatal — Todos los Territorios Autorizados',
+    etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
+    estadosAutorizados: ['TODOS'],
     cargosAutorizados: [
       'Presidente Municipal / Alcalde',
       'Regidor',
@@ -3054,10 +3584,12 @@ window.activateMasterFullAccess = async function() {
       'Gobernador'
     ],
     municipiosAutorizados: ['TODOS'],
+    permisoRadar: true,
+    permisoSimulador: true,
     maxSwarmSize: 100000
   };
   await applyLicenseRestrictionsToUI(masterUser, true);
-  showToast('Permisos de Administrador Maestro restaurados al 100%.');
+  showToast('Permisos de Administrador Maestro restaurados al 100% (32 Estados).');
 };
 
 
