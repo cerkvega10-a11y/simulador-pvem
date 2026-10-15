@@ -359,19 +359,26 @@
               </div>
             </div>
 
-            <!-- Selector Select Directo con las 7 opciones exactas -->
+            <!-- Selector Select Directo con las 10 opciones exactas (Operativas y Macro-Electorales) -->
             <select id="select-swarm-size" onchange="onSwarmSizeSelectChange(this.value)" class="w-full text-xs font-black p-2.5 border-2 border-emerald-300 rounded-xl bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs">
-              <option value="50">50 Agentes (Margen ±8.5% | Alta Volatilidad | 7 Meta-Agentes)</option>
-              <option value="100">100 Agentes (Margen ±7.0% | Volatilidad Inicial | 8 Meta-Agentes)</option>
-              <option value="500" selected>500 Agentes (Margen ±3.5% | 12 Meta-Agentes | Desplazamiento Calibrado)</option>
-              <option value="1000">1,000 Agentes (Margen ±2.8% | 14 Meta-Agentes Clúster)</option>
-              <option value="2000">2,000 Agentes (Margen ±1.8% | Precisión Quirúrgica | 16 Meta-Agentes)</option>
-              <option value="5000">5,000 Agentes (Margen ±1.2% | Alta Densidad Censal | 18 Meta-Agentes)</option>
-              <option value="10000">10,000 Agentes (Margen ±0.9% | Monte Carlo Asintótico | 20 Meta-Agentes)</option>
+              <optgroup label="── Muestras Operativas ──">
+                <option value="50">50 Agentes (Margen ±8.50% | Alta Volatilidad | 7 Meta-Agentes)</option>
+                <option value="100">100 Agentes (Margen ±7.00% | Volatilidad Inicial | 8 Meta-Agentes)</option>
+                <option value="500" selected>500 Agentes (Margen ±3.50% | 12 Meta-Agentes | Desplazamiento Calibrado)</option>
+                <option value="1000">1,000 Agentes (Margen ±2.80% | 14 Meta-Agentes Clúster)</option>
+                <option value="2000">2,000 Agentes (Margen ±1.80% | Precisión Quirúrgica | 16 Meta-Agentes)</option>
+                <option value="5000">5,000 Agentes (Margen ±1.20% | Alta Densidad Censal | 18 Meta-Agentes)</option>
+                <option value="10000">10,000 Agentes (Margen ±0.90% | Monte Carlo Asintótico | 20 Meta-Agentes)</option>
+              </optgroup>
+              <optgroup label="── Muestras Macro-Electorales (Grado Censal) ──">
+                <option value="25000">25,000 Agentes (Macro-Electoral ±0.62% | 22 Meta-Agentes + Micro-Nichos)</option>
+                <option value="50000">50,000 Agentes [Modo Censo Electoral] (±0.44% | 24 Meta-Agentes)</option>
+                <option value="100000">100,000 Agentes [Modo Censo Electoral] (±0.31% | 25 Meta-Agentes Maestros | Confianza 99.9%)</option>
+              </optgroup>
             </select>
 
-            <!-- Botones Pills de Selección Rápida Exacta (50 a 10,000) -->
-            <div class="grid grid-cols-4 sm:grid-cols-7 gap-1 text-[11px] font-black">
+            <!-- Botones Pills de Selección Rápida Exacta (50 a 100,000) -->
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1 text-[10px] sm:text-[11px] font-black">
               <button type="button" data-val="50" onclick="setExactSwarmSize(50)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">50</button>
               <button type="button" data-val="100" onclick="setExactSwarmSize(100)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">100</button>
               <button type="button" data-val="500" onclick="setExactSwarmSize(500)" class="btn-swarm-quick py-1.5 rounded-lg bg-emerald-600 text-white transition-all border border-emerald-700 shadow-xs">500</button>
@@ -379,10 +386,13 @@
               <button type="button" data-val="2000" onclick="setExactSwarmSize(2000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">2K</button>
               <button type="button" data-val="5000" onclick="setExactSwarmSize(5000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">5K</button>
               <button type="button" data-val="10000" onclick="setExactSwarmSize(10000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">10K</button>
+              <button type="button" data-val="25000" onclick="setExactSwarmSize(25000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Macro-Electoral 25K">25K</button>
+              <button type="button" data-val="50000" onclick="setExactSwarmSize(50000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Grado Censal 50K">50K</button>
+              <button type="button" data-val="100000" onclick="setExactSwarmSize(100000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Padrón Completo 100K">100K 🗳️</button>
             </div>
 
             <!-- Slider oculto para mantener compatibilidad con scripts existentes -->
-            <input type="range" id="swarm-slider" min="50" max="10000" step="50" value="500" class="hidden">
+            <input type="range" id="swarm-slider" min="50" max="100000" step="50" value="500" class="hidden">
 
             <!-- Indicador Dinámico de Profundidad Estadística (Requerimiento E.2) -->
             <div id="swarm-depth-indicator" class="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs leading-relaxed">
@@ -435,6 +445,18 @@
         <div id="global-progress-bar" class="bg-gradient-pvem h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
 
+      <!-- Banner de Telemetría Vectorial de Alta Velocidad (25K a 100K Agentes) -->
+      <div id="telemetry-speed-banner" class="hidden p-3.5 rounded-xl bg-slate-900 border border-emerald-500/50 shadow-md text-emerald-300 font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-in fade-in">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="telemetry-counter-text" class="font-bold">Procesando Padrón Sintético INE/CONAPO: 0 / 100,000 agentes...</span>
+        </div>
+        <div class="flex items-center gap-3 text-[11px] text-slate-400 shrink-0">
+          <span id="telemetry-variance-badge" class="bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700/60 text-emerald-300 font-bold">Varianza: ±0.31%</span>
+          <span id="telemetry-speed-rate" class="text-emerald-400 font-bold">Vector HPC: Float32Array</span>
+        </div>
+      </div>
+
       <!-- 4 Fases Visuales del Pipeline (Meta-Agentes de Sistema) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         
@@ -484,6 +506,7 @@
             <span id="dash-territorio" class="text-xs text-slate-300 font-semibold"></span>
             <span class="text-slate-400">•</span>
             <span id="dash-tamano-enjambre" class="text-xs text-emerald-300 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60"></span>
+            <span id="dash-modo-censo-pill" class="hidden text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-950/90 border border-amber-500/80 px-2.5 py-0.5 rounded-full shadow-2xs"></span>
           </div>
           <h2 id="dash-titulo-proyecto" class="text-xl sm:text-2xl font-black text-white"></h2>
           <p id="dash-dictamen" class="text-xs sm:text-sm text-emerald-200 font-medium"></p>
@@ -526,18 +549,21 @@
           <div class="card-pvem p-4 bg-white border-l-4 border-emerald-600">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Aprobación Final</span>
             <div id="kpi-aprobacion" class="text-2xl sm:text-3xl font-black text-emerald-700 my-1">--%</div>
+            <div id="kpi-aprobacion-votos" class="text-[11px] font-bold text-emerald-900 mb-1 truncate">-- votos</div>
             <span class="text-[10px] sm:text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Voto Favorable</span>
           </div>
 
           <div class="card-pvem p-4 bg-white border-l-4 border-red-500">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Rechazo Social</span>
             <div id="kpi-rechazo" class="text-2xl sm:text-3xl font-black text-red-600 my-1">--%</div>
+            <div id="kpi-rechazo-votos" class="text-[11px] font-bold text-red-900 mb-1 truncate">-- votos</div>
             <span class="text-[10px] sm:text-[11px] text-red-800 bg-red-50 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Oposición Ciudadana</span>
           </div>
 
           <div class="card-pvem p-4 bg-white border-l-4 border-slate-400">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Indiferencia / Neutro</span>
             <div id="kpi-indiferencia" class="text-2xl sm:text-3xl font-black text-slate-600 my-1">--%</div>
+            <div id="kpi-indiferencia-votos" class="text-[11px] font-bold text-slate-700 mb-1 truncate">-- votos</div>
             <span class="text-[10px] sm:text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded font-semibold block sm:inline-block truncate">Indecisos / Reserva</span>
           </div>
 

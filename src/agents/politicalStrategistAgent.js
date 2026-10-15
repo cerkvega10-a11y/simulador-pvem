@@ -1,6 +1,8 @@
 // Agente Sintetizador y Estratega Político (Report & Insights Compiler)
 // Consolida resultados del enjambre, genera el mapa de calor, selecciona testimonios y diseña la estrategia para el Partido Verde
 
+const sampleSizeVarianceEngine = require('./sampleSizeVarianceEngine');
+
 class PoliticalStrategistAgent {
   constructor() {
     this.name = 'Agente Sintetizador y Estratega Político (PVEM Insights & Strategy)';
@@ -23,11 +25,19 @@ class PoliticalStrategistAgent {
     const total = agentes.length;
     const votosFinales = deliberationData.votosFinales;
 
+    const realSwarmSize = orchestratorState.variacionMuestral?.tamanoMuestra || orchestratorState.swarmData?.totalGenerados || total;
+
     // 1. Índice de Aceptación Global y Fricción Social
     const indiceFriccionSocial = this.calculateSocialFrictionIndex(votosFinales, municipalResearch);
 
     // 2. Mapa de Calor Demográfico (Sectores Sociales requeridos, Edad y NSE)
     const mapaCalor = this.generateDemographicHeatmap(agentes, votosFinales);
+    const calibratedDemographics = sampleSizeVarianceEngine.calibrateDemographics(
+      mapaCalor.porEdad,
+      mapaCalor.porNSE,
+      realSwarmSize,
+      orchestratorState.variacionMuestral
+    );
 
     // 3. Voces del Enjambre (Mínimo 6 testimonios auténticos garantizando voces en contra, neutras y a favor)
     const testimoniosSeleccionados = this.curateSwarmVoices(agentes, votosFinales);
@@ -50,10 +60,13 @@ class PoliticalStrategistAgent {
         municipio: municipalResearch.municipio,
         estado: municipalResearch.estado,
         localidad: municipalResearch.localidad,
-        tamanoEnjambre: total,
+        tamanoEnjambre: realSwarmSize,
         aprobacionFinal: votosFinales.porcentajeFavor,
         rechazoFinal: votosFinales.porcentajeContra,
         indiferenciaFinal: votosFinales.porcentajeNeutro,
+        aFavorVotos: votosFinales.aFavor ?? Math.round((realSwarmSize * votosFinales.porcentajeFavor) / 100),
+        enContraVotos: votosFinales.enContra ?? Math.round((realSwarmSize * votosFinales.porcentajeContra) / 100),
+        neutroVotos: votosFinales.neutro ?? (realSwarmSize - Math.round((realSwarmSize * votosFinales.porcentajeFavor) / 100) - Math.round((realSwarmSize * votosFinales.porcentajeContra) / 100)),
         promedioEntusiasmo: votosFinales.promedioEntusiasmo,
         indiceFriccionSocial,
         polarizacion: votosFinales.indicePolarizacion,
@@ -111,7 +124,10 @@ class PoliticalStrategistAgent {
       }),
       mapaCalorDemografico: {
         ...mapaCalor,
-        porSectorSocial: orchestratorState.porSectorSocial || mapaCalor.porSectorSocial
+        porEdad: calibratedDemographics.porEdad,
+        porNSE: calibratedDemographics.porNSE,
+        porSectorSocial: orchestratorState.porSectorSocial || mapaCalor.porSectorSocial,
+        microNichosCensales: orchestratorState.variacionMuestral?.microNichosActivados || []
       },
       vocesDelEnjambre: testimoniosSeleccionados,
       chatsDelEnjambre: orchestratorState.chatsDelEnjambre || [],

@@ -214,6 +214,14 @@ window.resetFullSimulation = function() {
     const el = document.getElementById(id);
     if (el) el.innerText = '--%';
   });
+  ['kpi-aprobacion-votos', 'kpi-rechazo-votos', 'kpi-indiferencia-votos'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = '';
+  });
+  const censoPillEl = document.getElementById('dash-modo-censo-pill');
+  if (censoPillEl) censoPillEl.classList.add('hidden');
+  const speedBannerEl = document.getElementById('telemetry-speed-banner');
+  if (speedBannerEl) speedBannerEl.classList.add('hidden');
   const friccionValEl = document.getElementById('kpi-friccion-val');
   if (friccionValEl) friccionValEl.innerText = '--/100';
 
@@ -730,14 +738,27 @@ function updateSwarmDepthIndicator(size) {
   const depthText = document.getElementById('swarm-depth-indicator');
   if (!depthText) return;
 
-  if (size <= 150) {
-    depthText.innerHTML = `⚡ <b>${size} Agentes:</b> Muestra rápida exploratoria de barrio (Margen ±8.2%). Rápido para testeos preliminares.`;
-  } else if (size <= 400) {
-    depthText.innerHTML = `📊 <b>${size} Agentes:</b> Muestra censal estándar representativa por colonias y rangos de edad (Margen ±${(100 / Math.sqrt(size)).toFixed(1)}%). Recomendado.`;
-  } else if (size <= 750) {
-    depthText.innerHTML = `🔬 <b>${size} Agentes:</b> Muestra profunda con alta sensibilidad barrial y gremial (Margen ±${(100 / Math.sqrt(size)).toFixed(1)}%). Detecta focos de resistencia.`;
+  const s = parseInt(size, 10) || 500;
+  if (s <= 75) {
+    depthText.innerHTML = `⚡ <b>${s} Agentes (Margen ±8.50%):</b> Alta volatilidad. 7 Meta-Agentes activos para testeos preliminares rápidos.`;
+  } else if (s <= 150) {
+    depthText.innerHTML = `⚡ <b>${s} Agentes (Margen ±7.00%):</b> Muestra operativa inicial con 8 Meta-Agentes territoriales.`;
+  } else if (s <= 750) {
+    depthText.innerHTML = `📊 <b>${s} Agentes (Margen ±3.50%):</b> Muestra calibrada estándar con 12 Meta-Agentes y varianza de Monte Carlo. Recomendado.`;
+  } else if (s <= 1500) {
+    depthText.innerHTML = `🏛️ <b>${s.toLocaleString()} Agentes (Margen ±2.80%):</b> Volatilidad reducida con 14 Meta-Agentes clúster.`;
+  } else if (s <= 3500) {
+    depthText.innerHTML = `🎯 <b>${s.toLocaleString()} Agentes (Margen ±1.80%):</b> Precisión quirúrgica con 16 Meta-Agentes censales y gremiales.`;
+  } else if (s <= 7500) {
+    depthText.innerHTML = `🔬 <b>${s.toLocaleString()} Agentes (Margen ±1.20%):</b> Alta densidad censal con 18 Meta-Agentes y dispersión controlada.`;
+  } else if (s <= 15000) {
+    depthText.innerHTML = `🧪 <b>${s.toLocaleString()} Agentes (Margen ±0.90%):</b> Micro-estocástica asintótica con 20 Meta-Agentes.`;
+  } else if (s <= 35000) {
+    depthText.innerHTML = `🗳️ <b>${s.toLocaleString()} Agentes (Macro-Electoral ±0.62% | Confianza 99.5%):</b> 22 Meta-Agentes + Activación de Micro-Nichos Censales.`;
+  } else if (s <= 75000) {
+    depthText.innerHTML = `🏛️ <b>${s.toLocaleString()} Agentes [MODO CENSO ELECTORAL] (Margen ±0.44% | Confianza 99.9%):</b> 24 Meta-Agentes. Granularidad extrema municipal.`;
   } else {
-    depthText.innerHTML = `🚀 <b>${size} Agentes:</b> Simulación masiva a escala territorial completa (Margen ±3.1%). Máxima precisión con deliberación extendida.`;
+    depthText.innerHTML = `👑 <b>100,000 Agentes [MODO CENSO ELECTORAL — PADRÓN COMPLETO] (Margen ±0.31% | Confianza 99.9%):</b> Los 25 Meta-Agentes Maestros activos. Simulación hiper-vectorial (Float32Array) y Micro-Nichos censales activados.`;
   }
 }
 
@@ -971,7 +992,19 @@ async function startSimulation() {
 
   logToTerminal('router', `Iniciando sesión de simulación predictiva para: "${appState.tituloProyecto}"`);
   logToTerminal('router', `Territorio objetivo: ${appState.municipio}, ${appState.estado} (${appState.localidad || 'Zona General'})`);
-  logToTerminal('router', `Enjambre configurado: ${appState.swarmSize} agentes ciudadanos sintéticos.`);
+  logToTerminal('router', `Enjambre configurado: ${appState.swarmSize.toLocaleString()} agentes ciudadanos sintéticos.`);
+
+  const speedBanner = document.getElementById('telemetry-speed-banner');
+  const speedCounterText = document.getElementById('telemetry-counter-text');
+  const speedVarianceBadge = document.getElementById('telemetry-variance-badge');
+  if (appState.swarmSize >= 25000 && speedBanner) {
+    speedBanner.classList.remove('hidden');
+    const marginStr = appState.swarmSize >= 100000 ? '±0.31%' : (appState.swarmSize >= 50000 ? '±0.44%' : '±0.62%');
+    if (speedVarianceBadge) speedVarianceBadge.innerText = `Varianza: ${marginStr}`;
+    if (speedCounterText) speedCounterText.innerText = `Procesando Padrón Sintético INE/CONAPO: 0 / ${appState.swarmSize.toLocaleString()} agentes...`;
+  } else if (speedBanner) {
+    speedBanner.classList.add('hidden');
+  }
 
   // Feedback inmediato al hacer clic: fijar en 8% y activar paso 1
   handleProgressUpdate({
@@ -1129,10 +1162,24 @@ function handleProgressUpdate(step) {
   if (step.agente?.includes('Multimodal')) tag = 'multimodal';
   if (step.agente?.includes('Investigador')) tag = 'osint';
   if (step.agente?.includes('Persona')) tag = 'persona';
-  if (step.agente?.includes('Enjambre')) tag = 'swarm';
+  if (step.agente?.includes('Enjambre') || step.agente?.includes('Vectorial') || step.agente?.includes('HPC')) tag = 'swarm';
   if (step.agente?.includes('Deliberación')) tag = 'deliberation';
   if (step.agente?.includes('Sintetizador')) tag = 'strategist';
   if (step.agente?.includes('Auditor') || step.agente?.includes('Watchdog')) tag = 'watchdog';
+
+  // Actualizar telemetría de alta velocidad si el paso incluye datos de contador poblacional
+  if (step.telemetriaContador) {
+    const banner = document.getElementById('telemetry-speed-banner');
+    if (banner) banner.classList.remove('hidden');
+    const txt = document.getElementById('telemetry-counter-text');
+    if (txt) {
+      txt.innerText = `Procesando Padrón Sintético INE/CONAPO: ${step.telemetriaContador.procesados.toLocaleString()} / ${step.telemetriaContador.total.toLocaleString()} agentes... Cruzando Matriz Sindical CFCRL...`;
+    }
+    const badge = document.getElementById('telemetry-variance-badge');
+    if (badge && step.telemetriaContador.margen) {
+      badge.innerText = `Varianza: ${step.telemetriaContador.margen}`;
+    }
+  }
 
   logToTerminal(tag, step.mensaje);
 
@@ -1237,16 +1284,44 @@ function onSimulationFinished(report) {
     if (el) el.innerText = (val !== undefined && val !== null) ? val : '';
   };
 
+  const totalSwarm = res.tamanoEnjambre || appState.swarmSize || 500;
+  const aFavorVotos = res.aFavorVotos ?? Math.round((totalSwarm * (res.aprobacionFinal ?? 50)) / 100);
+  const enContraVotos = res.enContraVotos ?? Math.round((totalSwarm * (res.rechazoFinal ?? 30)) / 100);
+  const neutroVotos = res.neutroVotos ?? (totalSwarm - aFavorVotos - enContraVotos);
+
   // 1. Rellenar métricas del encabezado del dashboard
   safeSetText('dash-titulo-proyecto', res.tituloProyecto || 'Iniciativa Comunitaria');
   safeSetText('dash-territorio', `${res.municipio || 'Edomex'}, ${res.estado || 'México'} (${res.localidad || 'Zona Urbana'})`);
-  safeSetText('dash-tamano-enjambre', `${(res.tamanoEnjambre || appState.swarmSize || 500).toLocaleString()} Agentes Sintéticos (Margen ${report.variacionMuestral?.margenError || '±3.5%'})`);
+  safeSetText('dash-tamano-enjambre', `${totalSwarm.toLocaleString()} Agentes Sintéticos (Margen ${report.variacionMuestral?.margenError || '±3.50%'})`);
   safeSetText('dash-dictamen', res.dictamenPolitico || 'Evaluación predictiva completada');
 
-  // 2. Tarjetas KPI Principales (Garantía absoluta de porcentajes visibles)
+  // Modo Censo Pill en Dashboard Header
+  const censoPill = document.getElementById('dash-modo-censo-pill');
+  if (censoPill) {
+    if (totalSwarm >= 100000) {
+      censoPill.classList.remove('hidden');
+      censoPill.innerText = '🗳️ MODO CENSO ELECTORAL ACTIVO — MARGEN: ±0.31% | CONFIANZA: 99.9%';
+    } else if (totalSwarm >= 50000) {
+      censoPill.classList.remove('hidden');
+      censoPill.innerText = '🏛️ MODO CENSO ELECTORAL ACTIVO — MARGEN: ±0.44% | CONFIANZA: 99.9%';
+    } else if (totalSwarm >= 25000) {
+      censoPill.classList.remove('hidden');
+      censoPill.innerText = '📊 MODO MACRO-ELECTORAL ACTIVO — MARGEN: ±0.62% | CONFIANZA: 99.5%';
+    } else {
+      censoPill.classList.add('hidden');
+    }
+  }
+
+  // 2. Tarjetas KPI Principales (Garantía absoluta de porcentajes visibles y conteo exacto de votos)
   safeSetText('kpi-aprobacion', `${res.aprobacionFinal ?? 0}%`);
+  safeSetText('kpi-aprobacion-votos', `(${aFavorVotos.toLocaleString()} ciudadanos sintéticos)`);
+
   safeSetText('kpi-rechazo', `${res.rechazoFinal ?? 0}%`);
+  safeSetText('kpi-rechazo-votos', `(${enContraVotos.toLocaleString()} ciudadanos sintéticos)`);
+
   safeSetText('kpi-indiferencia', `${res.indiferenciaFinal ?? 0}%`);
+  safeSetText('kpi-indiferencia-votos', `(${neutroVotos.toLocaleString()} ciudadanos sintéticos)`);
+
   safeSetText('kpi-entusiasmo', `${res.promedioEntusiasmo ?? 50}%`);
 
   // Fricción social

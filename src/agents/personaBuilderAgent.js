@@ -40,8 +40,8 @@ class PersonaBuilderAgent {
    */
   generateSwarm(swarmSize, municipalData, demographicFilters = {}) {
     const rawSize = parseInt(swarmSize, 10) || 250;
-    const size = Math.min(Math.max(rawSize, 50), 10000);
-    // Para muestras masivas (2000, 5000, 10000), instanciamos hasta 1000 agentes representativos para el DOM y chats
+    const size = Math.min(Math.max(rawSize, 50), 100000);
+    // Para muestras masivas (2K a 100K), instanciamos hasta 1,000 agentes representativos para DOM/chats sin saturar RAM
     const arrayCount = Math.min(size, 1000);
     const colonias = municipalData.coloniasRepresentativas || ['Colonia Centro', 'Barrio Tradicional', 'Fraccionamiento'];
     const nseDistribution = municipalData.distribucionNSE || { 'A/B': 5, 'C+': 15, 'C': 35, 'D+': 30, 'D/E': 15 };

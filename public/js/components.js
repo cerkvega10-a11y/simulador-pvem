@@ -666,7 +666,7 @@ const Components = {
                 <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition-colors">
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-xs font-bold text-slate-900">${item.grupo || item.rango}</span>
-                    <span class="text-[10px] font-semibold text-slate-500">${item.total ? `${item.total} agentes` : ''}</span>
+                    <span class="text-[10px] font-bold text-slate-600">${item.totalCiudadanosStr || (item.total ? `${Number(item.total).toLocaleString()} agentes` : '')}</span>
                   </div>
                   ${renderBarHTML(item.favor, item.contra, item.neutro)}
                   ${item.observacion ? `<p class="text-[11px] text-slate-500 mt-1.5 leading-tight">${item.observacion}</p>` : ''}
@@ -691,7 +691,7 @@ const Components = {
                 <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition-colors">
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-xs font-bold text-slate-900">${item.nivel || item.estrato}</span>
-                    <span class="text-[10px] font-semibold text-slate-500">${item.total ? `${item.total} agentes` : ''}</span>
+                    <span class="text-[10px] font-bold text-slate-600">${item.totalCiudadanosStr || (item.total ? `${Number(item.total).toLocaleString()} agentes` : '')}</span>
                   </div>
                   ${renderBarHTML(item.favor, item.contra, item.neutro)}
                   ${item.observacion ? `<p class="text-[11px] text-slate-500 mt-1.5 leading-tight">${item.observacion}</p>` : ''}
@@ -726,6 +726,31 @@ const Components = {
                   </div>
                   ${renderBarHTML(item.favor, item.contra, item.neutro)}
                   ${item.observacion ? `<p class="text-[10px] text-slate-500 mt-1.5 leading-tight">${item.observacion}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${(data.microNichosCensales && data.microNichosCensales.length > 0) ? `
+          <!-- Micro-Nichos Censales (Desbloqueados a Escala 25K a 100K Agentes) -->
+          <div class="pt-4 border-t border-amber-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <h4 class="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span> Micro-Nichos Censales Desbloqueados (Granularidad Extrema)
+              </h4>
+              <span class="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-2xs">
+                Modo Censo Electoral / Micro-Poblaciones
+              </span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              ${data.microNichosCensales.map(mn => `
+                <div class="p-3 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition-colors text-xs">
+                  <div class="flex items-center justify-between font-bold text-amber-950 mb-1">
+                    <span class="truncate">${mn.nicho}</span>
+                    <span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-black shrink-0">${(mn.poblacionAprox || 0).toLocaleString()} hab.</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 leading-tight">${mn.sesgo}</p>
                 </div>
               `).join('')}
             </div>
