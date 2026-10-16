@@ -1181,9 +1181,16 @@
           <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">✔ [High-Performance Vector Engine — Procesamiento Asíncrono por Web Worker]</div>
         </div>
 
-        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-          <span class="text-[10px] font-mono text-slate-400">Watermark: RXJpY2sgZGUgSmVzw7pzIFZlZ2EgQ2FybW9uYSB8IE5ldXJhbCBNZWRpYSBIb3VzZQ==</span>
-          <button type="button" onclick="closePlatformInfoModal()" class="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm">Cerrar</button>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+          <div class="flex items-center gap-2">
+            <a href="/assets/lamina_ejecutiva_govtech_war_room.jpg" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-black flex items-center gap-1.5 transition-colors shadow-2xs">
+              <span>🖼️</span><span>Ver Lámina Ejecutiva de Marca (16:9 HD)</span>
+            </a>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] font-mono text-slate-400">Watermark: RXJpY2sgZGUgSmVzw7pzIFZlZ2EgQ2FybW9uYSB8IE5ldXJhbCBNZWRpYSBIb3VzZQ==</span>
+            <button type="button" onclick="closePlatformInfoModal()" class="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm cursor-pointer">Cerrar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1240,7 +1247,12 @@
           </div>
 
           <div>
-            <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Contraseña</label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Contraseña</label>
+              <button type="button" onclick="openForgotPasswordModal()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors cursor-pointer">
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
             <input type="password" id="auth-password" name="govtech_pass_manual" value="" required autocomplete="new-password" placeholder="••••••••••••"
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
           </div>
@@ -1288,6 +1300,67 @@
   </div>
 
   <!-- =====================================================================
+       MODAL DE RECUPERACIÓN DE CONTRASEÑA (CANAL OFICIAL DE SEGURIDAD)
+       ===================================================================== -->
+  <div id="modal-forgot-password" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this) closeForgotPasswordModal()">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="bg-slate-950 text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🛡️</span>
+          <div>
+            <h3 class="text-sm font-black uppercase tracking-wider text-white">Recuperación de Contraseña y Acceso</h3>
+            <p class="text-[10px] text-slate-400">GovTech War Room • Canal Oficial de Validación</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeForgotPasswordModal()" class="text-slate-400 hover:text-white p-1 text-lg rounded-lg transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-4">
+        <!-- Notificación de Alerta Obligatoria -->
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <span class="text-xl shrink-0 mt-0.5">⚠️</span>
+          <div class="text-xs text-amber-950 space-y-2 leading-relaxed">
+            <span class="font-extrabold text-amber-900 uppercase tracking-wide text-[11px] block">Acceso Restringido</span>
+            <p>
+              Para solicitar el restablecimiento de tu contraseña o recuperar el acceso a tu licencia, debes enviar un correo electrónico a tu distribuidor a la dirección: <strong class="underline font-black text-slate-900 select-all">cerkvega.10@gmail.com</strong>.
+            </p>
+            <p>
+              Es requisito indispensable incluir en el cuerpo del mensaje tu <strong>'Token de Seguridad'</strong> autorizado para verificar plenamente tu identidad.
+            </p>
+          </div>
+        </div>
+
+        <!-- Ficha de Datos Requeridos -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2.5 text-slate-700">
+          <div class="flex items-center justify-between border-b border-slate-200/70 pb-2">
+            <span class="font-bold text-slate-500 uppercase text-[10px]">Destinatario Oficial:</span>
+            <span class="font-mono font-bold text-slate-900 select-all bg-white px-2 py-0.5 rounded border border-slate-200">cerkvega.10@gmail.com</span>
+          </div>
+          <div class="flex items-center justify-between border-b border-slate-200/70 pb-2">
+            <span class="font-bold text-slate-500 uppercase text-[10px]">Asunto Requerido:</span>
+            <span class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 select-all">recuperación de contraseña</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-500 uppercase text-[10px]">Cuerpo del Mensaje:</span>
+            <span class="text-slate-600 italic text-[11px] font-medium">Incluir tu Token de Seguridad (ej. TK-PVEM-8472-XXXX)</span>
+          </div>
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-center gap-2">
+          <a href="mailto:cerkvega.10@gmail.com?subject=recuperaci%C3%B3n%20de%20contrase%C3%B1a&body=Hola,%20solicito%20el%20restablecimiento%20de%20mi%20contrase%C3%B1a%20para%20la%20licencia%20GovTech%20War%20Room.%0A%0A-%20Nombre%20o%20Campa%C3%B1a:%20%0A-%20Usuario:%20%0A-%20Token%20de%20Seguridad:%20%0A%0AGracias." 
+            class="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all text-center cursor-pointer">
+            <span>✉️ Enviar Correo a cerkvega.10@gmail.com</span>
+          </a>
+          <button type="button" onclick="closeForgotPasswordModal()" 
+            class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
        PANEL DE CONTROL MAESTRO (EXCLUSIVO ADMINISTRADOR: Cerkvega92)
        ===================================================================== -->
   <div id="modal-master-admin" class="fixed inset-0 bg-slate-900 z-50 hidden overflow-y-auto">
@@ -1306,6 +1379,9 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openQuickDemoModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-200 text-slate-950 text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-amber-300">
+            <span>⚡</span><span>Nueva Demo Exprés (7 Días)</span>
+          </button>
           <button type="button" onclick="closeMasterAdminModal()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer">
             📊 Ir a Ventana Principal: War Room Vista 2
           </button>
@@ -1502,8 +1578,8 @@
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Etiqueta de Región Asignada</label>
-                <input type="text" id="lic-etiqueta-region" required placeholder="Ej. Distrito Electoral Federal 04 - Monterrey"
+                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Etiqueta de Región Asignada (Opcional)</label>
+                <input type="text" id="lic-etiqueta-region" placeholder="Opcional (se autogenera según Estado y Municipio)..."
                   class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">
               </div>
             </div>
@@ -1535,7 +1611,167 @@
     </div>
   </div>
 
-  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.1.0) -->
+  <!-- =====================================================================
+       MODAL DE DEMO EXPRÉS (7 DÍAS DE VIGENCIA CON KILL SWITCH AUTOMÁTICO)
+       ===================================================================== -->
+  <div id="modal-quick-demo" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this) closeQuickDemoModal()">
+    <div class="bg-white w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200 transform transition-all animate-fadeIn">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-5 rounded-t-2xl flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-xl shadow-xs shrink-0">⚡</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black text-white">Alta Exprés de Licencia Demo (7 Días)</h3>
+              <span class="text-[10px] font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">Prospección</span>
+            </div>
+            <p class="text-xs text-slate-300">Da de alta a un prospecto político en menos de 30 segundos con Kill Switch automático y Token de Seguridad.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeQuickDemoModal()" class="text-slate-400 hover:text-white p-1.5 text-lg rounded-lg transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <!-- Formulario de Demo Rápida -->
+      <div class="p-5 sm:p-6 space-y-4">
+        <div id="quick-demo-form-container">
+          <form id="form-quick-demo" onsubmit="saveQuickDemoLicense(event)" class="space-y-4 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase mb-1">Nombre del Prospecto / Candidatura</label>
+              <input type="text" id="quick-demo-nombre" required placeholder="Ej. Lic. Fernando Morales / Campaña Toluca"
+                class="w-full px-3 py-2 rounded-lg border border-slate-300 font-semibold text-slate-900 text-sm focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Partido Político</label>
+                <select id="quick-demo-partido" onchange="regenerateQuickDemoCredentials()" class="w-full px-3 py-2 rounded-lg border border-slate-300 font-black text-slate-900 bg-white">
+                  <option value="PVEM" selected>🌿 PVEM (Verde)</option>
+                  <option value="MORENA">🦅 MORENA (Guinda)</option>
+                  <option value="PAN">🔵 PAN (Azul)</option>
+                  <option value="PRI">🔴 PRI (Rojo)</option>
+                  <option value="MC">🟠 MC (Naranja)</option>
+                  <option value="PT">⭐ PT (Rojo/Oro)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Nivel de Cargo</label>
+                <select id="quick-demo-cargo" class="w-full px-3 py-2 rounded-lg border border-slate-300 font-semibold text-slate-900 bg-white">
+                  <option value="Presidente Municipal / Alcalde" selected>Presidencia Municipal / Alcaldía</option>
+                  <option value="Diputado Local">Diputación Local</option>
+                  <option value="Diputado Federal">Diputación Federal</option>
+                  <option value="Senador">Senaduría</option>
+                  <option value="Gobernador">Gubernatura</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Territorio: Estado y Municipio Dinámico -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <span class="block font-black text-slate-800 uppercase text-[11px]">📍 Demarcación Territorial (32 Estados):</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Estado</label>
+                  <select id="quick-demo-estado" onchange="onQuickDemoStateChange(this.value)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">
+                    <!-- Rellenado dinámicamente con los 32 estados -->
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Municipio / Alcaldía</label>
+                  <select id="quick-demo-muni" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">
+                    <!-- Rellenado según el estado -->
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Credenciales sugeridas autogeneradas -->
+            <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="block font-black text-amber-950 uppercase text-[11px]">🔐 Credenciales Sugeridas (Editables):</span>
+                <button type="button" onclick="regenerateQuickDemoCredentials()" class="text-[10px] font-bold text-amber-900 hover:underline flex items-center gap-1 cursor-pointer">
+                  <span>🔄</span><span>Regenerar</span>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Usuario Demo</label>
+                  <input type="text" id="quick-demo-username" required autocomplete="off"
+                    class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono font-bold text-slate-900 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Contraseña</label>
+                  <input type="text" id="quick-demo-password" required autocomplete="off"
+                    class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono font-bold text-slate-900 text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- Parámetros Fijos del Entorno Demo -->
+            <div class="p-3 rounded-xl bg-slate-100/80 border border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-700">
+              <div>
+                <span class="font-bold text-slate-400 block text-[9px] uppercase">Vigencia Fija:</span>
+                <span class="font-black text-amber-900">⏱️ 7 Días Naturales</span>
+              </div>
+              <div>
+                <span class="font-bold text-slate-400 block text-[9px] uppercase">Límite Enjambre:</span>
+                <span class="font-black text-slate-900">🤖 1,000 Agentes</span>
+              </div>
+              <div>
+                <span class="font-bold text-slate-400 block text-[9px] uppercase">Módulos:</span>
+                <span class="font-black text-emerald-800">War Room + Radar</span>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer border border-amber-300 flex items-center justify-center gap-2">
+              <span>⚡</span><span>Activar y Generar Demo de 7 Días</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Ficha de Éxito y Envío Directo (Aparece tras guardar) -->
+        <div id="quick-demo-success-card" class="hidden space-y-4">
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-300 space-y-2">
+            <div class="flex items-center gap-2 text-emerald-900 font-black text-sm">
+              <span>✅</span><span>¡Demo Activada Exitosamente!</span>
+            </div>
+            <p class="text-xs text-emerald-800">
+              La licencia ya está en funcionamiento con Kill Switch activo para expirar exactamente en 7 días naturales.
+            </p>
+          </div>
+
+          <div class="bg-slate-900 text-white rounded-xl p-4 font-mono text-xs space-y-2 border border-slate-800">
+            <div class="text-amber-400 font-bold border-b border-slate-800 pb-1.5 flex items-center justify-between">
+              <span>FICHA DE ACCESO DEMO GOVTECH</span>
+              <span class="text-[10px] text-slate-400">7 DÍAS</span>
+            </div>
+            <div class="space-y-1 text-[11px] text-slate-200">
+              <div>👤 <b>Cliente:</b> <span id="qd-res-nombre" class="text-white"></span></div>
+              <div>🏷️ <b>Partido:</b> <span id="qd-res-partido" class="text-amber-300 font-bold"></span></div>
+              <div>📍 <b>Demarcación:</b> <span id="qd-res-region" class="text-white"></span></div>
+              <div>🌐 <b>Enlace de Acceso:</b> <span class="text-indigo-300 underline select-all">https://simulador-predictivo-pvem.onrender.com/</span></div>
+              <div class="pt-1 border-t border-slate-800"></div>
+              <div>🔑 <b>Usuario:</b> <span id="qd-res-user" class="text-emerald-400 font-bold select-all"></span></div>
+              <div>🔒 <b>Contraseña:</b> <span id="qd-res-pass" class="text-emerald-400 font-bold select-all"></span></div>
+              <div>🛡️ <b>Token de Seguridad:</b> <span id="qd-res-token" class="text-indigo-400 font-black select-all"></span></div>
+              <div>📅 <b>Válido Hasta:</b> <span id="qd-res-exp" class="text-amber-300 font-bold"></span></div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-2">
+            <button type="button" onclick="copyQuickDemoSummary()" class="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer">
+              <span>📋</span><span>Copiar Ficha de Acceso</span>
+            </button>
+            <button type="button" onclick="closeQuickDemoModal()" class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer">
+              Listo / Ver en Licencias
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.2.0) -->
   <script src="/js/components.js?v=5.1.0"></script>
   <script src="/js/planMaestroPdfExport.js?v=5.1.0"></script>
   <script src="/js/pdfExport.js?v=5.1.0"></script>

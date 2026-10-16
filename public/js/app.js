@@ -3365,14 +3365,22 @@ function renderMasterLicensesList() {
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white">${lic.partido}</span>
             <h4 class="font-black text-slate-900 text-sm">${lic.clienteNombre}</h4>
+            ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS</span>` : ''}
           </div>
           ${statusBadge}
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Credenciales Manuales:</span>
             <span class="font-mono font-bold text-slate-900">${lic.username}</span> / <span class="font-mono text-emerald-700 font-bold">${lic.password}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">🛡️ Token de Seguridad:</span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="font-mono font-extrabold text-indigo-950 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded text-[10px] select-all">${lic.tokenSeguridad || 'TK-AUTORIZADO-XXXX'}</span>
+              <button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');" class="text-slate-400 hover:text-slate-900 p-0.5 rounded cursor-pointer" title="Copiar Token">📋</button>
+            </div>
           </div>
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Capacidad Enjambre:</span>
@@ -3541,7 +3549,7 @@ window.saveClientLicense = async function(event) {
   const fechaInicio = document.getElementById('lic-fecha-inicio')?.value || '2026-01-01';
   const fechaExpiracion = document.getElementById('lic-fecha-expiracion')?.value || '2027-07-31';
   const nivelGeografico = document.getElementById('lic-nivel-geo')?.value || 'Municipal / Alcaldía';
-  const etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || `${nivelGeografico} — ${partido}`;
+  let etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || '';
 
   const permisoRadar = document.getElementById('lic-permiso-radar')?.checked !== false;
   const permisoSimulador = document.getElementById('lic-permiso-simulador')?.checked !== false;
@@ -3576,6 +3584,16 @@ window.saveClientLicense = async function(event) {
     if (municipiosAutorizados.length === 0) {
       alert('Selecciona al menos un Municipio/Alcaldía/Distrito o marca "Autorizar TODOS".');
       return;
+    }
+  }
+
+  if (!etiquetaRegion) {
+    if (municipiosAutorizados.length > 0 && municipiosAutorizados[0] !== 'TODOS') {
+      etiquetaRegion = `${estadosAutorizados[0]} — ${municipiosAutorizados.slice(0, 2).join(', ')}${municipiosAutorizados.length > 2 ? ` (+${municipiosAutorizados.length - 2} más)` : ''}`;
+    } else if (estadosAutorizados.length > 0 && estadosAutorizados[0] !== 'TODOS') {
+      etiquetaRegion = `Estado de ${estadosAutorizados.join(', ')}`;
+    } else {
+      etiquetaRegion = `Nacional — ${partido}`;
     }
   }
 
@@ -3717,6 +3735,156 @@ window.activateMasterFullAccess = async function() {
   };
   await applyLicenseRestrictionsToUI(masterUser, true);
   showToast('Permisos de Administrador Maestro restaurados al 100% (32 Estados).');
+};
+
+// =========================================================================
+// CANAL OFICIAL DE SEGURIDAD: RECUPERACIÓN DE CONTRASEÑA
+// =========================================================================
+window.openForgotPasswordModal = function() {
+  const modal = document.getElementById('modal-forgot-password');
+  if (modal) modal.classList.remove('hidden');
+};
+
+window.closeForgotPasswordModal = function() {
+  const modal = document.getElementById('modal-forgot-password');
+  if (modal) modal.classList.add('hidden');
+};
+
+// =========================================================================
+// GESTOR DE LICENCIAS DEMO RÁPIDAS (7 DÍAS CON KILL SWITCH AUTOMÁTICO)
+// =========================================================================
+let currentQuickDemoResult = null;
+
+window.openQuickDemoModal = async function() {
+  await ensureNationalCatalogLoaded();
+  const modal = document.getElementById('modal-quick-demo');
+  if (!modal) return;
+
+  const formBox = document.getElementById('quick-demo-form-container');
+  const resBox = document.getElementById('quick-demo-success-card');
+  if (formBox) formBox.classList.remove('hidden');
+  if (resBox) resBox.classList.add('hidden');
+
+  const stateSelect = document.getElementById('quick-demo-estado');
+  if (stateSelect && Array.isArray(nationalStatesList) && nationalStatesList.length > 0) {
+    stateSelect.innerHTML = nationalStatesList.map(st => `<option value="${st}" ${st === 'Estado de México' ? 'selected' : ''}>${st}</option>`).join('');
+    onQuickDemoStateChange(stateSelect.value || 'Estado de México');
+  }
+
+  regenerateQuickDemoCredentials();
+  modal.classList.remove('hidden');
+};
+
+window.closeQuickDemoModal = function() {
+  const modal = document.getElementById('modal-quick-demo');
+  if (modal) modal.classList.add('hidden');
+};
+
+window.onQuickDemoStateChange = function(selectedState) {
+  const muniSelect = document.getElementById('quick-demo-muni');
+  if (!muniSelect) return;
+  const munis = nationalCatalog32States[selectedState] || [];
+  muniSelect.innerHTML = munis.map((m, idx) => `<option value="${m}" ${idx === 0 ? 'selected' : ''}>${m}</option>`).join('');
+};
+
+window.regenerateQuickDemoCredentials = function() {
+  const party = (document.getElementById('quick-demo-partido')?.value || 'PVEM').toLowerCase();
+  const randNum = Math.floor(1000 + Math.random() * 9000);
+  const randPass = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+  const userEl = document.getElementById('quick-demo-username');
+  const passEl = document.getElementById('quick-demo-password');
+  if (userEl) userEl.value = `demo_${party}_${randNum}`;
+  if (passEl) passEl.value = `Demo2027*${randPass}`;
+};
+
+window.saveQuickDemoLicense = async function(event) {
+  if (event) event.preventDefault();
+
+  const nombre = document.getElementById('quick-demo-nombre')?.value?.trim();
+  const partido = document.getElementById('quick-demo-partido')?.value || 'PVEM';
+  const cargo = document.getElementById('quick-demo-cargo')?.value || 'Presidente Municipal / Alcalde';
+  const estado = document.getElementById('quick-demo-estado')?.value || 'Estado de México';
+  const muni = document.getElementById('quick-demo-muni')?.value || 'Toluca';
+  const username = document.getElementById('quick-demo-username')?.value?.trim() || `demo_${Date.now()}`;
+  const password = document.getElementById('quick-demo-password')?.value?.trim() || 'Demo2027*';
+
+  if (!nombre) {
+    alert('Ingresa el nombre del prospecto o candidatura.');
+    return;
+  }
+
+  const payload = {
+    clienteNombre: `${nombre} (Demo 7D - ${partido})`,
+    username,
+    password,
+    partido,
+    estadosAutorizados: [estado],
+    municipiosAutorizados: [muni],
+    cargosAutorizados: [cargo, 'Regidor', 'Diputado Local'],
+    nivelGeografico: 'Municipal / Alcaldía',
+    etiquetaRegion: `${estado} — ${muni}`,
+    permisoRadar: true,
+    permisoSimulador: true,
+    maxSwarmSize: 1000,
+    isDemo: true,
+    diasVigencia: 7
+  };
+
+  try {
+    const res = await fetch('/api/licenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success && data.license) {
+      currentQuickDemoResult = data.license;
+      masterLicensesCache = data.licenses;
+      renderMasterLicensesList();
+
+      const formBox = document.getElementById('quick-demo-form-container');
+      const resBox = document.getElementById('quick-demo-success-card');
+      if (formBox) formBox.classList.add('hidden');
+      if (resBox) resBox.classList.remove('hidden');
+
+      document.getElementById('qd-res-nombre').innerText = data.license.clienteNombre;
+      document.getElementById('qd-res-partido').innerText = data.license.partido;
+      document.getElementById('qd-res-region').innerText = `${estado} — ${muni}`;
+      document.getElementById('qd-res-user').innerText = data.license.username;
+      document.getElementById('qd-res-pass').innerText = data.license.password;
+      document.getElementById('qd-res-token').innerText = data.license.tokenSeguridad;
+      document.getElementById('qd-res-exp').innerText = data.license.fechaExpiracion;
+
+      showToast(`¡Demo 7 Días activada exitosamente para ${nombre}!`);
+    } else {
+      alert('Error activando demo: ' + (data.error || 'Error desconocido'));
+    }
+  } catch (err) {
+    console.error('Error guardando quick demo:', err);
+    alert('Error al comunicarse con el servidor: ' + err.message);
+  }
+};
+
+window.copyQuickDemoSummary = function() {
+  if (!currentQuickDemoResult) return;
+  const lic = currentQuickDemoResult;
+  const text = `*FICHA DE ACCESO DEMO (7 DÍAS) — GOVTECH WAR ROOM*\n\n` +
+    `👤 *Cliente:* ${lic.clienteNombre}\n` +
+    `🏷️ *Partido:* ${lic.partido}\n` +
+    `📍 *Demarcación:* ${lic.etiquetaRegion}\n` +
+    `🌐 *Plataforma:* https://simulador-predictivo-pvem.onrender.com/\n\n` +
+    `🔑 *Usuario:* ${lic.username}\n` +
+    `🔒 *Contraseña:* ${lic.password}\n` +
+    `🛡️ *Token de Seguridad:* ${lic.tokenSeguridad}\n` +
+    `📅 *Vigencia:* 7 Días Naturales (Expira el ${lic.fechaExpiracion})\n\n` +
+    `_Nota: Para recuperar tu acceso o validar tu licencia, envía un correo a cerkvega.10@gmail.com con asunto "recuperación de contraseña" e incluye tu Token de Seguridad._`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Ficha de acceso copiada para enviar por WhatsApp o correo.');
+  }).catch(() => {
+    prompt('Copia manualmente la ficha de acceso:', text);
+  });
 };
 
 

@@ -677,6 +677,13 @@ const AUTHORSHIP_WATERMARK = {
 // =========================================================================
 const LICENSES_FILE = path.join(__dirname, 'src', 'data', 'licensesStore.json');
 
+function generateSecurityToken(partido = 'PVEM') {
+  const cleanParty = String(partido || 'SYS').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'SYS';
+  const randNum = Math.floor(1000 + Math.random() * 9000);
+  const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `TK-${cleanParty}-${randNum}-${randHex}`;
+}
+
 const DEFAULT_LICENSES = [
   {
     id: 'lic-demo-pvem-01',
@@ -684,6 +691,7 @@ const DEFAULT_LICENSES = [
     username: 'ecatepec2027',
     password: 'Verde2027*',
     partido: 'PVEM',
+    tokenSeguridad: 'TK-PVEM-8472-ECA1',
     nivelGeografico: 'Municipal / Alcaldía',
     etiquetaRegion: 'Alcaldía — Municipio de Ecatepec de Morelos',
     estadosAutorizados: ['Estado de México'],
@@ -705,6 +713,7 @@ const DEFAULT_LICENSES = [
     username: 'distrito04',
     password: 'Morena2027*',
     partido: 'MORENA',
+    tokenSeguridad: 'TK-MORENA-3921-DF04',
     nivelGeografico: 'Federal',
     etiquetaRegion: 'Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla',
     estadosAutorizados: ['Estado de México'],
@@ -868,32 +877,67 @@ app.post('/api/licenses', (req, res) => {
 
     const id = body.id || `lic-${Date.now()}`;
     const existingIdx = licensesStore.findIndex(l => l.id === id);
+    const existingLic = existingIdx >= 0 ? licensesStore[existingIdx] : null;
+
+    const partido = String(body.partido || 'PVEM').toUpperCase();
+    const tokenSeguridad = body.tokenSeguridad
+      ? String(body.tokenSeguridad).trim()
+      : (existingLic && existingLic.tokenSeguridad ? existingLic.tokenSeguridad : generateSecurityToken(partido));
+
+    const estadosAutorizados = Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
+      ? body.estadosAutorizados
+      : ['Estado de México'];
+
+    const municipiosAutorizados = Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
+      ? body.municipiosAutorizados
+      : ['Ecatepec de Morelos'];
+
+    let etiquetaRegion = String(body.etiquetaRegion || '').trim();
+    if (!etiquetaRegion) {
+      if (municipiosAutorizados.length > 0 && municipiosAutorizados[0] !== 'TODOS') {
+        etiquetaRegion = `${estadosAutorizados[0]} — ${municipiosAutorizados.slice(0, 2).join(', ')}${municipiosAutorizados.length > 2 ? ` (+${municipiosAutorizados.length - 2} más)` : ''}`;
+      } else if (estadosAutorizados.length > 0 && estadosAutorizados[0] !== 'TODOS') {
+        etiquetaRegion = `Estado de ${estadosAutorizados.join(', ')}`;
+      } else {
+        etiquetaRegion = `Nacional — ${partido}`;
+      }
+    }
+
+    let fechaInicio = String(body.fechaInicio || '').trim();
+    let fechaExpiracion = String(body.fechaExpiracion || '').trim();
+    if (body.isDemo || body.diasVigencia) {
+      const days = parseInt(body.diasVigencia, 10) || 7;
+      const now = new Date();
+      fechaInicio = now.toISOString().split('T')[0];
+      const expDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      fechaExpiracion = expDate.toISOString().split('T')[0];
+    }
+    if (!fechaInicio) fechaInicio = '2026-01-01';
+    if (!fechaExpiracion) fechaExpiracion = '2027-12-31';
 
     const licenseObj = {
       id,
       clienteNombre: String(body.clienteNombre || 'Cliente Político').trim(),
       username: String(body.username || `usuario_${Date.now()}`).trim(),
       password: String(body.password || 'Clave2027*').trim(),
-      partido: String(body.partido || 'PVEM').toUpperCase(),
+      partido,
+      tokenSeguridad,
       nivelGeografico: String(body.nivelGeografico || 'Municipal / Alcaldía'),
-      etiquetaRegion: String(body.etiquetaRegion || 'Demarcación Autorizada').trim(),
-      estadosAutorizados: Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
-        ? body.estadosAutorizados
-        : ['Estado de México'],
+      etiquetaRegion,
+      estadosAutorizados,
       cargosAutorizados: Array.isArray(body.cargosAutorizados) && body.cargosAutorizados.length > 0
         ? body.cargosAutorizados
         : ['Presidente Municipal / Alcalde'],
-      municipiosAutorizados: Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
-        ? body.municipiosAutorizados
-        : ['Ecatepec de Morelos'],
+      municipiosAutorizados,
       permisoRadar: body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true,
       permisoSimulador: body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true,
       propuestaFijaTitulo: String(body.propuestaFijaTitulo || '').trim(),
       propuestaFijaTexto: String(body.propuestaFijaTexto || '').trim(),
-      maxSwarmSize: parseInt(body.maxSwarmSize, 10) || 100000,
-      fechaInicio: String(body.fechaInicio || '2026-01-01'),
-      fechaExpiracion: String(body.fechaExpiracion || '2027-12-31'),
+      maxSwarmSize: parseInt(body.maxSwarmSize, 10) || (body.isDemo ? 1000 : 100000),
+      fechaInicio,
+      fechaExpiracion,
       activo: body.activo !== undefined ? Boolean(body.activo) : true,
+      isDemo: Boolean(body.isDemo),
       creadoEn: body.creadoEn || new Date().toISOString().split('T')[0]
     };
 
