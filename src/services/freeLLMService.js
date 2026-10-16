@@ -12,10 +12,10 @@ class FreeLLMService {
         freeKeyUrl: 'https://console.groq.com/keys'
       },
       gemini: {
-        name: 'Google Gemini (1.5 Flash / Gratuito 1,500 req/día)',
+        name: 'Google Gemini Pro / Enterprise Neural Swarm (Motor Centralizado)',
         endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
-        defaultModel: 'gemini-1.5-flash',
-        availableModels: ['gemini-1.5-flash', 'gemini-2.0-flash-exp'],
+        defaultModel: 'gemini-1.5-pro',
+        availableModels: ['gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash'],
         freeKeyUrl: 'https://aistudio.google.com/'
       },
       openrouter: {
@@ -40,12 +40,12 @@ class FreeLLMService {
   }
 
   /**
-   * Estrategia de Doble Capa de Respaldo (Primary & Fallback API Key)
-   * 1. Clave Principal: explicitKey o process.env.GEMINI_API_KEY
+   * Estrategia de Doble Capa de Respaldo Centralizada (Primary & Fallback API Key)
+   * 1. Clave Principal: process.env.GEMINI_API_KEY o process.env.GOOGLE_AI_KEY o explicitKey
    * 2. Clave de Respaldo: process.env.BACKUP_API_KEY
    */
   getGeminiKeys(explicitKey) {
-    const primaryKey = (explicitKey || process.env.GEMINI_API_KEY || '').trim();
+    const primaryKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || explicitKey || '').trim();
     const backupKey = (process.env.BACKUP_API_KEY || '').trim();
     return { primaryKey, backupKey };
   }
@@ -297,9 +297,9 @@ Devuelve estrictamente un JSON con este formato:
 
     try {
       const raw = await this.executeChatCompletion({
-        provider: aiConfig.provider,
-        apiKey: aiConfig.apiKey,
-        model: aiConfig.model,
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: aiConfig?.model || process.env.GEMINI_MODEL || 'gemini-1.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Genera los debates vecinales para: "${propuestaTexto}" en ${municipio}.` }
@@ -311,7 +311,7 @@ Devuelve estrictamente un JSON con este formato:
       const cleanJson = raw.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (err) {
-      console.warn(`[FreeLLMService] Error generando debates con ${aiConfig.provider}:`, err.message);
+      console.warn(`[FreeLLMService] Error generando debates con ${effectiveProvider}:`, err.message);
       return null;
     }
   }

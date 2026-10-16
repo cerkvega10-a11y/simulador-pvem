@@ -140,11 +140,15 @@
           <span class="lg:hidden text-[11px]">Reiniciar</span>
         </button>
 
-        <button type="button" onclick="openConfigModal()" 
-          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-all active:scale-95">
-          <span>⚙️</span>
-          <span class="hidden lg:inline">IA</span>
-          <span id="nav-model-badge" class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">Híbrido</span>
+        <button type="button" onclick="openConfigModal()" id="btn-header-ai-engine"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-white text-emerald-950 text-xs font-black shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
+          title="Motor de IA Centralizado y Autónomo (Google Gemini Pro - Plug & Play)">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+          </span>
+          <span class="hidden sm:inline text-[11px] font-bold text-slate-700">Motor IA:</span>
+          <span id="nav-model-badge" class="text-[10px] bg-emerald-700 text-white font-extrabold px-1.5 py-0.5 rounded shadow-2xs">Gemini Pro Central</span>
         </button>
 
         <!-- BOTÓN DE CIERRE DE SESIÓN SEGURO (LOGOUT) -->
@@ -820,148 +824,70 @@
     </div>
   </footer>
 
-  <!-- MODAL DE CONFIGURACIÓN DE IA Y MODELOS LLM -->
+  <!-- MODAL INFORMATIVO: MOTOR DE IA CENTRALIZADO GOVTECH (PLUG & PLAY) -->
   <div id="modal-config" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="card-pvem max-w-xl w-full p-6 space-y-5 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95">
+    <div class="card-pvem max-w-lg w-full p-6 space-y-4 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95">
       
       <!-- Encabezado del Modal -->
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-base">⚙️</div>
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-black flex items-center justify-center text-lg shadow-xs">⚡</div>
           <div>
-            <h3 class="text-base font-black text-slate-900">Configuración de Modelos de IA</h3>
-            <p class="text-xs text-slate-500">Conecta tu propia API Key de Google Gemini u OpenAI</p>
+            <h3 class="text-base font-black text-slate-900">Motor de IA Centralizado GovTech</h3>
+            <p class="text-xs text-slate-500 font-semibold">Google Gemini Pro / Enterprise Neural Swarm</p>
           </div>
         </div>
         <button type="button" onclick="closeConfigModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center text-base font-bold transition-colors">✕</button>
       </div>
 
-      <!-- Selector de Proveedor de IA -->
-      <div class="space-y-2.5">
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Motor de Inteligencia Artificial para el Enjambre:
-        </label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <!-- Opción 1: Motor Nativo -->
-          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-emerald-50/40 border-emerald-300" id="label-provider-native">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold text-emerald-950">Motor Híbrido Semántico</span>
-              <input type="radio" name="ai_provider" value="native" checked onchange="onProviderChange('native')" class="text-emerald-600 focus:ring-emerald-500">
-            </div>
-            <p class="text-[11px] text-slate-600">Nativo INEGI-ABM. Detección de absurdos, 0 costo y sin API Key.</p>
-          </label>
-
-          <!-- Opción 2: Groq Cloud (Gratuito) -->
-          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-groq">
-            <div class="flex items-center justify-between mb-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-bold text-slate-900">Groq Cloud</span>
-                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded">GRATIS</span>
-              </div>
-              <input type="radio" name="ai_provider" value="groq" onchange="onProviderChange('groq')" class="text-emerald-600 focus:ring-emerald-500">
-            </div>
-            <p class="text-[11px] text-slate-600">Llama 3.3 70B ultra-rápido. 14,400 peticiones/día sin tarjeta.</p>
-          </label>
-
-          <!-- Opción 3: Google Gemini (Gratuito) -->
-          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-gemini">
-            <div class="flex items-center justify-between mb-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-bold text-slate-900">Google Gemini</span>
-                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded">GRATIS</span>
-              </div>
-              <input type="radio" name="ai_provider" value="gemini" onchange="onProviderChange('gemini')" class="text-emerald-600 focus:ring-emerald-500">
-            </div>
-            <p class="text-[11px] text-slate-600">Gemini 1.5 Flash. 1,500 peticiones/día gratis en Google AI Studio.</p>
-          </label>
-
-          <!-- Opción 4: OpenRouter (Modelos :free) -->
-          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-openrouter">
-            <div class="flex items-center justify-between mb-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-bold text-slate-900">OpenRouter</span>
-                <span class="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-1.5 py-0.2 rounded">:FREE</span>
-              </div>
-              <input type="radio" name="ai_provider" value="openrouter" onchange="onProviderChange('openrouter')" class="text-emerald-600 focus:ring-emerald-500">
-            </div>
-            <p class="text-[11px] text-slate-600">Llama 3.2 3B y Gemini 2.0 Flash libres sin costo por token.</p>
-          </label>
-
-          <!-- Opción 5: OpenAI -->
-          <label class="p-3 border rounded-xl cursor-pointer hover:border-emerald-500 transition-all flex flex-col justify-between bg-white border-slate-200" id="label-provider-openai">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold text-slate-900">OpenAI</span>
-              <input type="radio" name="ai_provider" value="openai" onchange="onProviderChange('openai')" class="text-emerald-600 focus:ring-emerald-500">
-            </div>
-            <p class="text-[11px] text-slate-600">GPT-4o y GPT-4o-mini con tu API Key personal.</p>
-          </label>
-        </div>
-      </div>
-
-      <!-- Configuración Específica del Proveedor Externo -->
-      <div id="external-llm-settings" class="space-y-3.5 hidden pt-2 border-t border-slate-100">
-        <!-- Selector de Modelo -->
-        <div>
-          <label for="cfg-model" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-            Modelo de Inferencia:
-          </label>
-          <select id="cfg-model" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <!-- Rellenado dinámicamente según el proveedor -->
-          </select>
-        </div>
-
-        <!-- Entrada de API Key -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label for="cfg-api-key" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-              API Key del Proveedor:
-            </label>
-            <a id="cfg-key-link" href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-emerald-700 hover:underline font-semibold">
-              Obtener clave gratuita ↗
-            </a>
+      <!-- Estado y Especificaciones del Motor Centralizado -->
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+            </span>
+            <span class="font-black text-emerald-950 text-xs">Estado del Motor:</span>
           </div>
-          <div class="relative">
-            <input type="password" id="cfg-api-key" placeholder="Pega tu clave API aquí..."
-              class="w-full px-3.5 py-2 pr-10 rounded-lg border border-slate-300 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-700">👁️</button>
+          <span class="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-700 text-white uppercase tracking-wider shadow-2xs">ONLINE • ALTA PRECISIÓN</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Arquitectura:</span>
+            <span class="font-black text-slate-900">Google Gemini Pro</span>
           </div>
-          <p class="text-[10px] text-slate-400 mt-1">Tu clave se almacena de forma segura en tu navegador local (localStorage) y nunca se divulga.</p>
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Gestión de Llaves:</span>
+            <span class="font-black text-emerald-700">Servidor Seguro (Plug & Play)</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Capa Estocástica:</span>
+            <span class="font-black text-slate-900">Enjambre Sintético INEGI</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Nivel de Fricción:</span>
+            <span class="font-black text-slate-900">Cero Configuración Requerida</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-blue-50/70 border border-blue-200 text-blue-950 text-[11px] leading-relaxed space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <span>🛡️</span>
+            <span>Encapsulamiento de Seguridad Industrial:</span>
+          </div>
+          <p class="text-slate-600">
+            Todas las corridas analíticas, simulaciones predictivas y dictámenes territoriales son procesados directamente por la infraestructura centralizada de la administración matriz. Las credenciales de inferencia residen exclusivamente en el servidor backend para garantizar máxima seguridad y evitar fugas de claves.
+          </p>
         </div>
       </div>
 
-      <!-- Proveedor Opcional de Búsqueda OSINT Web -->
-      <div class="pt-2 border-t border-slate-100 space-y-2">
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Búsqueda Web OSINT / Noticias Municipales:
-        </label>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="p-2 border rounded-lg flex items-center justify-between text-xs cursor-pointer bg-emerald-50/30 border-emerald-200" id="label-search-native">
-            <span>INEGI + Noticias Edomex (Nativo)</span>
-            <input type="radio" name="search_provider" value="native" checked onchange="onSearchProviderChange('native')" class="text-emerald-600">
-          </label>
-          <label class="p-2 border rounded-lg flex items-center justify-between text-xs cursor-pointer bg-white border-slate-200" id="label-search-tavily">
-            <span>Tavily Search API (Opcional)</span>
-            <input type="radio" name="search_provider" value="tavily" onchange="onSearchProviderChange('tavily')" class="text-emerald-600">
-          </label>
-        </div>
-        <div id="tavily-key-container" class="hidden">
-          <input type="password" id="cfg-tavily-key" placeholder="API Key de Tavily (tvly-...)"
-            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono">
-        </div>
-      </div>
-
-      <!-- Área de Feedback / Alertas de Test -->
-      <div id="cfg-feedback-alert" class="hidden p-3 rounded-lg text-xs"></div>
-
-      <!-- Botones de Acción -->
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-        <button type="button" id="btn-test-connection" onclick="testAIConnection()"
-          class="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
-          ⚡ Probar Conexión
-        </button>
-        <button type="button" onclick="saveAIConfig()"
-          class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition-all">
-          💾 Guardar Configuración
+      <!-- Botón de Cierre -->
+      <div class="flex items-center justify-end pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeConfigModal()"
+          class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition-all cursor-pointer">
+          Entendido / Cerrar
         </button>
       </div>
 

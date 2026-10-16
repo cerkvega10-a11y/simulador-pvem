@@ -18,11 +18,9 @@ let appState = {
   radarAnalysis: null,
   isLocked: false,
   aiConfig: {
-    provider: 'native',
-    model: 'native',
-    apiKey: '',
-    searchProvider: 'native',
-    tavilyApiKey: ''
+    provider: 'gemini',
+    model: 'gemini-1.5-pro',
+    centralized: true
   },
   currentReport: null,
   presets: []
@@ -1770,31 +1768,8 @@ function showToast(message) {
 window.openConfigModal = function() {
   const modal = document.getElementById('modal-config');
   if (!modal) return;
-
-  // Cargar valores actuales en los campos
-  const cfg = appState.aiConfig;
-  const radioProvider = document.querySelector(`input[name="ai_provider"][value="${cfg.provider}"]`);
-  if (radioProvider) {
-    radioProvider.checked = true;
-    onProviderChange(cfg.provider);
-  }
-
-  const apiKeyInput = document.getElementById('cfg-api-key');
-  if (apiKeyInput) apiKeyInput.value = cfg.apiKey || '';
-
-  const radioSearch = document.querySelector(`input[name="search_provider"][value="${cfg.searchProvider || 'native'}"]`);
-  if (radioSearch) {
-    radioSearch.checked = true;
-    onSearchProviderChange(cfg.searchProvider || 'native');
-  }
-
-  const tavilyKeyInput = document.getElementById('cfg-tavily-key');
-  if (tavilyKeyInput) tavilyKeyInput.value = cfg.tavilyApiKey || '';
-
-  // Limpiar alertas previas
-  hideConfigAlert();
-
   modal.classList.remove('hidden');
+  syncCentralAIEngineStatus();
 };
 
 window.closeConfigModal = function() {
@@ -1802,230 +1777,44 @@ window.closeConfigModal = function() {
   if (modal) modal.classList.add('hidden');
 };
 
-window.onProviderChange = function(provider) {
-  const settingsDiv = document.getElementById('external-llm-settings');
-  const keyLink = document.getElementById('cfg-key-link');
-  
-  // Actualizar estilos de las tarjetas
-  ['native', 'groq', 'gemini', 'openrouter', 'openai'].forEach(p => {
-    const label = document.getElementById(`label-provider-${p}`);
-    if (label) {
-      if (p === provider) {
-        label.classList.add('bg-emerald-50/40', 'border-emerald-500', 'ring-1', 'ring-emerald-400');
-        label.classList.remove('bg-white', 'border-slate-200');
-      } else {
-        label.classList.remove('bg-emerald-50/40', 'border-emerald-500', 'ring-1', 'ring-emerald-400');
-        label.classList.add('bg-white', 'border-slate-200');
-      }
+async function syncCentralAIEngineStatus() {
+  try {
+    const res = await fetch('/api/ai-engine/status');
+    const data = await res.json();
+    if (data.success && data.engine) {
+      appState.aiConfig = {
+        provider: data.engine.provider || 'gemini',
+        model: data.engine.model || 'gemini-1.5-pro',
+        centralized: true,
+        mode: data.engine.mode || 'centralized_master'
+      };
+      updateNavModelBadge(data.engine);
     }
-  });
-
-  if (provider === 'native') {
-    if (settingsDiv) settingsDiv.classList.add('hidden');
-  } else {
-    if (settingsDiv) settingsDiv.classList.remove('hidden');
-    populateModelOptions(provider, appState.aiConfig.model);
-
-    if (keyLink) {
-      if (provider === 'groq') {
-        keyLink.href = 'https://console.groq.com/keys';
-        keyLink.innerText = 'Obtener clave 100% GRATIS en Groq Console (sin tarjeta) ↗';
-      } else if (provider === 'gemini') {
-        keyLink.href = 'https://aistudio.google.com/app/apikey';
-        keyLink.innerText = 'Obtener clave 100% GRATIS en Google AI Studio (1,500 req/día) ↗';
-      } else if (provider === 'openrouter') {
-        keyLink.href = 'https://openrouter.ai/keys';
-        keyLink.innerText = 'Obtener clave para modelos :free en OpenRouter ↗';
-      } else if (provider === 'openai') {
-        keyLink.href = 'https://platform.openai.com/api-keys';
-        keyLink.innerText = 'Obtener clave en OpenAI Platform ↗';
-      }
-    }
-  }
-};
-
-function populateModelOptions(provider, selectedModel) {
-  const select = document.getElementById('cfg-model');
-  if (!select) return;
-
-  if (provider === 'groq') {
-    select.innerHTML = `
-      <option value="llama-3.3-70b-versatile" ${selectedModel === 'llama-3.3-70b-versatile' || !selectedModel ? 'selected' : ''}>Llama 3.3 70B Versatile (Recomendado - Gratuito, Potente y Veloz)</option>
-      <option value="llama-3.1-8b-instant" ${selectedModel === 'llama-3.1-8b-instant' ? 'selected' : ''}>Llama 3.1 8B Instant (Gratuito y Ultraligero)</option>
-      <option value="mixtral-8x7b-32768" ${selectedModel === 'mixtral-8x7b-32768' ? 'selected' : ''}>Mixtral 8x7B (Gratuito - 32k contexto)</option>
-    `;
-  } else if (provider === 'gemini') {
-    select.innerHTML = `
-      <option value="gemini-1.5-flash" ${selectedModel === 'gemini-1.5-flash' || !selectedModel ? 'selected' : ''}>Gemini 1.5 Flash (Recomendado - Gratuito, Multimodal)</option>
-      <option value="gemini-2.0-flash" ${selectedModel === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash (Experimental Gratuito)</option>
-      <option value="gemini-1.5-pro" ${selectedModel === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro (Razonamiento Profundo)</option>
-    `;
-  } else if (provider === 'openrouter') {
-    select.innerHTML = `
-      <option value="meta-llama/llama-3.2-3b-instruct:free" ${selectedModel === 'meta-llama/llama-3.2-3b-instruct:free' || !selectedModel ? 'selected' : ''}>Meta Llama 3.2 3B (:free - Gratuito)</option>
-      <option value="google/gemini-2.0-flash-exp:free" ${selectedModel === 'google/gemini-2.0-flash-exp:free' ? 'selected' : ''}>Google Gemini 2.0 Flash (:free - Gratuito)</option>
-      <option value="mistralai/mistral-7b-instruct:free" ${selectedModel === 'mistralai/mistral-7b-instruct:free' ? 'selected' : ''}>Mistral 7B Instruct (:free - Gratuito)</option>
-    `;
-  } else if (provider === 'openai') {
-    select.innerHTML = `
-      <option value="gpt-4o-mini" ${selectedModel === 'gpt-4o-mini' || !selectedModel ? 'selected' : ''}>GPT-4o Mini (Rápido, Económico y Preciso)</option>
-      <option value="gpt-4o" ${selectedModel === 'gpt-4o' ? 'selected' : ''}>GPT-4o (Máxima Capacidad Multimodal)</option>
-    `;
+  } catch (e) {
+    console.warn('Sincronización de motor centralizado en servidor activo:', e);
   }
 }
-
-window.onSearchProviderChange = function(provider) {
-  const tavilyContainer = document.getElementById('tavily-key-container');
-  const labelNative = document.getElementById('label-search-native');
-  const labelTavily = document.getElementById('label-search-tavily');
-
-  if (provider === 'tavily') {
-    if (tavilyContainer) tavilyContainer.classList.remove('hidden');
-    if (labelTavily) labelTavily.classList.add('bg-emerald-50/40', 'border-emerald-400');
-    if (labelNative) labelNative.classList.remove('bg-emerald-50/30', 'border-emerald-200');
-  } else {
-    if (tavilyContainer) tavilyContainer.classList.add('hidden');
-    if (labelNative) labelNative.classList.add('bg-emerald-50/30', 'border-emerald-200');
-    if (labelTavily) labelTavily.classList.remove('bg-emerald-50/40', 'border-emerald-400');
-  }
-};
-
-window.toggleApiKeyVisibility = function() {
-  const input = document.getElementById('cfg-api-key');
-  if (!input) return;
-  input.type = input.type === 'password' ? 'text' : 'password';
-};
-
-window.testAIConnection = async function() {
-  const provider = document.querySelector('input[name="ai_provider"]:checked')?.value || 'native';
-  const apiKey = document.getElementById('cfg-api-key')?.value.trim() || '';
-  const model = document.getElementById('cfg-model')?.value || '';
-  const btn = document.getElementById('btn-test-connection');
-
-  if (provider !== 'native' && !apiKey) {
-    showConfigAlert(false, 'Por favor escribe o pega tu API Key antes de probar la conexión.');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerText = '⏳ Probando conexión...';
-  hideConfigAlert();
-
-  try {
-    const res = await fetch('/api/test-connection', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, apiKey, model })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      showConfigAlert(true, `✓ ${data.message}`);
-    } else {
-      showConfigAlert(false, `✗ Error: ${data.error || 'No se pudo conectar'}`);
-    }
-  } catch (err) {
-    showConfigAlert(false, `✗ Error de red: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.innerText = '⚡ Probar Conexión';
-  }
-};
-
-window.saveAIConfig = function() {
-  const provider = document.querySelector('input[name="ai_provider"]:checked')?.value || 'native';
-  const apiKey = document.getElementById('cfg-api-key')?.value.trim() || '';
-  const model = document.getElementById('cfg-model')?.value || 'native';
-  const searchProvider = document.querySelector('input[name="search_provider"]:checked')?.value || 'native';
-  const tavilyApiKey = document.getElementById('cfg-tavily-key')?.value.trim() || '';
-
-  if (provider !== 'native' && !apiKey) {
-    showConfigAlert(false, 'Por favor ingresa una API Key o selecciona "Motor Híbrido".');
-    return;
-  }
-
-  appState.aiConfig = {
-    provider,
-    model: provider === 'native' ? 'native' : model,
-    apiKey: provider === 'native' ? '' : apiKey,
-    searchProvider,
-    tavilyApiKey
-  };
-
-  // Guardar en localStorage
-  try {
-    localStorage.setItem('pvem_ai_config', JSON.stringify(appState.aiConfig));
-  } catch (e) {
-    console.warn('No se pudo guardar en localStorage:', e);
-  }
-
-  updateNavModelBadge();
-  closeConfigModal();
-  showToast(`Configuración de IA actualizada: ${getProviderLabel(provider, model)}`);
-};
 
 function loadStoredAIConfig() {
+  // Purga de llaves cliente para garantizar seguridad total y cero fricción
   try {
-    const stored = localStorage.getItem('pvem_ai_config');
-    if (stored) {
-      appState.aiConfig = JSON.parse(stored);
-    }
+    localStorage.removeItem('pvem_ai_config');
   } catch (e) {
-    console.warn('Error leyendo localStorage:', e);
+    // Silencioso
   }
-  updateNavModelBadge();
+  syncCentralAIEngineStatus();
 }
 
-function updateNavModelBadge() {
+function updateNavModelBadge(engineInfo) {
   const badge = document.getElementById('nav-model-badge');
   if (!badge) return;
-
-  const cfg = appState.aiConfig;
-  if (cfg.provider === 'groq') {
-    badge.innerText = `Groq (Llama 3.3 Free)`;
-    badge.className = 'text-[10px] bg-orange-100 text-orange-900 font-extrabold px-1.5 py-0.5 rounded border border-orange-300';
-  } else if (cfg.provider === 'gemini') {
-    badge.innerText = `Gemini (${(cfg.model || '1.5-flash').replace('gemini-', '')})`;
-    badge.className = 'text-[10px] bg-blue-100 text-blue-800 font-extrabold px-1.5 py-0.5 rounded border border-blue-200';
-  } else if (cfg.provider === 'openrouter') {
-    badge.innerText = `OpenRouter (:free)`;
-    badge.className = 'text-[10px] bg-indigo-100 text-indigo-900 font-extrabold px-1.5 py-0.5 rounded border border-indigo-200';
-  } else if (cfg.provider === 'openai') {
-    badge.innerText = `OpenAI (${(cfg.model || 'gpt-4o').toUpperCase()})`;
-    badge.className = 'text-[10px] bg-purple-100 text-purple-800 font-extrabold px-1.5 py-0.5 rounded border border-purple-200';
-  } else {
-    badge.innerText = 'Motor Híbrido Semántico';
-    badge.className = 'text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded border border-emerald-200';
-  }
+  const modelName = engineInfo?.model || appState.aiConfig?.model || 'Gemini Pro';
+  badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> Gemini Pro Central`;
+  badge.className = 'text-[10px] bg-emerald-100 text-emerald-950 font-black px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1 shadow-2xs';
 }
 
-function getProviderLabel(provider, model) {
-  if (provider === 'groq') return `Groq Cloud (${model || 'Llama 3.3 70B'})`;
-  if (provider === 'gemini') return `Google Gemini (${model || '1.5 Flash'})`;
-  if (provider === 'openrouter') return `OpenRouter (${model || ':free'})`;
-  if (provider === 'openai') return `OpenAI (${model || 'GPT-4o'})`;
-  return 'Motor Híbrido Semántico INEGI-ABM';
-}
-
-function showConfigAlert(isSuccess, text) {
-  const alertEl = document.getElementById('cfg-feedback-alert');
-  if (!alertEl) return;
-  alertEl.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-red-50', 'text-red-900', 'border-red-300');
-  
-  if (isSuccess) {
-    alertEl.classList.add('bg-emerald-50', 'text-emerald-900', 'border', 'border-emerald-300');
-  } else {
-    alertEl.classList.add('bg-red-50', 'text-red-900', 'border', 'border-red-300');
-  }
-  alertEl.innerHTML = text;
-}
-
-function hideConfigAlert() {
-  const alertEl = document.getElementById('cfg-feedback-alert');
-  if (alertEl) {
-    alertEl.classList.add('hidden');
-    alertEl.innerHTML = '';
-  }
+function getProviderLabel() {
+  return 'Google Gemini Pro (Motor Centralizado GovTech)';
 }
 
 /**

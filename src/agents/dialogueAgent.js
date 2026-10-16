@@ -13,16 +13,25 @@ class DialogueAgent {
    * Genera hilos de discusión interactiva entre agentes del enjambre
    */
   async generateDebateThreads(projectTitle, projectText, municipalResearch, swarmAgents, aiConfig = {}, semanticResult = null) {
-    // 1. Si el usuario configuró una API Key gratuita (Groq / Gemini / OpenRouter), generamos con LLM real
-    if (aiConfig && aiConfig.apiKey && aiConfig.provider) {
+    // 1. Consulta al Motor Centralizado de IA (Google Gemini Pro / Enterprise)
+    const hasCentralKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
+    const hasClientKey = Boolean(aiConfig && aiConfig.apiKey);
+
+    if (hasCentralKey || hasClientKey) {
       try {
+        const activeAiConfig = {
+          provider: 'gemini',
+          model: process.env.GEMINI_MODEL || aiConfig?.model || 'gemini-1.5-pro',
+          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || aiConfig?.apiKey || '',
+          ...(aiConfig || {})
+        };
         const llmDebates = await freeLLMService.generateDebatesWithLLM(
           projectText,
           projectTitle,
           municipalResearch.municipio,
           municipalResearch.estado,
           municipalResearch.top5Problematicas,
-          aiConfig
+          activeAiConfig
         );
         if (llmDebates && Array.isArray(llmDebates) && llmDebates.length > 0) {
           return llmDebates;
@@ -263,9 +272,19 @@ class DialogueAgent {
     const muni = municipalResearch.municipio;
     const tipo = semanticResult?.tipo || 'GENERAL';
 
-    // Si hay API de IA gratuita configurada, consultamos al LLM
-    if (aiConfig && aiConfig.apiKey && aiConfig.provider) {
+    // Consulta al Motor Centralizado de IA (Google Gemini Pro) o fallback nativo
+    const hasCentralKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
+    const hasClientKey = Boolean(aiConfig && aiConfig.apiKey);
+
+    if (hasCentralKey || hasClientKey) {
       try {
+        const activeAiConfig = {
+          provider: 'gemini',
+          model: process.env.GEMINI_MODEL || aiConfig?.model || 'gemini-1.5-pro',
+          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || aiConfig?.apiKey || '',
+          ...(aiConfig || {})
+        };
+
         const systemPrompt = `Eres un grupo de 3 ciudadanos del municipio de ${muni}, Estado de México.
 Están evaluando el proyecto: "${projectTitle}" (${projectText}).
 Tipo semántico detectado: ${tipo}.
@@ -279,9 +298,9 @@ Devuelve estrictamente un JSON con formato:
 ]`;
 
         const raw = await freeLLMService.executeChatCompletion({
-          provider: aiConfig.provider,
-          apiKey: aiConfig.apiKey,
-          model: aiConfig.model,
+          provider: activeAiConfig.provider,
+          apiKey: activeAiConfig.apiKey,
+          model: activeAiConfig.model,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Pregunta del evaluador: "${pregunta}"` }

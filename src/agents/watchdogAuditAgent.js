@@ -31,21 +31,30 @@ class WatchdogAuditAgent {
     // 1. Análisis Semántico y Extracción de Entidades
     const semanticResult = semanticAnalyzer.analyze(textoOriginal, muni, estado, topProblems);
 
-    // 2. Consulta opcional a LLM gratuito si el usuario configuró API Key
+    // 2. Consulta al Motor Centralizado de IA (Google Gemini Pro / Enterprise)
     let llmEvaluation = null;
     let motorInferenciaUsado = 'Motor Híbrido INEGI-ABM + Watchdog Territorial';
 
-    if (inputData.aiConfig && inputData.aiConfig.apiKey && inputData.aiConfig.provider) {
+    const hasCentralKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
+    const hasClientKey = Boolean(inputData.aiConfig && inputData.aiConfig.apiKey);
+
+    if (hasCentralKey || hasClientKey) {
       try {
+        const activeAiConfig = {
+          provider: 'gemini',
+          model: process.env.GEMINI_MODEL || inputData.aiConfig?.model || 'gemini-1.5-pro',
+          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || inputData.aiConfig?.apiKey || '',
+          ...(inputData.aiConfig || {})
+        };
         llmEvaluation = await freeLLMService.evaluateProposalWithLLM(
           textoOriginal,
           muni,
           estado,
           topProblems,
-          inputData.aiConfig
+          activeAiConfig
         );
         if (llmEvaluation) {
-          motorInferenciaUsado = `${inputData.aiConfig.provider.toUpperCase()} (${inputData.aiConfig.model || 'Free Tier'}) + Watchdog Territorial`;
+          motorInferenciaUsado = 'Google Gemini Pro (Motor Centralizado GovTech) + Watchdog Territorial';
         }
       } catch (llmErr) {
         console.warn('[Watchdog] Fallback a inferencia territorial nativa:', llmErr.message);
