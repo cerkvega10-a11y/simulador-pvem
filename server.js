@@ -736,7 +736,7 @@ function loadLicensesStore() {
     if (fs.existsSync(LICENSES_FILE)) {
       const raw = fs.readFileSync(LICENSES_FILE, 'utf8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(lic => ({
           estadosAutorizados: ['Estado de México'],
           permisoRadar: true,
@@ -750,6 +750,8 @@ function loadLicensesStore() {
   } catch (e) {
     console.warn('Advertencia leyendo licensesStore.json:', e.message);
   }
+  // Inicializar archivo persistente si no existe
+  saveLicensesStore(DEFAULT_LICENSES);
   return [...DEFAULT_LICENSES];
 }
 
@@ -762,6 +764,22 @@ function saveLicensesStore(list) {
     console.warn('Advertencia guardando licensesStore.json:', e.message);
   }
 }
+
+// Catálogo de Cuentas de Administrador Maestro Autorizadas
+const MASTER_ADMIN_ACCOUNTS = [
+  {
+    id: 'master-admin-erick-vega',
+    clienteNombre: 'Erick Vega — Administrador Maestro (Neural Media House)',
+    username: 'Cerkvega92',
+    password: 'Tutusito1*'
+  },
+  {
+    id: 'master-admin-aland',
+    clienteNombre: 'Aland — Administrador Maestro',
+    username: 'Aland',
+    password: 'Aland2026'
+  }
+];
 
 let licensesStore = loadLicensesStore();
 
@@ -780,16 +798,20 @@ app.post('/api/auth/login', (req, res) => {
       });
     }
 
-    // Validación de Administrador Maestro Exclusivo
-    if (u === 'Cerkvega92' && p === 'Tutusito1*') {
+    // Validación de Administradores Maestros (Cerkvega92 y Aland)
+    const masterAccount = MASTER_ADMIN_ACCOUNTS.find(
+      acc => acc.username.toLowerCase() === u.toLowerCase() && acc.password === p
+    );
+
+    if (masterAccount) {
       return res.json({
         success: true,
         role: 'MASTER_ADMIN',
         watermark: AUTHORSHIP_WATERMARK,
         user: {
-          id: 'master-admin-erick-vega',
-          clienteNombre: 'Erick Vega — Administrador Maestro (Neural Media House)',
-          username: 'Cerkvega92',
+          id: masterAccount.id,
+          clienteNombre: masterAccount.clienteNombre,
+          username: masterAccount.username,
           partido: 'PVEM',
           nivelGeografico: 'Nacional / Estatal',
           etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
@@ -1027,6 +1049,41 @@ app.delete('/api/licenses/:id', (req, res) => {
     licensesStore = licensesStore.filter(l => l.id !== id);
     saveLicensesStore(licensesStore);
     res.json({ success: true, licenses: licensesStore });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (Persistencia Bidireccional)
+app.post('/api/licenses/sync-vault', (req, res) => {
+  try {
+    const { vaultLicenses = [] } = req.body || {};
+    if (!Array.isArray(vaultLicenses) || vaultLicenses.length === 0) {
+      licensesStore = loadLicensesStore();
+      return res.json({ success: true, count: 0, licenses: licensesStore });
+    }
+
+    licensesStore = loadLicensesStore();
+    let addedCount = 0;
+
+    vaultLicenses.forEach(vLic => {
+      if (!vLic || !vLic.id) return;
+      const idx = licensesStore.findIndex(l => l.id === vLic.id);
+      if (idx === -1) {
+        licensesStore.push(vLic);
+        addedCount++;
+      } else {
+        // Preservar datos y merge seguro
+        licensesStore[idx] = { ...licensesStore[idx], ...vLic };
+      }
+    });
+
+    if (addedCount > 0) {
+      saveLicensesStore(licensesStore);
+      console.log(`[VAULT-SYNC] Sincronización exitosa: ${addedCount} licencias restauradas y blindadas.`);
+    }
+
+    res.json({ success: true, addedCount, licenses: licensesStore });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

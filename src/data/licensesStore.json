@@ -1,0 +1,62 @@
+[
+  {
+    "id": "lic-demo-pvem-01",
+    "clienteNombre": "Candidatura Alcaldía Ecatepec (PVEM)",
+    "username": "ecatepec2027",
+    "password": "Verde2027*",
+    "partido": "PVEM",
+    "tokenSeguridad": "TK-PVEM-8472-ECA1",
+    "nivelGeografico": "Municipal / Alcaldía",
+    "etiquetaRegion": "Alcaldía — Municipio de Ecatepec de Morelos",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde",
+      "Regidor",
+      "Diputado Local"
+    ],
+    "municipiosAutorizados": [
+      "Ecatepec de Morelos"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2026-01-01",
+    "fechaExpiracion": "2027-12-31",
+    "activo": true,
+    "creadoEn": "2026-10-15"
+  },
+  {
+    "id": "lic-demo-morena-02",
+    "clienteNombre": "Coordinación Distrital Naucalpan - Tlalnepantla",
+    "username": "distrito04",
+    "password": "Morena2027*",
+    "partido": "MORENA",
+    "tokenSeguridad": "TK-MORENA-3921-DF04",
+    "nivelGeografico": "Federal",
+    "etiquetaRegion": "Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "cargosAutorizados": [
+      "Diputado Federal",
+      "Senador"
+    ],
+    "municipiosAutorizados": [
+      "Naucalpan de Juárez",
+      "Tlalnepantla de Baz"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 50000,
+    "fechaInicio": "2026-01-01",
+    "fechaExpiracion": "2027-08-31",
+    "activo": true,
+    "creadoEn": "2026-10-15"
+  }
+]

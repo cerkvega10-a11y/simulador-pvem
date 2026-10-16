@@ -2834,14 +2834,17 @@ window.handleAuthLogin = async function(event) {
         userBadge.classList.add('flex');
       }
       const navLabel = document.getElementById('nav-session-label');
-      if (navLabel) navLabel.innerText = '👑 Cerkvega92';
+      if (navLabel) navLabel.innerText = `👑 ${data.user.username}`;
+
+      const adminBadge = document.getElementById('master-admin-badge');
+      if (adminBadge) adminBadge.innerText = `Admin: ${data.user.username}`;
 
       await applyLicenseRestrictionsToUI(data.user, true);
       // Asegurar que la pantalla principal de fondo sea War Room Vista 2 y abrir el Panel Maestro
       const modalRadar = document.getElementById('modal-radar-electoral');
       if (modalRadar) modalRadar.classList.add('hidden');
       await openMasterAdminModal();
-      showToast('Bienvenido Erick Vega (Cerkvega92). Panel de Control Maestro y War Room Vista 2 desbloqueados.');
+      showToast(`Bienvenido ${data.user.clienteNombre} (${data.user.username}). Panel de Control Maestro y War Room Vista 2 desbloqueados.`);
     } else {
       // Es un Cliente Político con licencia activa
       const btnMaster = document.getElementById('btn-master-admin-header');
@@ -3328,10 +3331,45 @@ async function loadMasterLicenses() {
     const data = await res.json();
     if (data.success && Array.isArray(data.licenses)) {
       masterLicensesCache = data.licenses;
-      renderMasterLicensesList();
     }
+
+    // Bóveda Local Segura (Anti-Pérdida de Datos en Despliegues y Reinicios de Contenedor)
+    const localVaultRaw = localStorage.getItem('govtech_master_licenses_vault');
+    if (localVaultRaw) {
+      try {
+        const localVault = JSON.parse(localVaultRaw);
+        if (Array.isArray(localVault) && localVault.length > 0) {
+          const missingInServer = localVault.filter(vl => !masterLicensesCache.some(sl => sl.id === vl.id));
+          if (missingInServer.length > 0) {
+            console.log(`[VAULT] Restaurando ${missingInServer.length} licencias desde la bóveda local al servidor...`);
+            const syncRes = await fetch('/api/licenses/sync-vault', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ vaultLicenses: localVault })
+            });
+            const syncData = await syncRes.json();
+            if (syncData.success && Array.isArray(syncData.licenses)) {
+              masterLicensesCache = syncData.licenses;
+              showToast(`🛡️ Bóveda Segura: ${missingInServer.length} licencias restauradas y blindadas automáticamente.`);
+            }
+          }
+        }
+      } catch (vaultErr) {
+        console.warn('Error en bóveda local:', vaultErr);
+      }
+    }
+
+    localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+    renderMasterLicensesList();
   } catch (err) {
     console.warn('Error cargando licencias:', err);
+    const fallbackVault = localStorage.getItem('govtech_master_licenses_vault');
+    if (fallbackVault) {
+      try {
+        masterLicensesCache = JSON.parse(fallbackVault);
+        renderMasterLicensesList();
+      } catch (e) {}
+    }
   }
 }
 
@@ -3627,6 +3665,7 @@ window.saveClientLicense = async function(event) {
     const data = await res.json();
     if (data.success) {
       masterLicensesCache = data.licenses;
+      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
       renderMasterLicensesList();
       resetLicenseForm();
       showToast(`Licencia White-Label guardada exitosamente para ${clienteNombre}.`);
@@ -3714,9 +3753,11 @@ window.previewClientLicenseSession = async function(id) {
 };
 
 window.activateMasterFullAccess = async function() {
+  const currentUsername = appState.activeSession?.user?.username || 'Cerkvega92';
+  const currentName = appState.activeSession?.user?.clienteNombre || (currentUsername === 'Aland' ? 'Aland — Administrador Maestro' : 'Erick Vega — Administrador Maestro');
   const masterUser = {
-    clienteNombre: 'Erick Vega — Administrador Maestro',
-    username: 'Cerkvega92',
+    clienteNombre: currentName,
+    username: currentUsername,
     partido: appState.activeParty || 'PVEM',
     etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
     estadosAutorizados: ['TODOS'],
@@ -3734,7 +3775,7 @@ window.activateMasterFullAccess = async function() {
     maxSwarmSize: 100000
   };
   await applyLicenseRestrictionsToUI(masterUser, true);
-  showToast('Permisos de Administrador Maestro restaurados al 100% (32 Estados).');
+  showToast(`Permisos de Administrador Maestro (${currentUsername}) restaurados al 100% (32 Estados).`);
 };
 
 // =========================================================================
@@ -3841,6 +3882,7 @@ window.saveQuickDemoLicense = async function(event) {
     if (data.success && data.license) {
       currentQuickDemoResult = data.license;
       masterLicensesCache = data.licenses;
+      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
       renderMasterLicensesList();
 
       const formBox = document.getElementById('quick-demo-form-container');
@@ -3885,6 +3927,56 @@ window.copyQuickDemoSummary = function() {
   }).catch(() => {
     prompt('Copia manualmente la ficha de acceso:', text);
   });
+};
+
+// =========================================================================
+// RESPALDO Y RESTAURACIÓN MANUAL DE BÓVEDA DE LICENCIAS (ANTI-PÉRDIDA)
+// =========================================================================
+window.exportLicensesBackup = function() {
+  if (!masterLicensesCache || masterLicensesCache.length === 0) {
+    alert('No hay licencias registradas para respaldar.');
+    return;
+  }
+  const jsonStr = JSON.stringify(masterLicensesCache, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `boveda_licencias_govtech_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Copia de seguridad descargada exitosamente en formato JSON.');
+};
+
+window.importLicensesBackup = async function(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) {
+      alert('El archivo no contiene un formato de licencias válido.');
+      return;
+    }
+    const res = await fetch('/api/licenses/sync-vault', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vaultLicenses: imported })
+    });
+    const data = await res.json();
+    if (data.success) {
+      masterLicensesCache = data.licenses;
+      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+      renderMasterLicensesList();
+      showToast(`¡Bóveda restaurada! ${data.licenses.length} licencias sincronizadas y blindadas.`);
+    }
+  } catch (err) {
+    alert('Error al importar la bóveda: ' + err.message);
+  } finally {
+    event.target.value = '';
+  }
 };
 
 
