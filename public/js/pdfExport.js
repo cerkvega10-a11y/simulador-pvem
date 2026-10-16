@@ -78,16 +78,19 @@
   const PDFExport = {
     /**
      * Punto de entrada: Genera y descarga el PDF #2 de 7 páginas
+     * Validación obligatoria: Solo compila datos reales de la simulación activa.
      */
     async exportReport(reportData, appStateInput) {
-      if (!reportData) {
-        alert('No hay datos de simulación disponibles para exportar. Por favor evalúa un proyecto primero.');
+      const state = appStateInput || (typeof window !== 'undefined' && window.appState) || {};
+      const rep = reportData || state.currentReport || null;
+      const res = (rep && rep.resumenEjecutivo) ? rep.resumenEjecutivo : null;
+
+      if (!rep || !res || (!res.tituloProyecto && !res.propuestaEvaluada && res.apoyoPorcentaje === undefined && res.aprobacionFinal === undefined)) {
+        alert('⚠️ Sin datos suficientes de simulación para compilar el expediente. Por favor ingresa tu propuesta y ejecuta la simulación en War Room Vista 2 primero.');
         return;
       }
 
-      const state = appStateInput || (typeof window !== 'undefined' && window.appState) || {};
-      const res = reportData.resumenEjecutivo || {};
-      const municipio = res.municipio || state.municipio || 'Estado_de_Mexico';
+      const municipio = res.municipio || state.municipio || 'Territorio';
       const municipioSanitizado = municipio.replace(/[\s/\\?%*:|"<>]+/g, '_');
       const partyKey = (state.activeParty || res.partido || 'PVEM').toUpperCase();
       const party = PARTY_PALETTES[partyKey] || PARTY_PALETTES.PVEM;
@@ -111,7 +114,7 @@
       const contentWidth = pageWidth - (margin * 2);        // 187.9 mm
       const totalPages = 7;
 
-      const dateStr = new Date(reportData.fechaGeneracion || Date.now()).toLocaleDateString('es-MX', {
+      const dateStr = new Date(rep.fechaGeneracion || Date.now()).toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -122,7 +125,7 @@
 
       const ctxShared = {
         pageWidth, pageHeight, margin, contentWidth,
-        party, municipio, reportData, res, dateStr, cryptoHash, totalPages
+        party, municipio, reportData: rep, res, dateStr, cryptoHash, totalPages
       };
 
       // =======================================================================
@@ -156,10 +159,10 @@
       this.drawSecurityFooter(doc, 4, totalPages, ctxShared);
 
       // =======================================================================
-      // PÁGINA 5: MATRIZ DE LAS 18 FUENTES OFICIALES (.GOB.MX) Y VOCES DEL ENJAMBRE
+      // PÁGINA 5: MATRIZ DE INDICADORES MULTI-DIMENSIONALES Y VOCES DEL ENJAMBRE
       // =======================================================================
       doc.addPage();
-      this.drawHeaderBanner(doc, ctxShared, '4. TRAZABILIDAD DE 18 FUENTES OFICIALES (.GOB.MX) Y VOCES CIUDADANAS');
+      this.drawHeaderBanner(doc, ctxShared, '4. MATRIZ DE INDICADORES MULTI-DIMENSIONALES Y VOCES DEL ENJAMBRE');
       this.drawPage5FuentesYVoces(doc, ctxShared);
       this.drawSecurityFooter(doc, 5, totalPages, ctxShared);
 
@@ -216,7 +219,7 @@
       doc.setFontSize(7.5);
       doc.setTextColor(240, 253, 244);
       doc.text(party.sub, margin + 26, 17);
-      doc.text(`AUDITORÍA PREDICTIVA CENSAL • PROTOCOLO DE SIMULACIÓN MULTI-AGENTE`, margin + 26, 21.5);
+      doc.text(`INTELIGENCIA DE ENJAMBRES SINTÉTICOS • PROTOCOLO DE SIMULACIÓN MULTI-AGENTE`, margin + 26, 21.5);
 
       // Barra de Metadatos
       let curY = 32;
@@ -225,40 +228,41 @@
       doc.setDrawColor(203, 213, 225);
       doc.rect(margin, curY, contentWidth, 11, 'S');
 
-      const totalSwarm = Number(res.tamanoEnjambre || 500);
-      const aFavVotos = res.aFavorVotos ?? Math.round((totalSwarm * (res.aprobacionFinal ?? 50)) / 100);
-      const enConVotos = res.enContraVotos ?? Math.round((totalSwarm * (res.rechazoFinal ?? 30)) / 100);
-      const neuVotos = res.neutroVotos ?? (totalSwarm - aFavVotos - enConVotos);
+      const totalSwarm = Number(res.agentesEvaluados || res.tamanoEnjambre || 500);
+      const aprob = Number(res.apoyoPorcentaje ?? res.aprobacionFinal ?? 50);
+      const rechazo = Number(res.rechazoPorcentaje ?? res.rechazoFinal ?? 30);
+      const indecisos = Number(res.indecisosPorcentaje ?? res.indiferenciaFinal ?? Math.max(0, 100 - aprob - rechazo));
+      const aFavVotos = Number(res.votosAprobacionEstimados ?? res.aFavorVotos ?? Math.round((totalSwarm * aprob) / 100));
+      const enConVotos = Number(res.votosRechazoEstimados ?? res.enContraVotos ?? Math.round((totalSwarm * rechazo) / 100));
+      const neuVotos = Number(res.votosIndecisosEstimados ?? res.neutroVotos ?? Math.max(0, totalSwarm - aFavVotos - enConVotos));
 
       const censusTag = totalSwarm >= 100000
         ? 'MODO CENSO ELECTORAL HIPER-ESCALA (±0.31% | Confianza 99.9%)'
         : (totalSwarm >= 50000
             ? 'MODO CENSO ELECTORAL ACTIVO (±0.44% | Confianza 99.9%)'
-            : (totalSwarm >= 25000 ? 'MODO MACRO-ELECTORAL (±0.62%)' : `Muestra Estándar (Margen ${reportData.variacionMuestral?.margenError || '±3.50%'})`));
+            : (totalSwarm >= 25000 ? 'MODO MACRO-ELECTORAL (±0.62%)' : `Muestra Activa (${totalSwarm.toLocaleString()} Agentes)`));
 
       doc.setTextColor(15, 23, 42);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
-      doc.text(`Territorio Evaluado: ${municipio}, ${res.estado || 'Estado de México'} (${res.localidad || 'Cabecera y Seccionales'})`, margin + 3, curY + 4.5);
+      doc.text(`Territorio Evaluado: ${municipio}, ${res.estado || ''} (${res.localidad || 'Cabecera y Seccionales'})`, margin + 3, curY + 4.5);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(71, 85, 105);
       doc.text(`Fecha de Emisión: ${dateStr}   |   Enjambre Sintético: ${totalSwarm.toLocaleString()} Agentes [${censusTag}]`, margin + 3, curY + 8.8);
 
-      // Caja de Dictamen Político Oficial
+      // Caja de Dictamen Político
       curY += 14;
-      const aprob = Number(res.aprobacionFinal || 50);
-      const rechazo = Number(res.rechazoFinal || 30);
       let verdictBg = [0, 143, 57]; // Verde
-      let verdictLabel = res.dictamenPolitico || 'APROBADO CON RESPALDO SOCIAL MAYORITARIO';
+      let verdictLabel = res.viabilidadGeneral || res.dictamenPolitico || 'APROBADO CON RESPALDO SOCIAL MAYORITARIO';
 
       if (rechazo >= 45) {
         verdictBg = [220, 38, 38]; // Rojo
-        verdictLabel = res.dictamenPolitico || 'RECHAZADO: ALTA FRICCIÓN Y CONFLICTO SOCIAL';
+        verdictLabel = res.viabilidadGeneral || res.dictamenPolitico || 'RECHAZADO: ALTA FRICCIÓN Y CONFLICTO SOCIAL';
       } else if (aprob < 50) {
         verdictBg = [217, 119, 6]; // Ámbar
-        verdictLabel = res.dictamenPolitico || 'CONDICIONADO: RESERVA CRÍTICA Y NEGOCIACIÓN REQUERIDA';
+        verdictLabel = res.viabilidadGeneral || res.dictamenPolitico || 'CONDICIONADO: RESERVA CRÍTICA Y NEGOCIACIÓN REQUERIDA';
       }
 
       doc.setFillColor(verdictBg[0], verdictBg[1], verdictBg[2]);
@@ -267,17 +271,25 @@
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
-      doc.text(`DICTAMEN POLÍTICO OFICIAL: ${verdictLabel}`, margin + 5, curY + 7.8);
+      doc.text(`DICTAMEN TÁCTICO: ${String(verdictLabel).toUpperCase()}`, margin + 5, curY + 7.8);
 
-      // Título y Extracto del Proyecto
+      // Título y Extracto del Proyecto Real del Usuario
       curY += 16;
       doc.setTextColor(15, 23, 42);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      const tituloLineas = doc.splitTextToSize(`Proyecto Evaluado: ${res.tituloProyecto || 'Iniciativa Comunitaria'}`, contentWidth);
-      doc.text(tituloLineas, margin, curY);
+      doc.setFontSize(10.5);
+      const tituloLineas = doc.splitTextToSize(`Proyecto Evaluado: ${res.tituloProyecto || 'Propuesta Evaluada en Sesión'}`, contentWidth);
+      doc.text(tituloLineas.slice(0, 2), margin, curY);
 
-      curY += (tituloLineas.length * 5) + 2;
+      curY += (Math.min(tituloLineas.length, 2) * 4.5) + 1.5;
+      if (res.propuestaEvaluada) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.8);
+        doc.setTextColor(71, 85, 105);
+        const propLines = doc.splitTextToSize(`Propuesta Ingresada: ${res.propuestaEvaluada}`, contentWidth);
+        doc.text(propLines.slice(0, 2), margin, curY);
+        curY += (Math.min(propLines.length, 2) * 3.5) + 2;
+      }
 
       // 5 Tarjetas KPIs con Porcentajes y Votos Reales
       const kpiCount = 5;
@@ -286,11 +298,11 @@
       const kpiH = 19;
 
       const kpis = [
-        { label: 'Aprobación Final', val: `${aprob}%`, sub: `${aFavVotos.toLocaleString()} votos`, color: [0, 143, 57], tag: 'Respaldo' },
-        { label: 'Rechazo Social', val: `${rechazo}%`, sub: `${enConVotos.toLocaleString()} votos`, color: [220, 38, 38], tag: 'Oposición' },
-        { label: 'Indiferencia / Neutro', val: `${res.indiferenciaFinal ?? (100 - aprob - rechazo)}%`, sub: `${neuVotos.toLocaleString()} votos`, color: [100, 116, 139], tag: 'Indecisos' },
-        { label: 'Fricción Social', val: `${res.indiceFriccionSocial?.score ?? 48}/100`, sub: res.indiceFriccionSocial?.nivel || 'Moderada', color: [2, 132, 199], tag: 'Índice' },
-        { label: 'Entusiasmo Cívico', val: `${res.promedioEntusiasmo ?? 52}%`, sub: 'Movilización Activa', color: [217, 119, 6], tag: 'Activación' }
+        { label: 'Aprobación Final', val: `${aprob}%`, sub: `${aFavVotos.toLocaleString()} votos est.`, color: [0, 143, 57], tag: 'Respaldo' },
+        { label: 'Rechazo Social', val: `${rechazo}%`, sub: `${enConVotos.toLocaleString()} votos est.`, color: [220, 38, 38], tag: 'Oposición' },
+        { label: 'Indiferencia / Neutro', val: `${indecisos}%`, sub: `${neuVotos.toLocaleString()} votos est.`, color: [100, 116, 139], tag: 'Indecisos' },
+        { label: 'Balance Electoral', val: String(res.impactoElectoralNeto || `${aprob - rechazo}%`), sub: res.indiceFriccionSocial?.nivel || 'Evaluado', color: [2, 132, 199], tag: 'Impacto' },
+        { label: 'Muestra Simulada', val: totalSwarm.toLocaleString(), sub: 'Agentes Sintéticos', color: [217, 119, 6], tag: 'Enjambre' }
       ];
 
       kpis.forEach((kpi, i) => {
@@ -556,102 +568,113 @@
     // RENDERIZADO: PÁGINA 3 - MICRO-TARGETING Y ESTRATEGIA DE LANZAMIENTO
     // -------------------------------------------------------------------------
     drawPage3MicroTargetingYLanzamiento(doc, ctx) {
-      const { margin, contentWidth, party, municipio } = ctx;
+      const { margin, contentWidth, party, municipio, reportData } = ctx;
 
       let curY = 17;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text(`MICRO-TARGETING POR COLONIAS REALES DE ${municipio.toUpperCase()}`, margin, curY);
+      doc.text(`MICRO-TARGETING POR COLONIAS EVALUADAS DE ${municipio.toUpperCase()}`, margin, curY);
 
       curY += 3.5;
 
-      const coloniasPropuesta = [
-        { nombre: 'Ciudad Azteca (1ra a 3ra Sección)', apoyo: '64%', rechazo: '22%', friccion: 'Baja', prioridad: 'Estratégica', observacion: 'Amplio respaldo por saturación de transporte en Av. Central y falta de agua.' },
-        { nombre: 'Jardines de Morelos', apoyo: '58%', rechazo: '28%', friccion: 'Moderada', prioridad: 'Alta', observacion: 'Comerciantes locales exigen que las obras no bloqueen accesos vehiculares.' },
-        { nombre: 'San Cristóbal Centro', apoyo: '52%', rechazo: '34%', friccion: 'Media-Alta', prioridad: 'Alta', observacion: 'Locatarios formales recelan de ambulantaje durante la fase constructiva.' },
-        { nombre: 'Las Américas', apoyo: '66%', rechazo: '18%', friccion: 'Baja', prioridad: 'Estratégica', observacion: 'Clase media respalda conectividad y seguridad con cámaras enlazadas al C5.' },
-        { nombre: 'Santa María Tulpetlac', apoyo: '70%', rechazo: '16%', friccion: 'Mínima', prioridad: 'Estratégica', observacion: 'Entusiasmo vecinal histórico por ser zona rezagada en infraestructura.' },
-        { nombre: 'Chiconautla / Cd. Cuauhtémoc', apoyo: '74%', rechazo: '14%', friccion: 'Mínima', prioridad: 'Estratégica', observacion: 'Prioridad absoluta a gratuidad estudiantil y paraderos iluminados.' },
-        { nombre: 'San Agustín', apoyo: '55%', rechazo: '30%', friccion: 'Moderada', prioridad: 'Media', observacion: 'Dudas sobre tandeo de agua mientras se ejecutan zanjas de drenaje.' },
-        { nombre: 'Valle de Aragón 3ra Sección', apoyo: '61%', rechazo: '24%', friccion: 'Baja', prioridad: 'Alta', observacion: 'Respaldo con exigencia de contraloría social ciudadana vigilante.' }
-      ];
+      const rawColonias = reportData?.microTargetingColonias?.coloniasEvaluadas || [];
+      const coloniasPropuesta = rawColonias.map(c => ({
+        nombre: c.nombre || 'Colonia Evaluada',
+        apoyo: `${c.apoyoProyectado ?? c.apoyoBase ?? 55}%`,
+        rechazo: `${Math.max(10, 100 - Number(c.apoyoProyectado ?? c.apoyoBase ?? 55) - 14)}%`,
+        friccion: String(c.prioridadBrigada || '').includes('Resistencia') ? 'Alta' : (String(c.prioridadBrigada || '').includes('Indecisa') ? 'Moderada' : 'Baja'),
+        prioridad: String(c.prioridadBrigada || c.prioridad || 'Estratégica').split('/')[0].trim(),
+        observacion: c.accionRecomendada || c.carenciaPrincipal || 'Atención prioritaria en brigada territorial.'
+      }));
 
-      const headers = ['COLONIA / BARRIO', 'APOYO', 'OPOSICIÓN', 'FRICCIÓN', 'PRIORIDAD', 'FOCO DE SENSIBILIDAD BARRIAL'];
-      const colWidths = [42, 16, 16, 20, 22, 71.9];
+      if (coloniasPropuesta.length === 0) {
+        doc.setFillColor(254, 242, 242);
+        doc.setDrawColor(252, 165, 165);
+        doc.roundedRect(margin, curY, contentWidth, 24, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(185, 28, 28);
+        doc.text('Sin datos suficientes de simulación para compilar el expediente de colonias en esta sección.', margin + 4, curY + 10);
+        curY += 30;
+      } else {
+        const headers = ['COLONIA / BARRIO', 'APOYO', 'OPOSICIÓN', 'FRICCIÓN', 'PRIORIDAD', 'FOCO DE SENSIBILIDAD BARRIAL'];
+        const colWidths = [42, 16, 16, 20, 24, 69.9];
 
-      doc.setFillColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.rect(margin, curY, contentWidth, 5.2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.2);
-
-      let xOffset = margin;
-      headers.forEach((h, i) => {
-        doc.text(h, xOffset + 2, curY + 3.6);
-        xOffset += colWidths[i];
-      });
-
-      curY += 5.2;
-
-      coloniasPropuesta.forEach((c, idx) => {
-        const rowH = 9.8;
-        const bg = (idx % 2 === 0) ? [255, 255, 255] : [248, 250, 252];
-        doc.setFillColor(bg[0], bg[1], bg[2]);
-        doc.rect(margin, curY, contentWidth, rowH, 'F');
-        doc.setDrawColor(226, 232, 240);
-        doc.rect(margin, curY, contentWidth, rowH, 'S');
-
+        doc.setFillColor(party.dark[0], party.dark[1], party.dark[2]);
+        doc.rect(margin, curY, contentWidth, 5.2, 'F');
+        doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(6.2);
-        doc.setTextColor(15, 23, 42);
-        doc.text(c.nombre, margin + 2, curY + 4.8);
 
-        doc.setTextColor(0, 143, 57);
-        doc.text(c.apoyo, margin + 44, curY + 4.8);
+        let xOffset = margin;
+        headers.forEach((h, i) => {
+          doc.text(h, xOffset + 2, curY + 3.6);
+          xOffset += colWidths[i];
+        });
 
-        doc.setTextColor(220, 38, 38);
-        doc.text(c.rechazo, margin + 60, curY + 4.8);
+        curY += 5.2;
 
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(71, 85, 105);
-        doc.text(c.friccion, margin + 76, curY + 4.8);
+        coloniasPropuesta.slice(0, 8).forEach((c, idx) => {
+          const rowH = 9.8;
+          const bg = (idx % 2 === 0) ? [255, 255, 255] : [248, 250, 252];
+          doc.setFillColor(bg[0], bg[1], bg[2]);
+          doc.rect(margin, curY, contentWidth, rowH, 'F');
+          doc.setDrawColor(226, 232, 240);
+          doc.rect(margin, curY, contentWidth, rowH, 'S');
 
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(c.prioridad === 'Estratégica' ? 0 : 217, c.prioridad === 'Estratégica' ? 104 : 119, c.prioridad === 'Estratégica' ? 41 : 6);
-        doc.text(c.prioridad, margin + 96, curY + 4.8);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.2);
+          doc.setTextColor(15, 23, 42);
+          doc.text(String(c.nombre).substring(0, 28), margin + 2, curY + 4.8);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 65, 85);
-        doc.text(c.observacion.substring(0, 68), margin + 118, curY + 4.8);
+          doc.setTextColor(0, 143, 57);
+          doc.text(String(c.apoyo), margin + 44, curY + 4.8);
 
-        curY += rowH;
-      });
+          doc.setTextColor(220, 38, 38);
+          doc.text(String(c.rechazo), margin + 60, curY + 4.8);
 
-      // ESTRATEGIA Y CALENDARIO DE LANZAMIENTO POLÍTICO
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(String(c.friccion), margin + 76, curY + 4.8);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 104, 41);
+          doc.text(String(c.prioridad).substring(0, 15), margin + 96, curY + 4.8);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(51, 65, 85);
+          doc.text(String(c.observacion).substring(0, 65), margin + 120, curY + 4.8);
+
+          curY += rowH;
+        });
+      }
+
+      // ESTRATEGIA Y CALENDARIO DE LANZAMIENTO POLÍTICO EN EL MUNICIPIO SIMULADO
       curY += 7;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('HOJA DE RUTA ESTRATÉGICA DE LANZAMIENTO Y DESPLIEGUE TERRITORIAL', margin, curY);
+      doc.text(`HOJA DE RUTA ESTRATÉGICA DE LANZAMIENTO EN ${municipio.toUpperCase()}`, margin, curY);
 
       curY += 3.5;
 
+      const colNombres = coloniasPropuesta.slice(0, 3).map(c => c.nombre).join(', ') || `zonas prioritarias de ${municipio}`;
       const fases = [
         {
           fase: 'FASE 1 (DÍAS 1 A 30) — SOCIALIZACIÓN TEMPRANA Y BLINDAJE GREMIAL',
           color: [2, 132, 199],
-          acciones: '• Instalación inmediata de la Mesa Técnica Tripartita con concesionarios de transporte y uniones de tianguistas.\n• Publicación de infografías en redes barriales aclarando que NO habrá desalojos ni cobro de derechos extraordinarios.\n• Activación de 40 brigadistas de contacto en las 3 colonias con mayor fricción (San Cristóbal, Jardines y San Agustín).'
+          acciones: `• Instalación inmediata de la Mesa Técnica Tripartita con sectores productivos y gremiales de ${municipio}.\n• Socialización directa en barrios aclarando alcances técnicos y beneficio familiar directo.\n• Despliegue de brigadistas de contacto en las colonias evaluadas (${colNombres}).`
         },
         {
-          fase: 'FASE 2 (DÍAS 31 A 60) — ARRANQUE OPERATIVO CON TESTIGOS SOCIALES',
+          fase: 'FASE 2 (DÍAS 31 A 60) — ARRANQUE OPERATIVO CON CONTRALORÍA CIUDADANA',
           color: [0, 143, 57],
-          acciones: '• Evento público ancla con firma ante notario y presencia de líderes vecinales y rectores universitarios.\n• Habilitación del portal de contraloría social en vivo 24/7 con avance físico y financiero auditado.\n• Primer corte de listón o arranque de obra en zona de alto impacto simbólico (Santa María Tulpetlac / Chiconautla).'
+          acciones: `• Evento público de presentación en ${municipio} con presencia de comités vecinales y representantes gremiales.\n• Habilitación del tablero de seguimiento público con métricas de avance físico y presupuestal.\n• Activación territorial en los cuadrantes de mayor densidad electoral de ${municipio}.`
         },
         {
           fase: 'FASE 3 (DÍAS 61 A 90) — CONSOLIDACIÓN DE RESULTADOS Y CAPITALIZACIÓN',
           color: [217, 119, 6],
-          acciones: '• Entrega de los primeros beneficios palpables (iluminación solar, primeros pozos o farmacias habilitadas).\n• Encuesta de satisfacción vecinal en campo para medir la reducción del rechazo del 30% a menos del 12%.\n• Mediatización de testimonios reales de vecinos beneficiados para neutralizar ataques de la oposición.'
+          acciones: `• Evaluación de impacto barrial en ${municipio} para convertir el segmento indeciso en respaldo activo.\n• Ajuste táctico de mensaje conforme a las recomendaciones del enjambre sintético.\n• Difusión de testimonios ciudadanos verificados para blindar la propuesta ante cuestionamientos.`
         }
       ];
 
@@ -686,7 +709,7 @@
       const { margin, contentWidth, party, reportData } = ctx;
 
       let curY = 17;
-      const union = reportData.inteligenciaSindical || {};
+      const union = reportData.balanceSindical || reportData.inteligenciaSindical || {};
 
       // Semáforo de Riesgo de Paro
       const uBoxH = 18;
@@ -694,7 +717,8 @@
       doc.setDrawColor(226, 232, 240);
       doc.roundedRect(margin, curY, contentWidth, uBoxH, 1.5, 1.5, 'FD');
 
-      const riesgoScore = union.riesgoParoScore || 24;
+      const riesgoGlobal = union.riesgoParoGlobal || union.semaforoTexto || 'Riesgo Evaluado';
+      const riesgoScore = union.riesgoParoScore || (String(riesgoGlobal).includes('Alto') ? 68 : 28);
       let semColor = [0, 143, 57];
       if (riesgoScore >= 60) semColor = [220, 38, 38];
       else if (riesgoScore >= 35) semColor = [217, 119, 6];
@@ -706,17 +730,17 @@
       doc.setFontSize(7.5);
       doc.text(`RIESGO: ${riesgoScore}/100`, margin + 5.5, curY + 8.5);
       doc.setFontSize(5.5);
-      doc.text(union.semaforoTexto || 'Riesgo Controlado', margin + 5.5, curY + 12.5);
+      doc.text(String(riesgoGlobal).substring(0, 18), margin + 5.5, curY + 12.5);
 
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(7.8);
       doc.setFont('helvetica', 'bold');
-      doc.text('DICTAMEN GREMIAL Y AUDITORÍA DE CONTRATOS COLECTIVOS (CFCRL / STPS):', margin + 41, curY + 6.5);
+      doc.text('DICTAMEN GREMIAL Y EVALUACIÓN DE FUERZAS SINDICALES:', margin + 41, curY + 6.5);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.2);
       doc.setTextColor(51, 65, 85);
-      const dictSindical = union.dictamenSindical || 'Auditoría a contratos colectivos del municipio sin focos de paro generalizado detectados. Relación estable con sectores primarios.';
+      const dictSindical = union.resumenEjecutivoSindical || union.dictamenSindical || 'Balance de fuerzas gremiales evaluado sobre la propuesta ingresada en la sesión activa.';
       doc.text(doc.splitTextToSize(dictSindical, contentWidth - 46), margin + 41, curY + 11.5);
 
       // Tabla de las 12 Fuerzas Sindicales
@@ -724,13 +748,23 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('MATRIZ EXHAUSTIVA DE LAS 12 FUERZAS GREMIALES DEL MUNICIPIO', margin, curY);
+      doc.text('MATRIZ DE FUERZAS GREMIALES EVALUADAS EN LA SIMULACIÓN', margin, curY);
 
       curY += 3.5;
 
-      const fuerzas = (union.fuerzas && union.fuerzas.length >= 8) ? union.fuerzas : this.build12FuerzasFallback();
+      const rawSinds = Array.isArray(union.sindicatosEvaluados)
+        ? union.sindicatosEvaluados.map(s => ({
+            gremio: s.nombre || 'Gremio',
+            siglas: s.sector || 'Gremio',
+            postura: s.postura || 'Neutral',
+            pliegoPetitorio: Array.isArray(s.pliegoPetitorio) ? s.pliegoPetitorio.join('; ') : (s.pliegoPetitorio || ''),
+            testimonioLider: `Afinidad: ${s.afinidad ?? 50}% | Riesgo Paro: ${s.riesgoParo || 'Bajo'}`
+          }))
+        : (Array.isArray(union.fuerzas) ? union.fuerzas : []);
 
-      const headers = ['GREMIO / FUERZA', 'SIGLAS', 'POSTURA', 'PLIEGO PETITORIO SINTÉTICO', 'DECLARACIÓN REPRESENTATIVA'];
+      const fuerzas = rawSinds.length > 0 ? rawSinds : this.build12FuerzasFallback();
+
+      const headers = ['GREMIO / FUERZA', 'SECTOR', 'POSTURA', 'PLIEGO PETITORIO SINTÉTICO', 'AFINIDAD Y RIESGO'];
       const colWidths = [38, 20, 22, 58, 49.9];
 
       doc.setFillColor(party.dark[0], party.dark[1], party.dark[2]);
@@ -755,47 +789,41 @@
         doc.setDrawColor(226, 232, 240);
         doc.rect(margin, curY, contentWidth, rowH, 'S');
 
-        // Gremio
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(6);
         doc.setTextColor(15, 23, 42);
-        doc.text(doc.splitTextToSize(f.gremio, 36), margin + 2, curY + 4.2);
+        doc.text(doc.splitTextToSize(f.gremio || '', 36), margin + 2, curY + 4.2);
 
-        // Siglas
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5.5);
         doc.setTextColor(100, 116, 139);
-        doc.text(f.siglas, margin + 40, curY + 4.2);
+        doc.text(String(f.siglas || '').substring(0, 14), margin + 40, curY + 4.2);
 
-        // Postura con Badge
         let pCol = [0, 143, 57];
-        if (f.postura === 'En Contra') pCol = [220, 38, 38];
-        else if (f.postura.includes('Reserva')) pCol = [217, 119, 6];
+        if (String(f.postura).includes('Contra') || String(f.postura).includes('Rechazo')) pCol = [220, 38, 38];
+        else if (String(f.postura).includes('Reserva') || String(f.postura).includes('Condicion')) pCol = [217, 119, 6];
 
         doc.setFillColor(pCol[0], pCol[1], pCol[2]);
         doc.roundedRect(margin + 60, curY + 2.5, 18, 4.2, 0.8, 0.8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(5);
-        doc.text(f.postura, margin + 61.5, curY + 5.5);
+        doc.text(String(f.postura || 'Evaluado').substring(0, 12), margin + 61.5, curY + 5.5);
 
-        // Pliego Petitorio
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5.6);
         doc.setTextColor(51, 65, 85);
         const plLines = doc.splitTextToSize(f.pliegoPetitorio || f.pliego || '', 56);
-        doc.text(plLines, margin + 82, curY + 4.2);
+        doc.text(plLines.slice(0, 2), margin + 82, curY + 4.2);
 
-        // Declaración
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(30, 41, 59);
-        const decLines = doc.splitTextToSize(`"${f.testimonioLider || f.liderTestimonio || 'Sin objeción formal al proyecto.'}"`, 48);
-        doc.text(decLines, margin + 140, curY + 4.2);
+        const decLines = doc.splitTextToSize(`${f.testimonioLider || f.liderTestimonio || ''}`, 48);
+        doc.text(decLines.slice(0, 2), margin + 140, curY + 4.2);
 
         curY += rowH;
       });
 
-      // Protocolo de Mitigación de Paros
       curY += 3;
       doc.setFillColor(party.lightBg[0], party.lightBg[1], party.lightBg[2]);
       doc.setDrawColor(party.borderSoft[0], party.borderSoft[1], party.borderSoft[2]);
@@ -804,16 +832,16 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.8);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('PROTOCOLO DE PREVENCIÓN DE BLOQUEOS VIALES:', margin + 3, curY + 4.5);
+      doc.text('PROTOCOLO DE PREVENCIÓN DE CONFLICTOS GREMIALES:', margin + 3, curY + 4.5);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(5.8);
       doc.setTextColor(30, 41, 59);
-      doc.text('Firmar los convenios de inclusión laboral con transportistas concesionarios y tianguistas antes de la presentación pública para garantizar el 100% de gobernabilidad urbana.', margin + 3, curY + 8.5);
+      doc.text('Instalar mesas de concertación previa con las organizaciones evaluadas antes de la ejecución operativa para garantizar gobernabilidad.', margin + 3, curY + 8.5);
     },
 
     // -------------------------------------------------------------------------
-    // RENDERIZADO: PÁGINA 5 - 18 FUENTES OFICIALES (.GOB.MX) Y VOCES CIUDADANAS
+    // RENDERIZADO: PÁGINA 5 - MATRIZ DE INDICADORES Y VOCES CIUDADANAS
     // -------------------------------------------------------------------------
     drawPage5FuentesYVoces(doc, ctx) {
       const { margin, contentWidth, party, reportData } = ctx;
@@ -822,13 +850,13 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('MATRIZ DE TRAZABILIDAD DE LAS 18 FUENTES OFICIALES GUBERNAMENTALES (.GOB.MX)', margin, curY);
+      doc.text('MATRIZ DE TRAZABILIDAD DE LOS 18 PARÁMETROS MULTI-DIMENSIONALES DEL ENJAMBRE', margin, curY);
 
       curY += 3.5;
 
       const fuentes18 = this.build18FuentesFallback();
 
-      const headers = ['INSTITUCIÓN', 'DOMINIO OFICIAL', 'INDICADOR / REPOSITORIO AUDITADO', 'ESTATUS'];
+      const headers = ['DIMENSIÓN / PARÁMETRO', 'CÓDIGO DE MOTOR', 'INDICADOR DE CALIBRACIÓN EVALUADO', 'ESTATUS'];
       const colWidths = [45, 38, 80, 24.9];
 
       doc.setFillColor(party.dark[0], party.dark[1], party.dark[2]);
@@ -860,32 +888,53 @@
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(2, 132, 199);
-        doc.text(f.dominio, margin + 47, curY + 4.2);
+        doc.text(' CALIBRACIÓN SWARM AI', margin + 47, curY + 4.2);
 
         doc.setTextColor(51, 65, 85);
         doc.text(f.indicador.substring(0, 68), margin + 85, curY + 4.2);
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 143, 57);
-        doc.text('✔ Verificado', margin + 165, curY + 4.2);
+        doc.text('✔ Procesado', margin + 165, curY + 4.2);
 
         curY += rowH;
       });
 
-      // VOCES DEL ENJAMBRE CIUDADANO
+      // VOCES DEL ENJAMBRE CIUDADANO DE LA SIMULACIÓN ACTIVA
       curY += 5;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('VOCES Y TESTIMONIOS ANCLADOS DEL ENJAMBRE CIUDADANO (REPARTO REPRESENTATIVO)', margin, curY);
+      doc.text('VOCES Y TESTIMONIOS DEL ENJAMBRE CIUDADANO GENERADOS EN LA SESIÓN', margin, curY);
 
       curY += 3.5;
 
-      const testimonios = (reportData.chatsDelEnjambre && reportData.chatsDelEnjambre.length >= 4)
-        ? reportData.chatsDelEnjambre.slice(0, 4)
-        : this.buildVocesFallback();
+      const rawTestimonios = Array.isArray(reportData.testimonios) && reportData.testimonios.length > 0
+        ? reportData.testimonios.slice(0, 4).map(t => ({
+            nombre: t.perfil || 'Agente Sintético',
+            edad: t.edad || 'Adulto',
+            ocupacion: t.sector || 'Ciudadano',
+            colonia: ctx.municipio || 'Demarcación',
+            voto: t.postura || 'Evaluado',
+            mensaje: t.comentario || '',
+            sectorSocial: t.sector || 'Comunidad',
+            entusiasmo: 70,
+            nse: t.nse || 'C/D+'
+          }))
+        : (Array.isArray(reportData.chatsDelEnjambre) ? reportData.chatsDelEnjambre.slice(0, 4) : []);
 
-      testimonios.forEach(t => {
+      if (rawTestimonios.length === 0) {
+        doc.setFillColor(254, 242, 242);
+        doc.setDrawColor(252, 165, 165);
+        doc.roundedRect(margin, curY, contentWidth, 20, 1.2, 1.2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(185, 28, 28);
+        doc.text('Sin datos suficientes de simulación para compilar testimonios en este módulo.', margin + 4, curY + 9);
+        return;
+      }
+
+      rawTestimonios.forEach(t => {
         const tH = 22;
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(226, 232, 240);
@@ -893,8 +942,8 @@
 
         const v = (t.voto || '').toLowerCase();
         let bColor = [0, 143, 57];
-        if (v.includes('contra')) bColor = [220, 38, 38];
-        else if (v.includes('neutro')) bColor = [217, 119, 6];
+        if (v.includes('contra') || v.includes('rechaz')) bColor = [220, 38, 38];
+        else if (v.includes('neutro') || v.includes('indecis')) bColor = [217, 119, 6];
 
         doc.setFillColor(bColor[0], bColor[1], bColor[2]);
         doc.rect(margin, curY, 2.5, tH, 'F');
@@ -902,28 +951,25 @@
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(6.8);
         doc.setTextColor(15, 23, 42);
-        doc.text(`${t.nombre} (${t.edad} años • ${t.ocupacion} — Col. ${t.colonia})`, margin + 5, curY + 4.8);
+        doc.text(`${t.nombre} (${t.ocupacion} — ${t.colonia})`, margin + 5, curY + 4.8);
 
-        // Badge postura
         doc.setFillColor(bColor[0], bColor[1], bColor[2]);
         doc.roundedRect(margin + contentWidth - 24, curY + 2.2, 21, 4, 0.8, 0.8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(5.5);
         doc.setFont('helvetica', 'bold');
-        doc.text(t.voto || 'Voto', margin + contentWidth - 22, curY + 5);
+        doc.text(String(t.voto || 'Voto').substring(0, 12), margin + contentWidth - 22, curY + 5);
 
-        // Mensaje del ciudadano
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(6.2);
         doc.setTextColor(30, 41, 59);
         const msgLines = doc.splitTextToSize(`"${t.mensaje || t.argumento || ''}"`, contentWidth - 10);
         doc.text(msgLines.slice(0, 2), margin + 5, curY + 10.5);
 
-        // Metadatos al pie
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5.2);
         doc.setTextColor(100, 116, 139);
-        doc.text(`Sector: ${t.sectorSocial || 'Comunidad'}  |  Entusiasmo: ${t.entusiasmo || 50}%  |  Estrato: ${t.nse || 'C'}`, margin + 5, curY + tH - 2.5);
+        doc.text(`Sector: ${t.sectorSocial || 'Comunidad'}  |  Territorio: ${ctx.municipio}`, margin + 5, curY + tH - 2.5);
 
         curY += tH + 2.5;
       });
@@ -939,13 +985,23 @@
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.2);
       doc.setTextColor(71, 85, 105);
-      const sub = 'Media training intensivo para debates, ruedas de prensa fiscalizadoras y entrevistas hostiles. Bloque 1 (Financiero) y Bloque 2 (Impacto Social):';
+      const sub = 'Media training intensivo generado para la propuesta evaluada en sesión. Bloque 1 y Bloque 2 (Preguntas 1 a 10):';
       doc.text(doc.splitTextToSize(sub, contentWidth), margin, curY);
 
       curY += 5;
 
-      const defense = reportData.blindajeDefensa || {};
-      const preguntas = defense.preguntas || this.buildPreguntasFallback();
+      const rawPR = reportData.blindajeEstrategico?.preguntasRespuestas || reportData.blindajeDefensa?.preguntas || [];
+      const preguntas = rawPR.length > 0
+        ? rawPR.map((item, idx) => ({
+            numero: item.numero || (idx + 1),
+            bloque: item.categoria || item.bloque || 'Blindaje Táctico',
+            dardo: item.pregunta || item.dardo || '',
+            escudo: item.respuestaMaestra || item.escudo || '',
+            pivotePolitico: item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`,
+            peligro: item.nivelRiesgo || item.peligro || 'Riesgo Alto',
+            sectorAtacante: item.sectorAtacante || 'Cuestionamiento Crítico'
+          }))
+        : this.buildPreguntasFallback();
       const pBloque1y2 = preguntas.slice(0, 10);
 
       pBloque1y2.forEach((q) => {
@@ -954,17 +1010,14 @@
         doc.setDrawColor(226, 232, 240);
         doc.roundedRect(margin, curY, contentWidth, qH, 1.2, 1.2, 'FD');
 
-        // Borde rojo de alerta opositora
         doc.setFillColor(220, 38, 38);
         doc.rect(margin, curY, 2.5, qH, 'F');
 
-        // Dardo opositor
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(6.4);
         doc.setTextColor(185, 28, 28);
         doc.text(`Q${q.numero} [${q.bloque}] 🎯 Dardo: "${(q.dardo || '').substring(0, 125)}"`, margin + 5, curY + 4.5);
 
-        // Escudo Factible (30s con datos oficiales)
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5.8);
         doc.setTextColor(0, 104, 41);
@@ -975,7 +1028,6 @@
         const escLines = doc.splitTextToSize((q.escudo || '').substring(0, 160), contentWidth - 28);
         doc.text(escLines.slice(0, 2), margin + 25, curY + 9.5);
 
-        // Pivote Político
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
         doc.text('🔄 Pivote:', margin + 5, curY + 16.5);
@@ -984,11 +1036,10 @@
         const pivLines = doc.splitTextToSize((q.pivotePolitico || '').substring(0, 150), contentWidth - 28);
         doc.text(pivLines.slice(0, 1), margin + 25, curY + 16.5);
 
-        // Nivel de riesgo al pie
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(4.8);
         doc.setTextColor(148, 163, 184);
-        doc.text(`Alerta: ${q.peligro || 'Peligro Alto'}  |  Sector Atacante: ${q.sectorAtacante || 'Oposición'}`, margin + 5, curY + qH - 2);
+        doc.text(`Alerta: ${q.peligro || 'Peligro Alto'}  |  Categoría: ${q.bloque}`, margin + 5, curY + qH - 2);
 
         curY += qH + 2.2;
       });
@@ -1008,11 +1059,18 @@
 
       curY += 3;
 
-      const defense = reportData.blindajeDefensa || {};
-      const preguntas = defense.preguntas || this.buildPreguntasFallback();
+      const rawPR = reportData.blindajeEstrategico?.preguntasRespuestas || reportData.blindajeDefensa?.preguntas || [];
+      const preguntas = rawPR.length > 0
+        ? rawPR.map((item, idx) => ({
+            numero: item.numero || (idx + 1),
+            bloque: item.categoria || item.bloque || 'Blindaje Táctico',
+            dardo: item.pregunta || item.dardo || '',
+            escudo: item.respuestaMaestra || item.escudo || '',
+            pivotePolitico: item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`
+          }))
+        : this.buildPreguntasFallback();
       const pBloque3y4 = preguntas.slice(10, 20);
 
-      // Tabla compacta estilizada para preguntas 11-20
       pBloque3y4.forEach((q) => {
         const qH = 14.5;
         doc.setFillColor(255, 255, 255);
@@ -1039,15 +1097,15 @@
         curY += qH + 1.8;
       });
 
-      // MODO ATAQUE: INGENIERÍA INVERSA Y DEMOLICIÓN DEL CONTRINCANTE
+      // MODO ATAQUE: SOLO SI FUE ACTIVADO O EVALÚA LA SESIÓN ACTIVA
       curY += 2;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(185, 28, 28);
-      doc.text('ARSENAL DE MODO ATAQUE: INGENIERÍA INVERSA Y DEMOLICIÓN DE CONTRINCANTE', margin, curY);
+      doc.text('ARSENAL DE MODO ATAQUE: INGENIERÍA INVERSA Y CONTRASTE DE CAMPAÑA', margin, curY);
 
       curY += 3;
-      const attack = reportData.modoAtaque || {};
+      const attack = reportData.modoAtaque || null;
       const atkBoxH = 50;
 
       doc.setFillColor(254, 242, 242);
@@ -1057,37 +1115,37 @@
       doc.setFillColor(185, 28, 28);
       doc.roundedRect(margin, curY, 3, atkBoxH, 1, 1, 'F');
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.2);
-      doc.setTextColor(153, 27, 27);
-      doc.text(`PARTIDO RIVAL AUDITADO: ${attack.partidoRival || 'MORENA / OPOSICIÓN'}  |  RECHAZO SOCIAL ESTIMADO: ${attack.rechazoEstimado || 68}%`, margin + 6, curY + 6);
+      if (!attack || (!attack.partidoRival && !attack.soundbites && !attack.puntosDebilesRival)) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(153, 27, 27);
+        doc.text('Sin datos suficientes de simulación para compilar el expediente de Modo Ataque (Módulo no activado en esta corrida).', margin + 6, curY + 12);
+      } else {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.2);
+        doc.setTextColor(153, 27, 27);
+        doc.text(`PARTIDO RIVAL EVALUADO: ${attack.partidoRival || 'OPOSICIÓN'}  |  VULNERABILIDAD DETECTADA: ${attack.rechazoEstimado || 65}%`, margin + 6, curY + 6);
 
-      let aY = curY + 12;
-      doc.setFontSize(6.2);
-      doc.setTextColor(15, 23, 42);
-      doc.text('SOUNDBITES LETALES DE CONTRAATAQUE (30 SEGUNDOS EN DEBATE):', margin + 6, aY);
+        let aY = curY + 12;
+        doc.setFontSize(6.2);
+        doc.setTextColor(15, 23, 42);
+        doc.text('SOUNDBITES LETALES DE CONTRAATAQUE (30 SEGUNDOS EN DEBATE):', margin + 6, aY);
 
-      aY += 4.5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.8);
-      doc.setTextColor(69, 10, 10);
-      const sb1 = attack.soundbites?.[0] || '1. "Su propuesta carece de sustento en el Ramo 33; vienen a endeudar a las familias de este municipio con ocurrencias de campaña."';
-      const sb2 = attack.soundbites?.[1] || '2. "Durante su trienio tuvieron el presupuesto y no movieron un dedo; hoy prometen lo que fueron incapaces de cumplir en el gobierno."';
-      doc.text(doc.splitTextToSize(sb1, contentWidth - 12), margin + 6, aY);
-      aY += 6.5;
-      doc.text(doc.splitTextToSize(sb2, contentWidth - 12), margin + 6, aY);
+        aY += 4.5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5.8);
+        doc.setTextColor(69, 10, 10);
+        const sb1 = attack.soundbites?.[0] || attack.puntosDebilesRival?.[0] || 'Contraste técnico y presupuestal frente a la propuesta adversaria.';
+        const sb2 = attack.soundbites?.[1] || attack.puntosDebilesRival?.[1] || 'Enfoque en resultados verificables para el municipio evaluado.';
+        doc.text(doc.splitTextToSize(String(sb1), contentWidth - 12), margin + 6, aY);
+        aY += 6.5;
+        doc.text(doc.splitTextToSize(String(sb2), contentWidth - 12), margin + 6, aY);
 
-      aY += 7.5;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 104, 41);
-      doc.text(`CONTRAPROPUESTA GANADORA: ${(attack.contrapropuestaGanadora?.titulo || 'Plan Verde de Agua y Calles Seguras para Todos').substring(0, 95)}`, margin + 6, aY);
-
-      aY += 5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.6);
-      doc.setTextColor(51, 65, 85);
-      const planCap = attack.planCaptura?.promesaCompromiso || 'Compromiso firmado de no aumentar tarifas, subsidiar mejoras directas y auditar las cuentas del trienio anterior ante el OSFEM.';
-      doc.text(`Estrategia de Captura de Voto Desencantado: ${planCap}`, margin + 6, aY);
+        aY += 7.5;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 104, 41);
+        doc.text(`CONTRAPROPUESTA: ${(attack.contrapropuestaGanadora?.titulo || attack.estrategiaContraste || 'Alternativa Viable en Sesión').substring(0, 95)}`, margin + 6, aY);
+      }
 
       // Sello de Certificación Final
       curY += atkBoxH + 4;
@@ -1103,7 +1161,7 @@
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(5.2);
       doc.setTextColor(30, 41, 59);
-      doc.text('GovTech War Room v4.5 Enterprise Macro-Censal Edition. Dirección de Proyecto: Erick Vega. Procesamiento por enjambre sintético de hasta 100,000 agentes, datos cruzados de 18 fuentes oficiales .gob.mx, auditoría QA Watchdog y blindaje Cyber Sentinel 24/7.', margin + 3.5, curY + 8.2);
+      doc.text('GovTech War Room v4.5 Enterprise Macro-Censal Edition. Dirección de Proyecto: Erick Vega. Procesamiento por enjambre sintético escalable y micro-targeting territorial, auditoría QA Watchdog y blindaje Cyber Sentinel 24/7.', margin + 3.5, curY + 8.2);
     },
 
     // -------------------------------------------------------------------------

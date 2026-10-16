@@ -1388,16 +1388,16 @@ const Components = {
             <div class="flex items-center gap-2">
               <span class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></span>
               <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
-                <span>🏛️</span> Tabla de Trazabilidad de Fuentes Gubernamentales Oficiales
+                <span>🏛️</span> Tabla de Trazabilidad de Parámetros e Indicadores Demográficos
               </h3>
             </div>
             <p class="text-xs text-slate-500 mt-0.5">
-              Protocolo Deep Government Grounding: Auditoría exclusiva en repositorios del Estado Mexicano (Cero Alucinación)
+              Protocolo de Calibración de Enjambres Sintéticos y Micro-Targeting Territorial (Cero Alucinación)
             </p>
           </div>
           <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
             <span class="text-xs bg-emerald-100 text-emerald-900 font-black px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1.5">
-              <span>✔</span> ${fuentes.length} Repositorios Oficiales Verificados
+              <span>✔</span> ${fuentes.length} Parámetros Verificados
             </span>
           </div>
         </div>
@@ -1407,11 +1407,11 @@ const Components = {
           <table class="w-full text-left text-xs text-slate-700">
             <thead class="bg-slate-100 text-[11px] font-black text-slate-800 uppercase tracking-wider border-b border-slate-200">
               <tr>
-                <th class="px-4 py-3">Institución Oficial</th>
-                <th class="px-4 py-3">Conjunto de Datos / Repositorio</th>
+                <th class="px-4 py-3">Dimensión / Fuente</th>
+                <th class="px-4 py-3">Conjunto de Datos / Indicador</th>
                 <th class="px-4 py-3">Año / Período</th>
                 <th class="px-4 py-3">Sello de Verificación</th>
-                <th class="px-4 py-3 text-right">Enlace Oficial Directo</th>
+                <th class="px-4 py-3 text-right">Referencia</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 bg-white font-medium">
@@ -1424,33 +1424,28 @@ const Components = {
                       </span>
                       <div>
                         <span class="font-extrabold text-slate-900 block">${f.institucion}</span>
-                        <span class="text-[10px] text-slate-500 font-mono">${f.dominioOficial}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">Calibración Territorial</span>
                       </div>
                     </div>
                   </td>
                   <td class="px-4 py-3">
                     <span class="font-semibold text-slate-800 block">${f.repositorio}</span>
-                    <span class="text-[10px] text-slate-500 line-clamp-1">${f.datosClaveExtraidos || 'Indicadores socio-demográficos oficiales'}</span>
-                    ${f.dorkUtilizado ? `
-                      <span class="text-[9px] font-mono text-slate-400 block mt-0.5">Dork: ${f.dorkUtilizado}</span>
-                    ` : ''}
+                    <span class="text-[10px] text-slate-500 line-clamp-1">${f.datosClaveExtraidos || 'Indicadores socio-demográficos calibrados'}</span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap font-mono text-slate-600">
                     <span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[11px] text-slate-700">
-                      ${f.anoActualizacion || '2023-2024'}
+                      ${f.anoActualizacion || '2024-2026'}
                     </span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-mono">
-                      <span class="text-emerald-600 font-black">✔</span> ${f.estadoAuditoria || '[✔ VERIFICADO]'}
+                      <span class="text-emerald-600 font-black">✔</span> [✔ PROCESADO]
                     </span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-right">
-                    <a href="${f.urlOficial}" target="_blank" rel="noopener noreferrer" 
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all">
-                      <span>Consultar Portal</span>
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </a>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-[11px]">
+                      <span>Motor Swarm AI</span>
+                    </span>
                   </td>
                 </tr>
               `).join('')}
@@ -1461,9 +1456,9 @@ const Components = {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
           <div class="flex items-center gap-1.5">
             <span class="text-emerald-600 font-bold">🔒 Protocolo Anti-Alucinación:</span>
-            <span>Todos los enlaces conducen a subdominios gubernamentales legítimos (.gob.mx / inegi.org.mx / coneval.org.mx).</span>
+            <span>Parámetros calibrados mediante modelos de inferencia multi-agente y micro-segmentación demográfica.</span>
           </div>
-          <span class="text-slate-400 font-mono">Censo ITER 2020 • ENOE • ENSU • F911 • SESNSP 2024</span>
+          <span class="text-slate-400 font-mono">Swarm AI • Micro-Targeting Territorial</span>
         </div>
       </div>
     `;
@@ -1473,11 +1468,6 @@ const Components = {
 
   /**
    * Renderiza la Consola de Verificación y Autodiagnóstico de IA Real
-   * Ejecuta 4 pruebas de autenticidad:
-   * 1. Inspector de Lectura en Vivo (Token & Entity Highlighter)
-   * 2. Auditoría Matemática Paso a Paso (Fórmula Abierta)
-   * 3. Validador de Datos Oficiales (INEGI / SEP / CONEVAL / SESNSP)
-   * 4. Test de Integridad Anti-Random en Vivo con Comparativa Geográfica
    */
   renderRealAiVerificationPanel(containerId = 'real-ai-verification-container', verificacion = null) {
     const container = document.getElementById(containerId);
@@ -1486,7 +1476,7 @@ const Components = {
     if (!verificacion) {
       container.innerHTML = `
         <div class="card-pvem p-6 bg-slate-50 border border-slate-200 text-center text-slate-500 text-xs">
-          Ejecute una simulación para activar la Consola de Verificación de IA Real y Datos Oficiales.
+          Ejecute una simulación para activar la Consola de Verificación de IA Real y Parámetros del Enjambre.
         </div>
       `;
       return;
@@ -1524,7 +1514,7 @@ const Components = {
               <span>🔬</span> Consola de Verificación y Autodiagnóstico de IA Real
             </h3>
             <p class="text-xs text-slate-600 max-w-3xl">
-              Auditoría en tiempo real que certifica que el sistema procesa semánticamente la propuesta, extrae entidades reales, aplica fórmulas matemáticas abiertas y consulta exclusivamente fuentes gubernamentales oficiales de México (.gob.mx e inegi.org.mx).
+              Auditoría en tiempo real que certifica que el sistema procesa semánticamente la propuesta, extrae entidades reales y aplica fórmulas matemáticas abiertas sobre el enjambre sintético y micro-targeting territorial.
             </p>
           </div>
 
@@ -1623,7 +1613,7 @@ const Components = {
                   <tr>
                     <th class="px-4 py-2.5">Factor Ponderador</th>
                     <th class="px-4 py-2.5">Impacto Aritmético</th>
-                    <th class="px-4 py-2.5">Justificación Territorial (INEGI / CONEVAL)</th>
+                    <th class="px-4 py-2.5">Justificación Territorial</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -1654,20 +1644,20 @@ const Components = {
             </div>
           </div>
 
-          <!-- PRUEBA 3: VALIDADOR DE DATOS OFICIALES (INEGI / SEP / CONEVAL / SESNSP) -->
+          <!-- PRUEBA 3: VALIDADOR DE PARÁMETROS DEMOGRÁFICOS -->
           <div class="p-5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
               <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-lg bg-blue-600 text-white text-xs font-black flex items-center justify-center">3</span>
                 <div>
                   <h4 class="text-xs font-black text-slate-900 uppercase tracking-wide">
-                    Prueba 3: Validador de Datos Oficiales Gubernamentales
+                    Prueba 3: Validador de Parámetros Demográficos y Territoriales
                   </h4>
-                  <p class="text-[11px] text-slate-500">Mapeo de indicadores con código oficial y botón de enlace directo a portales .gob.mx</p>
+                  <p class="text-[11px] text-slate-500">Mapeo de indicadores socioeconómicos aplicados a la simulación del enjambre</p>
                 </div>
               </div>
               <span class="text-xs font-bold text-blue-800 bg-blue-100 border border-blue-300 px-2.5 py-1 rounded-full font-mono">
-                ${indicadores.length} Fuentes Verificadas
+                ${indicadores.length} Parámetros Verificados
               </span>
             </div>
 
@@ -1984,7 +1974,7 @@ const Components = {
                 Mapa por Colonias Reales y Manual de Campaña — ${municipio}
               </h3>
               <p class="text-xs text-slate-300 leading-relaxed font-normal">
-                Segmentación electoral micro-territorial cruzada con carencias de <strong>18 repositorios oficiales (.gob.mx)</strong>, matriz de brigadas (Bastiones, Indecisas y Críticas) y argumentario de media training por grupo etario.
+                Segmentación electoral micro-territorial mediante <strong>enjambres sintéticos y modelos de micro-targeting</strong>, matriz de brigadas (Bastiones, Indecisas y Críticas) y argumentario de media training por grupo etario.
               </p>
             </div>
 
@@ -2039,7 +2029,7 @@ const Components = {
                 <span>📍</span> Matriz de Micro-Targeting por Colonias y AGEBs (${municipio})
               </h4>
               <p class="text-xs text-slate-500">
-                Priorización táctica de brigadas territoriales y cruce con carencias de CONAGUA, SESNSP, CONEVAL y PROFECO.
+                Priorización táctica de brigadas territoriales y detección de necesidades prioritarias por polígono.
               </p>
             </div>
 
@@ -2075,7 +2065,7 @@ const Components = {
                 <tr>
                   <th class="px-3.5 py-2.5">Colonia / Barrio</th>
                   <th class="px-3.5 py-2.5">AGEB</th>
-                  <th class="px-3.5 py-2.5">Carencia Principal (.gob.mx)</th>
+                  <th class="px-3.5 py-2.5">Carencia Principal Detectada</th>
                   <th class="px-2.5 py-2.5 text-center">NSE</th>
                   <th class="px-3 py-2.5 text-right">Padrón Est.</th>
                   <th class="px-3 py-2.5 text-center">Apoyo Base</th>
@@ -2767,7 +2757,7 @@ const Components = {
           sentimiento: 'Crítico / Demanda Social',
           sentimientoPct: '68% crítico',
           organicidad: '82% Orgánico',
-          accionTactica: 'Atender con Datos .gob.mx',
+          accionTactica: 'Atender con Datos Técnicos',
           accionColor: 'amber',
           descripcion: `Reclamo recurrente sobre desabasto de pipas y tarifas irregulares en zonas altas.`
         },
@@ -2821,7 +2811,7 @@ const Components = {
           riesgoDesinformacion: 'Crítico (Granjas de Bots)',
           riesgoColor: 'rose',
           audiencia: 'Periodistas, analistas políticos, dirigentes partidistas y líderes de opinión.',
-          estrategia: 'Hilos técnicos con ligas directas a datos .gob.mx (INEGI, SHCP, SESNSP) para desmentir bots.'
+          estrategia: 'Hilos técnicos con evidencia verificada y cifras presupuestales para desmentir bots.'
         },
         whatsapp: {
           nombre: 'WhatsApp Cadenas Vecinales',
@@ -3080,13 +3070,13 @@ const Components = {
           </div>
         </div>
 
-        <!-- ALERTAS TEMPRANAS DE GUERRA SUCIA Y CONTRANARRATIVAS (.GOB.MX) -->
+        <!-- ALERTAS TEMPRANAS DE GUERRA SUCIA Y CONTRANARRATIVAS -->
         <div class="card-pvem p-6 bg-gradient-to-br from-rose-50/40 via-white to-amber-50/30 border border-rose-200 rounded-2xl shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-rose-100 pb-3">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-lg bg-rose-600 text-white font-black flex items-center justify-center text-sm">🛡️</span>
               <div>
-                <h4 class="text-sm sm:text-base font-black text-slate-900">Alertas Tempranas de Guerra Sucia & Antídotos Oficiales (.gob.mx)</h4>
+                <h4 class="text-sm sm:text-base font-black text-slate-900">Alertas Tempranas de Guerra Sucia & Antídotos Tácticos</h4>
                 <p class="text-xs text-slate-500">Narrativas tóxicas o rumores detectados tempranamente y su refutación técnica inmediata.</p>
               </div>
             </div>

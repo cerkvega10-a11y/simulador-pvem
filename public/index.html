@@ -97,13 +97,13 @@
           <span>Panel Maestro</span>
         </button>
 
-        <!-- Botón Permanente: 🗳️ Radar Electoral 2027-2030 (Abre Ventana Especializada de Plan Maestro) -->
+        <!-- Botón Permanente (Ventana Secundaria): 🗳️ Diagnóstico de Radar Electoral 2027-2030 -->
         <button type="button" id="btn-header-radar-electoral" onclick="openRadarElectoralModal()"
           class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow-xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-emerald-400"
-          title="Abrir Ventana Especializada de Radar Electoral 2027-2030 y Plan Maestro de Victoria en PDF">
+          title="Abrir Ventana Secundaria de Diagnóstico de Radar Electoral 2027-2030 y Selector de Cargo">
           <span>🗳️</span>
-          <span class="inline">Radar Electoral</span>
-          <span class="hidden md:inline text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded font-bold text-emerald-200">2027-2030</span>
+          <span id="btn-header-radar-label" class="inline">Diagnóstico de Radar</span>
+          <span id="btn-header-radar-sub" class="hidden md:inline text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded font-bold text-emerald-200">Vista Secundaria</span>
         </button>
 
         <!-- Botón Permanente: ℹ️ Información de la Plataforma (Créditos Neural Media House / Erick Vega) -->
@@ -388,36 +388,37 @@
             </div>
           </div>
 
-          <!-- ACCESO EXCLUSIVO A VENTANA DE RADAR ELECTORAL 2027-2030 & PLAN MAESTRO -->
+          <!-- VENTANA SECUNDARIA: DIAGNÓSTICO DE RADAR ELECTORAL 2027-2030 & SELECTOR DE CARGO -->
           <div id="card-radar-electoral-banner" class="pt-3 border-t border-slate-100">
-            <div class="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-2 border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div id="card-radar-inner" class="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-2 border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs transition-all">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center text-sm font-bold shrink-0">🗳️</div>
+                <div id="card-radar-icon" class="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center text-sm font-bold shrink-0">🗳️</div>
                 <div>
-                  <span class="text-xs font-black text-emerald-950 block">Portal Radar Electoral 2027-2030 & Plan Maestro</span>
-                  <span class="text-[11px] text-slate-600">Ventana especializada para evaluar cargos de elección, micro-targeting por colonias y descargar el Plan Maestro en PDF.</span>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs font-black text-emerald-950">Diagnóstico de Radar Electoral 2027-2030 & Selector de Cargo</span>
+                    <span id="card-radar-status-pill" class="text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded">Ventana Secundaria</span>
+                  </div>
+                  <span id="card-radar-desc" class="text-[11px] text-slate-600 block mt-0.5">Módulo secundario especializado para evaluar cargos de elección, micro-targeting por colonias y descargar el Plan Maestro en PDF.</span>
                 </div>
               </div>
-              <button type="button" onclick="openRadarElectoralModal()" class="w-full sm:w-auto px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-[1.02] active:scale-95 cursor-pointer">
-                <span>Abrir Radar</span>
-                <span>↗</span>
+              <button type="button" id="btn-card-open-radar" onclick="openRadarElectoralModal()" class="w-full sm:w-auto px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-[1.02] active:scale-95 cursor-pointer">
+                <span id="btn-card-open-radar-text">Abrir Radar ↗</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- MÓDULO 3: CONFIGURACIÓN DEL ENJAMBRE (SWARM CONTROL) -->
+        <!-- MÓDULO 3: CONFIGURACIÓN DEL ENJAMBRE (SWARM CONTROL — TOPE FLEXIBLE POR LICENCIA) -->
         <div class="card-pvem p-6 space-y-5 bg-gradient-to-br from-white to-emerald-50/20 border-emerald-200">
           <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-sm">3</span>
-              <h2 class="text-base font-bold text-slate-900">Configuración del Enjambre</h2>
+              <h2 class="text-base font-bold text-slate-900">Configuración del Enjambre Sintético</h2>
             </div>
-            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Swarm AI</span>
+            <span id="swarm-ceiling-badge" class="text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 font-black px-2.5 py-0.5 rounded-full">Tope Licencia: 100,000</span>
           </div>
 
-          <!-- Slider de Agentes (100 a 1,000) -->
-          <!-- Selector Escalonado de Muestra (50 a 10,000 Agentes) -->
+          <!-- Selector Escalonado y Flexible de Muestra (De 50 hasta el Tope Máximo de la Licencia) -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <label for="select-swarm-size" class="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
@@ -429,67 +430,81 @@
               </div>
             </div>
 
-            <!-- Selector Select Directo con las 10 opciones exactas (Operativas y Macro-Electorales) -->
+            <!-- Selector Select Directo con escalones granulares (de 50 al tope máximo autorizado) -->
             <select id="select-swarm-size" onchange="onSwarmSizeSelectChange(this.value)" class="w-full text-xs font-black p-2.5 border-2 border-emerald-300 rounded-xl bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs">
-              <optgroup label="── Muestras Operativas ──">
-                <option value="50">50 Agentes (Margen ±8.50% | Alta Volatilidad | 7 Meta-Agentes)</option>
-                <option value="100">100 Agentes (Margen ±7.00% | Volatilidad Inicial | 8 Meta-Agentes)</option>
-                <option value="500" selected>500 Agentes (Margen ±3.50% | 12 Meta-Agentes | Desplazamiento Calibrado)</option>
+              <optgroup label="── Muestras Operativas y Tácticas ──">
+                <option value="50">50 Agentes (Margen ±8.50% | Testeo Rápido | 7 Meta-Agentes)</option>
+                <option value="100">100 Agentes (Margen ±7.00% | Muestra Inicial | 8 Meta-Agentes)</option>
+                <option value="250">250 Agentes (Margen ±4.90% | Sondeo Barrial | 10 Meta-Agentes)</option>
+                <option value="500" selected>500 Agentes (Margen ±3.50% | 12 Meta-Agentes | Calibrado Estándar)</option>
                 <option value="1000">1,000 Agentes (Margen ±2.80% | 14 Meta-Agentes Clúster)</option>
                 <option value="2000">2,000 Agentes (Margen ±1.80% | Precisión Quirúrgica | 16 Meta-Agentes)</option>
-                <option value="5000">5,000 Agentes (Margen ±1.20% | Alta Densidad Censal | 18 Meta-Agentes)</option>
+                <option value="2500">2,500 Agentes (Margen ±1.60% | Densidad Distrital | 17 Meta-Agentes)</option>
+                <option value="5000">5,000 Agentes (Margen ±1.20% | Alta Densidad Demográfica | 18 Meta-Agentes)</option>
                 <option value="10000">10,000 Agentes (Margen ±0.90% | Monte Carlo Asintótico | 20 Meta-Agentes)</option>
               </optgroup>
-              <optgroup label="── Muestras Macro-Electorales (Grado Censal) ──">
+              <optgroup label="── Muestras Macro-Electorales (Alta Escala) ──">
                 <option value="25000">25,000 Agentes (Macro-Electoral ±0.62% | 22 Meta-Agentes + Micro-Nichos)</option>
                 <option value="50000">50,000 Agentes [Modo Censo Electoral] (±0.44% | 24 Meta-Agentes)</option>
                 <option value="100000">100,000 Agentes [Modo Censo Electoral] (±0.31% | 25 Meta-Agentes Maestros | Confianza 99.9%)</option>
               </optgroup>
             </select>
 
-            <!-- Botones Pills de Selección Rápida Exacta (50 a 100,000) -->
-            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1 text-[10px] sm:text-[11px] font-black">
-              <button type="button" data-val="50" onclick="setExactSwarmSize(50)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">50</button>
-              <button type="button" data-val="100" onclick="setExactSwarmSize(100)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">100</button>
-              <button type="button" data-val="500" onclick="setExactSwarmSize(500)" class="btn-swarm-quick py-1.5 rounded-lg bg-emerald-600 text-white transition-all border border-emerald-700 shadow-xs">500</button>
-              <button type="button" data-val="1000" onclick="setExactSwarmSize(1000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">1K</button>
-              <button type="button" data-val="2000" onclick="setExactSwarmSize(2000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">2K</button>
-              <button type="button" data-val="5000" onclick="setExactSwarmSize(5000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">5K</button>
-              <button type="button" data-val="10000" onclick="setExactSwarmSize(10000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200">10K</button>
-              <button type="button" data-val="25000" onclick="setExactSwarmSize(25000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Macro-Electoral 25K">25K</button>
-              <button type="button" data-val="50000" onclick="setExactSwarmSize(50000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Grado Censal 50K">50K</button>
-              <button type="button" data-val="100000" onclick="setExactSwarmSize(100000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200" title="Padrón Completo 100K">100K 🗳️</button>
+            <!-- Botones Pills de Selección Rápida Escalonada (del tope máximo hacia abajo) -->
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 text-[10px] sm:text-[11px] font-black">
+              <button type="button" data-val="50" onclick="setExactSwarmSize(50)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">50</button>
+              <button type="button" data-val="100" onclick="setExactSwarmSize(100)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">100</button>
+              <button type="button" data-val="250" onclick="setExactSwarmSize(250)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">250</button>
+              <button type="button" data-val="500" onclick="setExactSwarmSize(500)" class="btn-swarm-quick py-1.5 rounded-lg bg-emerald-600 text-white transition-all border border-emerald-700 shadow-xs cursor-pointer">500</button>
+              <button type="button" data-val="1000" onclick="setExactSwarmSize(1000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">1,000</button>
+              <button type="button" data-val="2000" onclick="setExactSwarmSize(2000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">2,000</button>
+              <button type="button" data-val="2500" onclick="setExactSwarmSize(2500)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">2,500</button>
+              <button type="button" data-val="5000" onclick="setExactSwarmSize(5000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">5,000</button>
+              <button type="button" data-val="10000" onclick="setExactSwarmSize(10000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer">10K</button>
+              <button type="button" data-val="25000" onclick="setExactSwarmSize(25000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer" title="Macro-Electoral 25K">25K</button>
+              <button type="button" data-val="50000" onclick="setExactSwarmSize(50000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer" title="Grado Censal 50K">50K</button>
+              <button type="button" data-val="100000" onclick="setExactSwarmSize(100000)" class="btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 transition-all border border-slate-200 cursor-pointer" title="Padrón Completo 100K">100K 🗳️</button>
             </div>
 
-            <!-- Slider oculto para mantener compatibilidad con scripts existentes -->
-            <input type="range" id="swarm-slider" min="50" max="100000" step="50" value="500" class="hidden">
+            <!-- Control Deslizante Flexible (Permite elegir cualquier cantidad desde 50 hasta el tope máximo autorizado) -->
+            <div class="pt-1 space-y-1">
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                <span>Ajuste gradual (50 agentes mín.)</span>
+                <span id="swarm-slider-max-label">Máx. autorizado: 100,000 agentes</span>
+              </div>
+              <input type="range" id="swarm-slider" min="50" max="100000" step="50" value="500" oninput="setExactSwarmSize(this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+            </div>
 
-            <!-- Indicador Dinámico de Profundidad Estadística (Requerimiento E.2) -->
+            <!-- Indicador Dinámico de Profundidad Estadística -->
             <div id="swarm-depth-indicator" class="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs leading-relaxed">
               <strong>Ley de los Grandes Números Activa:</strong> Muestra de 500 agentes con margen de error del ±3.5% y 12 Meta-Agentes.
             </div>
           </div>
 
-          <!-- Toggle de Investigación Web Activa (Requerimiento E.3) -->
+          <!-- Toggle de Investigación Web Activa -->
           <div class="pt-3 border-t border-slate-200">
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" id="toggle-web-search" checked class="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
               <div class="text-xs">
-                <span class="font-bold text-slate-900 block">Investigación Web y OSINT en Tiempo Real</span>
+                <span class="font-bold text-slate-900 block">Investigación Territorial y OSINT en Tiempo Real</span>
                 <span class="text-slate-500 text-[11px] leading-relaxed">
-                  Extrae contexto actual de noticias locales, problemáticas barriales (agua, transporte, bacheo) e intereses de la localidad.
+                  Extrae contexto actual de noticias locales, problemáticas barriales (agua, transporte, bacheo) e intereses de la demarcación.
                 </span>
               </div>
             </label>
           </div>
 
-          <!-- BOTÓN PRINCIPAL DE EJECUCIÓN -->
-          <div class="pt-2">
+          <!-- BOTÓN PRINCIPAL DE EJECUCIÓN PROMINENTE (WAR ROOM VISTA 2) -->
+          <div class="pt-2 space-y-2">
             <button type="button" id="btn-iniciar-simulacion"
-              class="w-full py-3.5 px-6 rounded-xl bg-gradient-pvem text-white font-extrabold text-sm uppercase tracking-wider shadow-lg hover:shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              <span>Iniciar Simulación Predictiva</span>
+              class="w-full py-4 px-6 rounded-2xl bg-gradient-pvem text-white font-black text-base sm:text-lg uppercase tracking-wider shadow-xl hover:shadow-emerald-700/30 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer border-2 border-white/20">
+              <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Simular en War Room Vista 2</span>
             </button>
+            <p class="text-[11px] text-slate-600 text-center font-medium leading-snug bg-emerald-50/70 border border-emerald-200/80 rounded-lg px-3 py-1.5">
+              ⚡ <b>Núcleo Principal (War Room Vista 2):</b> En esta vista puedes modificar y controlar un mayor número de parámetros tácticos (demografía, edad, NSE, ocupación, documentos multimodales, tamaño flexible de muestra y 7 pestañas de inteligencia).
+            </p>
           </div>
 
         </div>
@@ -605,7 +620,7 @@
           <span class="shrink-0">✊</span> <span class="truncate">3. Inteligencia Sindical</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-fuentes-voces')" class="tab-btn px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-fuentes-voces">
-          <span class="shrink-0">🏛️</span> <span class="truncate">4. 18 Fuentes .gob.mx</span>
+          <span class="shrink-0">🏛️</span> <span class="truncate">4. Fuentes y Voces</span>
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-blindaje-defensa')" class="tab-btn px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-blindaje-defensa">
           <span class="shrink-0">🛡️</span> <span class="truncate">5. Escudo (20 Preguntas)</span>
@@ -1002,28 +1017,27 @@
   </div>
 
   <!-- =====================================================================
-       VENTANA INDEPENDIENTE (VISTA 1): RADAR ELECTORAL 2027-2030 & PLAN MAESTRO
-       (Único lugar desde donde se descarga el PDF del Plan Maestro)
+       VENTANA SECUNDARIA: DIAGNÓSTICO DE RADAR ELECTORAL 2027-2030 & PLAN MAESTRO
        ===================================================================== -->
   <div id="modal-radar-electoral" class="fixed inset-0 z-50 hidden bg-slate-50 overflow-y-auto">
-    <!-- Barra superior de la ventana -->
+    <!-- Barra superior de la ventana secundaria -->
     <div class="sticky top-0 z-10 bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-md">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2.5 min-w-0">
           <span class="text-xl sm:text-2xl shrink-0">🗳️</span>
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-base sm:text-lg font-black leading-tight">Radar Electoral 2027-2030 & Selector de Cargo</h2>
+              <h2 class="text-base sm:text-lg font-black leading-tight">Diagnóstico de Radar Electoral 2027-2030 & Selector de Cargo</h2>
               <span id="radar-assigned-region-badge" class="text-[10px] font-black uppercase tracking-wider bg-black/30 border border-white/25 px-2.5 py-0.5 rounded-full text-emerald-200">
-                📍 Control Estatal Edomex
+                📍 Territorio Autorizado
               </span>
             </div>
-            <p class="text-[11px] sm:text-xs text-emerald-200 truncate">Vista 1: Diagnóstico Territorial, Micro-Targeting por Colonias y Descarga Exclusiva del Plan Maestro PDF</p>
+            <p class="text-[11px] sm:text-xs text-emerald-200 truncate">Ventana Secundaria: Diagnóstico Territorial, Micro-Targeting por Colonias y Plan Maestro en PDF</p>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button type="button" id="btn-radar-go-war-room" onclick="closeRadarElectoralModal()" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-xs sm:text-sm font-bold transition-all">
-            ← <span class="hidden sm:inline">Ir al War Room Táctico (Vista 2)</span><span class="sm:hidden">Volver</span>
+          <button type="button" id="btn-radar-go-war-room" onclick="closeRadarElectoralModal()" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-white/40 text-xs sm:text-sm font-black shadow-md transition-all cursor-pointer">
+            ← <span class="hidden sm:inline">Volver a Ventana Principal: War Room Vista 2 (Control Táctico Total)</span><span class="sm:hidden">War Room Vista 2</span>
           </button>
           <button type="button" onclick="logoutSession()" class="px-3 py-2 rounded-lg bg-rose-900/60 hover:bg-rose-800/80 border border-rose-400/50 text-rose-100 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5" title="Cerrar Sesión y volver al Portal Neutral">
             <span>🚪</span><span>Cerrar Sesión</span>
@@ -1038,7 +1052,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
             <h3 class="text-base sm:text-lg font-black text-slate-900">1. Configura tu Candidatura, Cargo Autorizado y Propuesta</h3>
-            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Los estados, cargos y demarcaciones disponibles están vinculados a los permisos de tu licencia activa.</p>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Ingresa obligatoriamente el título y descripción de tu propuesta antes de generar el diagnóstico o descargar el Plan Maestro PDF.</p>
           </div>
           <span id="radar-license-capacity-pill" class="text-[11px] font-black bg-emerald-50 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-full self-start sm:self-center">
             Capacidad Autorizada: Hasta 100,000 Agentes
@@ -1080,41 +1094,52 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="radar-input-candidato" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Nombre del Candidato(a) <span class="font-normal text-slate-400 normal-case">(opcional)</span></label>
-            <input type="text" id="radar-input-candidato" placeholder="Ej. Lic. María Hernández" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <label for="radar-input-candidato" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Nombre del Candidato(a) <span class="font-normal text-slate-400 normal-case">(requerido para personalizar PDF)</span></label>
+            <input type="text" id="radar-input-candidato" placeholder="Ingresa el nombre del candidato(a)..." class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
           </div>
           <div>
-            <label for="radar-input-titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Título de la Propuesta Estratégica</label>
-            <input type="text" id="radar-input-titulo" placeholder="Ej. Plan Integral de Agua Segura y Blindaje Barrial" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <label for="radar-input-titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Título de la Propuesta Estratégica <span class="text-rose-600">*</span></label>
+            <input type="text" id="radar-input-titulo" placeholder="Ingresa el título exacto de tu propuesta o plan..." class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
           </div>
         </div>
 
         <div>
-          <label for="radar-input-propuesta" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Descripción Estratégica de la Propuesta</label>
-          <textarea id="radar-input-propuesta" rows="4" placeholder="Describe qué propones, a qué colonias beneficia y cómo se financiaría (Ramo 28 / Ramo 33)..." class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"></textarea>
+          <label for="radar-input-propuesta" class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Descripción Estratégica de la Propuesta <span class="text-rose-600">*</span></label>
+          <textarea id="radar-input-propuesta" rows="4" placeholder="Redacta aquí tu propuesta específica, colonias objetivo, acciones operativas y mecanismo de financiamiento..." class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"></textarea>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button type="button" id="btn-run-radar" onclick="runRadarAnalysis()" class="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
-            <span>🔍</span><span>Iniciar Diagnóstico de Radar</span>
-          </button>
-          <button type="button" id="btn-download-plan-maestro" onclick="descargarPlanMaestroPdf()" class="py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
-            <span>📥</span><span>Descargar Plan Maestro (PDF)</span>
-          </button>
-          <button type="button" id="btn-radar-transfer-war-room" onclick="transferRadarToWarRoom()" class="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
-            <span>🚀</span><span>Simular en War Room (Vista 2)</span>
-          </button>
+        <!-- Botones de Acción del Radar y Botón Prominente hacia War Room Vista 2 -->
+        <div class="space-y-3 pt-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button type="button" id="btn-run-radar" onclick="runRadarAnalysis()" class="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
+              <span>🔍</span><span>1. Iniciar Diagnóstico de Radar</span>
+            </button>
+            <button type="button" id="btn-download-plan-maestro" onclick="descargarPlanMaestroPdf()" class="py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
+              <span>📥</span><span>2. Descargar Plan Maestro (PDF)</span>
+            </button>
+          </div>
+
+          <!-- BOTÓN DESTACADO Y DE MAYOR TAMAÑO: SIMULAR EN WAR ROOM VISTA 2 -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-2 border-amber-400 shadow-md space-y-2">
+            <button type="button" id="btn-radar-transfer-war-room" onclick="transferRadarToWarRoom()" class="w-full py-4 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm sm:text-base uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2.5 active:scale-95 cursor-pointer">
+              <span class="text-lg">🚀</span>
+              <span>Simular en War Room Vista 2 (Pantalla Principal de Control Táctico)</span>
+            </button>
+            <p class="text-xs text-amber-950 text-center font-semibold leading-relaxed">
+              💡 <b>¿Por qué operar en War Room Vista 2?</b> En la ventana principal <b>War Room Vista 2</b> puedes modificar y controlar un mayor número de parámetros tácticos: segmentación por edad, nivel socioeconómico (NSE), ocupación, carga de documentos y renders multimodales, ajuste escalonado del tamaño de enjambre sintético y análisis profundo en las 7 pestañas de cuarto de guerra.
+            </p>
+          </div>
         </div>
       </div>
 
       <!-- Resultados del Radar -->
       <div id="radar-results-container" class="space-y-6">
         <div class="card-pvem p-8 bg-white text-center text-slate-500 text-sm">
-          Pulsa <b>"Iniciar Diagnóstico de Radar"</b> para desplegar las 6 problemáticas críticas (.gob.mx), batería de propuestas ganadoras por cargo, postura de los 12 sindicatos y micro-targeting por colonias.
+          Ingresa los datos de tu propuesta arriba y pulsa <b>"1. Iniciar Diagnóstico de Radar"</b> para desplegar las 6 problemáticas críticas del territorio, batería de propuestas por cargo, postura de los 12 sindicatos y micro-targeting por colonias.
         </div>
       </div>
 
-      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v5.0 Enterprise — Desarrollado por <b>Neural Media House / Erick de Jesús Vega Carmona</b></p>
+      <p class="text-center text-[11px] text-slate-400 pb-4">GovTech War Room v5.1 Enterprise — Desarrollado por <b>Neural Media House / Erick de Jesús Vega Carmona</b></p>
     </div>
   </div>
 
@@ -1127,7 +1152,7 @@
         <button type="button" onclick="closePlatformInfoModal()" class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 text-lg font-bold">✕</button>
         <span class="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-300 bg-indigo-500/15 border border-indigo-400/40 px-2.5 py-0.5 rounded-full mb-2">ℹ️ Información de la Plataforma</span>
         <h3 class="text-lg sm:text-2xl font-black leading-tight pr-10">GovTech War Room — Simulador Predictivo Electoral y de Políticas Públicas</h3>
-        <p class="text-indigo-300 text-sm font-bold mt-1">v5.0 Enterprise Macro-Censal Edition</p>
+        <p class="text-indigo-300 text-sm font-bold mt-1">v5.1 Enterprise Macro-Censal Edition</p>
       </div>
 
       <div class="p-5 sm:p-6 space-y-5">
@@ -1145,7 +1170,7 @@
         <div>
           <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Descripción Institucional</span>
           <p class="text-sm text-slate-700 leading-relaxed">
-            Sistema avanzado de inteligencia de datos, cobertura nacional de los 32 Estados de la República Mexicana, enjambre sintético de alta densidad (hasta 100,000 agentes) y anclaje estricto a repositorios oficiales del Estado Mexicano (.gob.mx), diseñado para la estrategia táctica, blindaje de propuestas, análisis sindical y micro-targeting territorial rumbo a los procesos electorales 2027-2030.
+            Sistema propietario de inteligencia predictiva, cobertura nacional de los 32 Estados de la República Mexicana y tecnología avanzada de enjambres sintéticos multi-agente (hasta 100,000 agentes), diseñado para la simulación de impacto comunitario, blindaje estratégico de propuestas, análisis gremial y micro-targeting territorial rumbo a los procesos electorales 2027-2030.
           </p>
         </div>
 
@@ -1190,7 +1215,7 @@
           Plataforma de Inteligencia Predictiva y Simulación Social
         </h1>
         <p class="text-xs sm:text-sm text-slate-500 font-medium">
-          Sistema Nacional de Micro-Targeting Territorial (32 Estados), Enjambre Sintético y Análisis Oficial (.gob.mx)
+          Tecnología Propietaria de Enjambres Sintéticos Multi-Agente y Micro-Targeting Territorial Nacional (32 Estados)
         </p>
       </div>
 
@@ -1276,16 +1301,16 @@
               <h2 class="text-base sm:text-lg font-black text-white">Panel de Control Maestro — Gestión Nacional de Licencias (32 Estados)</h2>
               <span class="text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">Admin: Cerkvega92</span>
             </div>
-            <p class="text-xs text-slate-400">Selector Nacional de 32 Estados y Municipios, Permisos Independientes Radar vs. Simulador, Datepicker de Vigencias y Kill Switch</p>
+            <p class="text-xs text-slate-400">Selector Nacional de 32 Estados y Municipios, Tope Flexible de Agentes, Permisos Radar vs. Simulador, Datepicker de Vigencias y Kill Switch</p>
           </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" onclick="closeMasterAdminModal(); openRadarElectoralModal();" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all">
-            🗳️ Ir a Vista 1: Radar Electoral
+          <button type="button" onclick="closeMasterAdminModal()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer">
+            📊 Ir a Ventana Principal: War Room Vista 2
           </button>
-          <button type="button" onclick="closeMasterAdminModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold transition-all">
-            📊 Ir a Vista 2: War Room Táctico
+          <button type="button" onclick="closeMasterAdminModal(); openRadarElectoralModal();" class="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer">
+            🗳️ Ir a Ventana Secundaria: Diagnóstico de Radar
           </button>
           <button type="button" onclick="logoutSession()" class="px-3 py-2 rounded-xl bg-rose-900/70 hover:bg-rose-800 border border-rose-500/50 text-rose-100 text-xs font-black transition-all flex items-center gap-1.5">
             <span>🚪</span><span>Cerrar Sesión</span>
@@ -1339,14 +1364,18 @@
               </select>
             </div>
             <div>
-              <label class="block font-bold text-slate-700 uppercase mb-1">Capacidad Máx. Agentes</label>
+              <label class="block font-bold text-slate-700 uppercase mb-1">Tope Máx. de Agentes (Escalonado)</label>
               <select id="lic-max-swarm" class="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 bg-white">
-                <option value="1000">Hasta 1,000 Agentes</option>
-                <option value="5000">Hasta 5,000 Agentes</option>
-                <option value="10000">Hasta 10,000 Agentes</option>
-                <option value="25000">Hasta 25,000 Agentes</option>
-                <option value="50000">Hasta 50,000 Agentes</option>
-                <option value="100000" selected>100,000 (Modo Censo Electoral)</option>
+                <option value="100">Hasta 100 Agentes (50 a 100)</option>
+                <option value="250">Hasta 250 Agentes (50 a 250)</option>
+                <option value="500">Hasta 500 Agentes (50 a 500)</option>
+                <option value="1000">Hasta 1,000 Agentes (50 a 1,000)</option>
+                <option value="2500">Hasta 2,500 Agentes (50 a 2,500)</option>
+                <option value="5000">Hasta 5,000 Agentes (50 a 5,000)</option>
+                <option value="10000">Hasta 10,000 Agentes (50 a 10,000)</option>
+                <option value="25000">Hasta 25,000 Agentes (50 a 25,000)</option>
+                <option value="50000">Hasta 50,000 Agentes (50 a 50,000)</option>
+                <option value="100000" selected>Hasta 100,000 (Modo Censo Total)</option>
               </select>
             </div>
           </div>
@@ -1364,22 +1393,22 @@
             </div>
           </div>
 
-          <!-- PERMISOS INDEPENDIENTES DE MÓDULOS: RADAR ELECTORAL (VISTA 1) VS SIMULADOR (VISTA 2) -->
+          <!-- PERMISOS INDEPENDIENTES DE MÓDULOS: WAR ROOM VISTA 2 (PRINCIPAL) VS RADAR ELECTORAL (SECUNDARIO) -->
           <div class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
             <span class="block font-black text-indigo-950 uppercase text-[11px]">A. Permisos Independientes de Módulos (Vistas Autorizadas):</span>
             <div class="space-y-2">
               <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
-                <input type="checkbox" id="lic-permiso-radar" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+                <input type="checkbox" id="lic-permiso-simulador" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
                 <div>
-                  <span class="block text-xs font-black text-slate-900">🗳️ Acceso al Módulo de Radar Electoral y Selector de Cargo (Vista 1)</span>
-                  <span class="block text-[10px] font-normal text-slate-500">Permite diagnosticar colonias, elegir cargos autorizados y descargar el PDF del Plan Maestro.</span>
+                  <span class="block text-xs font-black text-slate-900">📊 Ventana Principal: War Room Vista 2 y 7 Pestañas Tácticas</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite controlar todos los parámetros del enjambre sintético, ver las 7 pestañas y descargar el Dictamen PDF.</span>
                 </div>
               </label>
               <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
-                <input type="checkbox" id="lic-permiso-simulador" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+                <input type="checkbox" id="lic-permiso-radar" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
                 <div>
-                  <span class="block text-xs font-black text-slate-900">📊 Acceso al Simulador Táctico y 7 Pestañas (Vista 2)</span>
-                  <span class="block text-[10px] font-normal text-slate-500">Permite simular propuestas en el enjambre sintético, ver las 7 pestañas y descargar el Dictamen PDF.</span>
+                  <span class="block text-xs font-black text-slate-900">🗳️ Ventana Secundaria: Diagnóstico de Radar y Selector de Cargo</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Si se desmarca, aparecerá como "🔒 Bloqueado / No disponible para esta licencia".</span>
                 </div>
               </label>
             </div>
@@ -1506,10 +1535,10 @@
     </div>
   </div>
 
-  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.0.0) -->
-  <script src="/js/components.js?v=5.0.0"></script>
-  <script src="/js/planMaestroPdfExport.js?v=5.0.0"></script>
-  <script src="/js/pdfExport.js?v=5.0.0"></script>
-  <script src="/js/app.js?v=5.0.0"></script>
+  <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.1.0) -->
+  <script src="/js/components.js?v=5.1.0"></script>
+  <script src="/js/planMaestroPdfExport.js?v=5.1.0"></script>
+  <script src="/js/pdfExport.js?v=5.1.0"></script>
+  <script src="/js/app.js?v=5.1.0"></script>
 </body>
 </html>

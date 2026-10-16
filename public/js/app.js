@@ -379,8 +379,8 @@ window.lockSimulationControls = function(locked) {
       btnSimular.disabled = false;
       btnSimular.classList.remove('opacity-60', 'cursor-not-allowed');
       btnSimular.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        <span>Iniciar Simulación Predictiva</span>
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span>Simular en War Room Vista 2</span>
       `;
     }
   }
@@ -559,28 +559,52 @@ window.onPartyThemeChange = function(partyCode) {
 };
 
 /**
- * Actualiza el estilo activo de los botones rápidos de tamaño de enjambre
+ * Actualiza el estilo activo de los botones rápidos de tamaño de enjambre respetando el tope máximo de licencia
  */
 function updateSwarmQuickButtons(num) {
+  const maxAllowed = parseInt(appState.maxAllowedSwarm, 10) || parseInt(appState.activeSession?.user?.maxSwarmSize, 10) || 100000;
+  const isMaster = appState.activeSession?.role === 'MASTER_ADMIN';
+
   document.querySelectorAll('.btn-swarm-quick').forEach(btn => {
     const bVal = parseInt(btn.getAttribute('data-val'), 10);
+    if (!isMaster && bVal > maxAllowed) {
+      btn.disabled = true;
+      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 font-bold opacity-40 cursor-not-allowed';
+      btn.title = `🔒 Bloqueado por licencia (Tope máximo contratado: ${maxAllowed.toLocaleString()} agentes)`;
+      return;
+    }
+    btn.disabled = Boolean(appState.isLocked);
+    btn.title = `Simular con ${bVal.toLocaleString()} agentes`;
     if (bVal === num) {
-      btn.className = 'btn-swarm-quick active-pill py-1.5 rounded-lg text-white transition-all shadow-xs font-black';
+      btn.className = 'btn-swarm-quick active-pill py-1.5 rounded-lg text-white transition-all shadow-xs font-black cursor-pointer';
     } else {
-      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200 font-bold';
+      btn.className = 'btn-swarm-quick py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200 font-bold cursor-pointer';
     }
   });
 }
 
 /**
- * CONFIGURACIÓN DE TAMAÑO EXACTO DEL ENJAMBRE (50 A 10,000 AGENTES)
+ * CONFIGURACIÓN DE TAMAÑO FLEXIBLE Y ESCALONADO DEL ENJAMBRE (DE 50 HASTA EL TOPE MÁXIMO DE LA LICENCIA)
  */
 window.setExactSwarmSize = function(val) {
-  const num = parseInt(val, 10) || 500;
+  let num = parseInt(val, 10) || 500;
+  const maxAllowed = parseInt(appState.maxAllowedSwarm, 10) || parseInt(appState.activeSession?.user?.maxSwarmSize, 10) || 100000;
+  const isMaster = appState.activeSession?.role === 'MASTER_ADMIN';
+
+  if (!isMaster && num > maxAllowed) {
+    num = maxAllowed;
+    showToast(`🔒 Límite ajustado al tope máximo de tu licencia: ${maxAllowed.toLocaleString()} agentes.`);
+  }
+  if (num < 50) num = 50;
+
   appState.swarmSize = num;
 
   const select = document.getElementById('select-swarm-size');
-  if (select) select.value = String(num);
+  if (select) {
+    // Si el valor coincide con una opción del select, seleccionarla
+    const matchingOpt = Array.from(select.options).find(o => parseInt(o.value, 10) === num);
+    if (matchingOpt) select.value = String(num);
+  }
 
   const display = document.getElementById('swarm-count-display');
   if (display) display.innerText = num.toLocaleString();
@@ -836,6 +860,7 @@ function setupEventListeners() {
 
 /**
  * PDF #1: Descarga del PLAN MAESTRO DE VICTORIA ELECTORAL Y DIAGNÓSTICO TERRITORIAL
+ * Validación estricta: Prohibido generar plantillas con datos inventados si el usuario no ingresó propuesta.
  */
 window.descargarPlanMaestroPdf = async function() {
   try {
@@ -845,50 +870,53 @@ window.descargarPlanMaestroPdf = async function() {
     }
 
     const selectCiclo = document.getElementById('select-ciclo-electoral');
-    if (selectCiclo) appState.cicloElectoral = selectCiclo.value;
+    if (selectCiclo && selectCiclo.value) appState.cicloElectoral = selectCiclo.value;
     const selectCargo = document.getElementById('select-cargo-electoral');
-    if (selectCargo) appState.cargoElectoral = selectCargo.value;
+    if (selectCargo && selectCargo.value) appState.cargoElectoral = selectCargo.value;
+    const radarEstado = document.getElementById('radar-select-estado');
+    if (radarEstado && radarEstado.value) appState.estado = radarEstado.value;
     const radarMuni = document.getElementById('radar-select-municipio');
     if (radarMuni && radarMuni.value) appState.municipio = radarMuni.value;
 
-    const candidatoVal = document.getElementById('radar-input-candidato')?.value?.trim() || 'Candidato Oficial de la Coalición';
-    const tituloVal = document.getElementById('radar-input-titulo')?.value?.trim() || appState.tituloProyecto || `Plan Maestro — ${appState.municipio}`;
-    const propuestaVal = document.getElementById('radar-input-propuesta')?.value?.trim() || appState.propuestaTexto || '';
+    const candidatoVal = (document.getElementById('radar-input-candidato')?.value || '').trim();
+    const tituloVal = (document.getElementById('radar-input-titulo')?.value || appState.tituloProyecto || '').trim();
+    const propuestaVal = (document.getElementById('radar-input-propuesta')?.value || appState.propuestaTexto || '').trim();
 
-    showToast('Generando Plan Maestro de Victoria Electoral en alta resolución...');
-
-    // Obtener análisis de radar actualizado para este municipio y cargo
-    try {
-      const res = await fetch('/api/electoral-radar/diagnostico', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          municipio: appState.municipio || 'Ecatepec de Morelos',
-          cargo: appState.cargoElectoral || 'Presidente Municipal / Alcalde',
-          ciclo: appState.cicloElectoral || '2027',
-          candidato: candidatoVal,
-          coalicion: `${appState.activeParty || 'PVEM'} - Coalición Estratégica`
-        })
-      });
-      const d = await res.json();
-      if (d.success && d.radar) {
-        appState.radarAnalysis = d.radar;
-      }
-    } catch (err) {
-      console.warn('Fallback local para Plan Maestro:', err);
+    // VALIDACIÓN OBLIGATORIA ANTES DE GENERAR EL PDF (CERO DATOS GENÉRICOS O PRECARGADOS)
+    if (!tituloVal || !propuestaVal || propuestaVal.length < 10) {
+      alert('⚠️ Sin datos suficientes de simulación para compilar el expediente.\n\nPor favor ingresa obligatoriamente el Título y la Descripción Estratégica de tu propuesta (y pulsa "1. Iniciar Diagnóstico de Radar") antes de descargar el Plan Maestro en PDF.');
+      const propInput = document.getElementById('radar-input-propuesta');
+      if (propInput) propInput.focus();
+      return;
     }
+
+    if (!appState.radarAnalysis || appState.radarAnalysis._municipio !== appState.municipio || appState.radarAnalysis._cargo !== appState.cargoElectoral) {
+      showToast('Ejecutando diagnóstico territorial para sincronizar tus datos reales antes de exportar...');
+      await window.runRadarAnalysis();
+    }
+
+    if (!appState.radarAnalysis) {
+      alert('⚠️ Sin datos suficientes de simulación para compilar el expediente. Ejecuta primero el Diagnóstico de Radar.');
+      return;
+    }
+
+    showToast('Compilando Plan Maestro de Victoria Electoral con los datos de tu sesión activa...');
 
     await PlanMaestroPDFExport.exportPlanMaestro(appState.currentReport, {
       ...appState,
+      estado: appState.estado,
+      municipio: appState.municipio,
       tituloProyecto: tituloVal,
       propuestaTexto: propuestaVal,
-      candidato: candidatoVal,
+      candidato: candidatoVal || `Candidatura ${appState.cargoElectoral} (${appState.activeParty || 'PVEM'})`,
       cargo: appState.cargoElectoral,
-      ciclo: appState.cicloElectoral
+      ciclo: appState.cicloElectoral,
+      radarAnalysis: appState.radarAnalysis
     });
 
     if (window.cyberSentinelAgent?.auditEvent) {
       window.cyberSentinelAgent.auditEvent('PDF_PLAN_MAESTRO_GENERATED', {
+        estado: appState.estado,
         municipio: appState.municipio,
         cargo: appState.cargoElectoral,
         ciclo: appState.cicloElectoral,
@@ -905,11 +933,12 @@ window.descargarPlanMaestroPdf = async function() {
 
 /**
  * PDF #2: Descarga del DICTAMEN INTEGRAL DE SIMULACIÓN PREDICTIVA Y CUARTO DE GUERRA
+ * Validación estricta: Prohibido exportar si no se ha ejecutado una simulación real en la sesión activa.
  */
 window.descargarDictamenEjecutivoPdf = async function() {
   try {
-    if (!appState.currentReport) {
-      showToast('Primero evalúa una propuesta para generar el Dictamen Ejecutivo.');
+    if (!appState.currentReport || !appState.currentReport.resumenEjecutivo || (!appState.propuestaTexto && !appState.documentData)) {
+      alert('⚠️ Sin datos suficientes de simulación para compilar el expediente.\n\nPrimero ingresa una propuesta real y ejecuta la simulación en el War Room Vista 2 para generar el Dictamen Ejecutivo.');
       return;
     }
     if (typeof PDFExport === 'undefined') {
@@ -1352,8 +1381,8 @@ function restoreSimulateButton() {
     btnSimular.disabled = false;
     btnSimular.classList.remove('opacity-60', 'cursor-not-allowed');
     btnSimular.innerHTML = `
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      <span>Iniciar Simulación Predictiva</span>
+      <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      <span>Simular en War Room Vista 2</span>
     `;
   }
 }
@@ -2244,13 +2273,13 @@ window.runWebWorkerVectorExpansion = function(report) {
 };
 
 // =========================================================================
-// 3. VENTANA INDEPENDIENTE: RADAR ELECTORAL 2027-2030 & PLAN MAESTRO PDF
+// 3. VENTANA SECUNDARIA: DIAGNÓSTICO DE RADAR ELECTORAL 2027-2030 & PLAN MAESTRO PDF
 // =========================================================================
 window.openRadarElectoralModal = async function() {
-  // Verificar si el cliente tiene permiso para acceder al módulo Radar Electoral (Vista 1)
+  // Verificar si el cliente tiene permiso para acceder al módulo secundario de Radar Electoral
   const session = appState.activeSession;
   if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoRadar === false) {
-    showToast('🔒 Tu licencia está configurada exclusivamente para el Simulador Táctico (Vista 2).');
+    alert('🔒 Bloqueado / No disponible para esta licencia.\n\nEl Administrador Maestro ha configurado esta licencia exclusivamente para operar en la ventana principal War Room Vista 2.');
     return;
   }
 
@@ -2260,7 +2289,7 @@ window.openRadarElectoralModal = async function() {
   // Sincronizar selector de estados y municipios autorizados en la ventana del Radar
   await syncAuthorizedSelectorsInRadar();
 
-  // Pre-rellenar con datos actuales si están vacíos
+  // Sincronizar con datos reales de la sesión activa si el usuario ya los ingresó en War Room Vista 2
   const radarTit = document.getElementById('radar-input-titulo');
   const radarProp = document.getElementById('radar-input-propuesta');
   if (radarTit && !radarTit.value && appState.tituloProyecto) {
@@ -2276,7 +2305,7 @@ window.openRadarElectoralModal = async function() {
 window.closeRadarElectoralModal = function() {
   const session = appState.activeSession;
   if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoSimulador === false) {
-    showToast('🔒 Tu licencia está autorizada exclusivamente para el Radar Electoral y Plan Maestro (Vista 1).');
+    showToast('🔒 Tu licencia está autorizada exclusivamente para la ventana de Diagnóstico de Radar.');
     return;
   }
   const modal = document.getElementById('modal-radar-electoral');
@@ -2286,7 +2315,7 @@ window.closeRadarElectoralModal = function() {
 window.transferRadarToWarRoom = async function() {
   const session = appState.activeSession;
   if (session && session.role !== 'MASTER_ADMIN' && session.user && session.user.permisoSimulador === false) {
-    showToast('🔒 Tu licencia está autorizada exclusivamente para el Radar Electoral y Plan Maestro (Vista 1).');
+    showToast('🔒 Tu licencia está autorizada exclusivamente para la ventana de Diagnóstico de Radar.');
     return;
   }
 
@@ -2331,7 +2360,7 @@ window.transferRadarToWarRoom = async function() {
       inputProp.focus();
       inputProp.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    showToast('Parámetros del Radar transferidos al War Room. Redacta o confirma tu propuesta para simular.');
+    showToast('Bienvenido a War Room Vista 2. Configura tus parámetros tácticos y redacta tu propuesta para simular.');
   }
 };
 
@@ -2340,18 +2369,28 @@ window.runRadarAnalysis = async function() {
   const btn = document.getElementById('btn-run-radar');
   if (!container) return;
 
+  const estado = document.getElementById('radar-select-estado')?.value || appState.estado || 'Estado de México';
   const municipio = document.getElementById('radar-select-municipio')?.value || appState.municipio || 'Ecatepec de Morelos';
   const cargo = document.getElementById('select-cargo-electoral')?.value || 'Presidente Municipal / Alcalde';
   const ciclo = document.getElementById('select-ciclo-electoral')?.value || '2027';
-  const candidato = document.getElementById('radar-input-candidato')?.value?.trim() || 'Candidato(a) Oficial';
-  const titulo = document.getElementById('radar-input-titulo')?.value?.trim() || `Plan Estratégico para ${municipio}`;
-  const propuesta = document.getElementById('radar-input-propuesta')?.value?.trim() || '';
+  const candidato = (document.getElementById('radar-input-candidato')?.value || '').trim();
+  const titulo = (document.getElementById('radar-input-titulo')?.value || appState.tituloProyecto || '').trim();
+  const propuesta = (document.getElementById('radar-input-propuesta')?.value || appState.propuestaTexto || '').trim();
 
+  // Validación obligatoria: exigir que el usuario haya ingresado una propuesta real antes de ejecutar el diagnóstico
+  if (!titulo || !propuesta || propuesta.length < 10) {
+    alert('⚠️ Sin datos suficientes para iniciar el diagnóstico.\n\nPor favor ingresa el Título y la Descripción Estratégica de tu propuesta en los campos del formulario antes de pulsar "1. Iniciar Diagnóstico de Radar".');
+    const propEl = document.getElementById('radar-input-propuesta');
+    if (propEl) propEl.focus();
+    return;
+  }
+
+  appState.estado = estado;
   appState.municipio = municipio;
   appState.cargoElectoral = cargo;
   appState.cicloElectoral = ciclo;
-  if (titulo) appState.tituloProyecto = titulo;
-  if (propuesta) appState.propuestaTexto = propuesta;
+  appState.tituloProyecto = titulo;
+  appState.propuestaTexto = propuesta;
 
   if (btn) {
     btn.disabled = true;
@@ -2363,19 +2402,37 @@ window.runRadarAnalysis = async function() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        estado,
         municipio,
         cargo,
         ciclo,
-        candidato,
-        coalicion: `${appState.activeParty || 'PVEM'} - Coalición Territorial`
+        candidato: candidato || `Candidatura ${cargo} (${appState.activeParty || 'PVEM'})`,
+        tituloPropuesta: titulo,
+        propuestaTexto: propuesta,
+        coalicion: `${appState.activeParty || 'PVEM'} - Estrategia Territorial`
       })
     });
     const data = await res.json();
 
     if (data.success && data.radar) {
+      data.radar._estado = estado;
+      data.radar._municipio = municipio;
+      data.radar._cargo = cargo;
+      data.radar._tituloUsuario = titulo;
+      data.radar._propuestaUsuario = propuesta;
+      data.radar._candidatoUsuario = candidato || `Candidatura ${cargo} (${appState.activeParty || 'PVEM'})`;
       appState.radarAnalysis = data.radar;
-      renderRadarDiagnosisView(container, data.radar, { municipio, cargo, ciclo, candidato, titulo, propuesta });
-      showToast(`Diagnóstico de Radar Electoral completado para ${municipio} (${cargo}).`);
+
+      renderRadarDiagnosisView(container, data.radar, {
+        estado,
+        municipio,
+        cargo,
+        ciclo,
+        candidato: data.radar._candidatoUsuario,
+        titulo,
+        propuesta
+      });
+      showToast(`Diagnóstico de Radar Electoral completado para ${municipio}, ${estado} (${cargo}).`);
     } else {
       throw new Error(data.error || 'No se pudo obtener el diagnóstico');
     }
@@ -2389,7 +2446,7 @@ window.runRadarAnalysis = async function() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = `<span>🔍</span><span>Iniciar Diagnóstico de Radar</span>`;
+      btn.innerHTML = `<span>🔍</span><span>1. Iniciar Diagnóstico de Radar</span>`;
     }
   }
 };
@@ -2403,30 +2460,36 @@ function renderRadarDiagnosisView(container, radar, meta) {
 
   container.innerHTML = `
     <div class="space-y-6">
-      <!-- Encabezado Resumen del Diagnóstico -->
-      <div class="card-pvem p-5 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-2xl shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2.5 py-0.5 rounded-full">Proceso ${meta.ciclo}</span>
-            <span class="text-xs font-bold text-amber-300">${meta.cargo}</span>
-            <span class="text-slate-400">•</span>
-            <span class="text-xs font-bold text-white">${meta.municipio}</span>
+      <!-- Encabezado Resumen del Diagnóstico con la Propuesta Ingresada por el Usuario -->
+      <div class="card-pvem p-5 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-2xl shadow-lg space-y-3">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2.5 py-0.5 rounded-full">Proceso ${meta.ciclo}</span>
+              <span class="text-xs font-bold text-amber-300">${meta.cargo}</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-xs font-bold text-white">${meta.municipio}, ${meta.estado || 'México'}</span>
+            </div>
+            <h4 class="text-lg sm:text-xl font-black text-white">${meta.titulo}</h4>
+            <p class="text-xs text-slate-300">Candidato(a): <b>${meta.candidato}</b> | Partido Activo: <b>${appState.activeParty}</b></p>
           </div>
-          <h4 class="text-lg sm:text-xl font-black text-white">${meta.titulo}</h4>
-          <p class="text-xs text-slate-300">Candidato(a): <b>${meta.candidato}</b> | Partido Activo: <b>${appState.activeParty}</b></p>
+          <div class="shrink-0">
+            <button type="button" onclick="descargarPlanMaestroPdf()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer">
+              <span>📥</span><span>Descargar Plan Maestro (PDF)</span>
+            </button>
+          </div>
         </div>
-        <div class="shrink-0">
-          <button type="button" onclick="descargarPlanMaestroPdf()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-2">
-            <span>📥</span><span>Descargar Plan Maestro (PDF)</span>
-          </button>
+        <div class="p-3 rounded-xl bg-white/10 border border-white/15 text-xs text-emerald-100 leading-relaxed">
+          <b class="text-white uppercase tracking-wider text-[10px] block mb-0.5">Propuesta Estratégica Evaluada en Sesión:</b>
+          ${meta.propuesta}
         </div>
       </div>
 
-      <!-- 1. Radiografía de las 6 Problemáticas Críticas (.gob.mx) -->
+      <!-- 1. Radiografía de las 6 Problemáticas Críticas del Territorio -->
       <div class="card-pvem p-5 bg-white space-y-4">
         <div class="border-b border-slate-100 pb-2">
-          <h4 class="text-sm sm:text-base font-black text-slate-900">🚨 1. Radiografía de Problemáticas Críticas Municipales (.gob.mx)</h4>
-          <p class="text-xs text-slate-500">Indicadores oficiales de carencia social, seguridad e infraestructura en ${meta.municipio}.</p>
+          <h4 class="text-sm sm:text-base font-black text-slate-900">🚨 1. Radiografía de Problemáticas Críticas en ${meta.municipio}</h4>
+          <p class="text-xs text-slate-500">Indicadores de carencia social, seguridad e infraestructura detectados por el motor territorial en ${meta.municipio}.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           ${problematicas.map(p => `
@@ -2437,7 +2500,7 @@ function renderRadarDiagnosisView(container, radar, meta) {
               </div>
               <p class="text-xs text-slate-700 leading-relaxed">${p.diagnostico || p.descripcion || ''}</p>
               <div class="text-[10px] font-mono text-emerald-800 font-bold pt-1 border-t border-slate-200/60">
-                Fuente: ${p.fuenteOficial || 'INEGI / CONEVAL (.gob.mx)'}
+                Referencia: ${(p.fuenteOficial || 'Indicador Demográfico Territorial').replace(/\(\.gob\.mx\)|\.gob\.mx/gi, '').trim()}
               </div>
             </div>
           `).join('')}
@@ -2447,8 +2510,16 @@ function renderRadarDiagnosisView(container, radar, meta) {
       <!-- 2. Batería de Propuestas Ganadoras según el Cargo (${meta.cargo}) -->
       <div class="card-pvem p-5 bg-white space-y-4">
         <div class="border-b border-slate-100 pb-2">
-          <h4 class="text-sm sm:text-base font-black text-slate-900">🏆 2. Batería de Propuestas Ganadoras para ${meta.cargo} (Viabilidad Ramo 28 y 33 SHCP)</h4>
-          <p class="text-xs text-slate-500">Propuestas diseñadas conforme a las facultades constitucionales del cargo y su retorno electoral proyectado.</p>
+          <h4 class="text-sm sm:text-base font-black text-slate-900">🏆 2. Propuesta Eje del Usuario y Líneas de Acción para ${meta.cargo}</h4>
+          <p class="text-xs text-slate-500">Articulación de tu propuesta central con las facultades del cargo y su retorno electoral proyectado.</p>
+        </div>
+        <div class="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-black uppercase bg-emerald-700 text-white px-2.5 py-0.5 rounded-full">PROPUESTA EJE DEL CANDIDATO(A)</span>
+            <span class="text-xs font-black text-emerald-900">${meta.cargo} • ${meta.municipio}</span>
+          </div>
+          <h5 class="text-sm font-black text-slate-900">${meta.titulo}</h5>
+          <p class="text-xs text-slate-800 leading-relaxed">${meta.propuesta}</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           ${propuestas.map(prop => `
@@ -2479,7 +2550,7 @@ function renderRadarDiagnosisView(container, radar, meta) {
                 <th class="p-2.5">Colonia / Barrio</th>
                 <th class="p-2.5">NSE</th>
                 <th class="p-2.5">Padrón Est.</th>
-                <th class="p-2.5">Carencia Principal (.gob.mx)</th>
+                <th class="p-2.5">Demanda Territorial Prioritaria</th>
                 <th class="p-2.5">Apoyo Proy.</th>
                 <th class="p-2.5">Prioridad de Brigada</th>
               </tr>
@@ -2528,7 +2599,7 @@ function renderRadarDiagnosisView(container, radar, meta) {
           <div class="space-y-2 text-xs">
             <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
               <span class="font-black text-emerald-950 block">Slogan / Naming Ganador:</span>
-              <span class="text-emerald-800 font-bold">"${manual.sloganCentral || manual.namingCampana || `${meta.municipio} con Futuro y Resultados`}"</span>
+              <span class="text-emerald-800 font-bold">"${manual.sloganCentral || manual.namingCampana || `${meta.titulo} — ${meta.municipio}`}"</span>
             </div>
             <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
               <span class="font-bold text-slate-800 block">Jóvenes (18-29 años):</span>
@@ -2742,7 +2813,7 @@ window.handleAuthLogin = async function(event) {
       user: data.user
     };
 
-    // Desbloquear contenedores principales de la plataforma
+    // Desbloquear contenedores principales de la plataforma (War Room Vista 2 como Ventana Principal)
     ['app-main-header', 'app-main-workspace', 'app-main-footer'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove('hidden');
@@ -2766,8 +2837,11 @@ window.handleAuthLogin = async function(event) {
       if (navLabel) navLabel.innerText = '👑 Cerkvega92';
 
       await applyLicenseRestrictionsToUI(data.user, true);
+      // Asegurar que la pantalla principal de fondo sea War Room Vista 2 y abrir el Panel Maestro
+      const modalRadar = document.getElementById('modal-radar-electoral');
+      if (modalRadar) modalRadar.classList.add('hidden');
       await openMasterAdminModal();
-      showToast('Bienvenido Erick Vega (Cerkvega92). Panel de Control Maestro desbloqueado.');
+      showToast('Bienvenido Erick Vega (Cerkvega92). Panel de Control Maestro y War Room Vista 2 desbloqueados.');
     } else {
       // Es un Cliente Político con licencia activa
       const btnMaster = document.getElementById('btn-master-admin-header');
@@ -2785,19 +2859,11 @@ window.handleAuthLogin = async function(event) {
 
       await applyLicenseRestrictionsToUI(data.user, false);
 
-      // Enrutamiento según permisos independientes (Radar Electoral vs. Simulador)
-      const canRadar = data.user.permisoRadar !== false;
-      const canSimulador = data.user.permisoSimulador !== false;
+      // REORDENAMIENTO ARQUITECTÓNICO: War Room Vista 2 es SIEMPRE la pantalla principal por defecto al autenticarse
+      const modalRadar = document.getElementById('modal-radar-electoral');
+      if (modalRadar) modalRadar.classList.add('hidden');
 
-      if (canRadar) {
-        await openRadarElectoralModal();
-        showToast(`Sesión White-Label activada: ${data.user.clienteNombre} (${data.user.partido})`);
-      } else if (canSimulador) {
-        // Si no tiene permiso al Radar Electoral, ingresa directo al Simulador War Room (Vista 2)
-        const modalRadar = document.getElementById('modal-radar-electoral');
-        if (modalRadar) modalRadar.classList.add('hidden');
-        showToast(`Acceso directo al Simulador Táctico activado: ${data.user.clienteNombre} (${data.user.partido})`);
-      }
+      showToast(`Bienvenido a War Room Vista 2 (Pantalla Principal): ${data.user.clienteNombre} (${data.user.partido})`);
     }
   } catch (err) {
     if (errBox) {
@@ -2814,6 +2880,8 @@ window.handleAuthLogin = async function(event) {
 window.logoutSession = function() {
   // 1. Destruir sesión activa y almacenamiento temporal
   appState.activeSession = null;
+  appState.radarAnalysis = null;
+  appState.maxAllowedSwarm = 100000;
   try {
     sessionStorage.clear();
   } catch (e) {
@@ -2834,7 +2902,7 @@ window.logoutSession = function() {
   if (radarResults) {
     radarResults.innerHTML = `
       <div class="card-pvem p-8 bg-white text-center text-slate-500 text-sm">
-        Pulsa <b>"Iniciar Diagnóstico de Radar"</b> para desplegar las 6 problemáticas críticas (.gob.mx), batería de propuestas ganadoras por cargo, postura de los 12 sindicatos y micro-targeting por colonias.
+        Ingresa los datos de tu propuesta arriba y pulsa <b>"1. Iniciar Diagnóstico de Radar"</b> para desplegar las 6 problemáticas críticas del territorio, batería de propuestas por cargo, postura de los 12 sindicatos y micro-targeting por colonias.
       </div>
     `;
   }
@@ -2856,7 +2924,7 @@ window.logoutSession = function() {
 };
 
 /**
- * Aplica en tiempo real la mutación White-Label, permisos Radar/Simulador, estados/municipios permitidos y límite de agentes
+ * Aplica en tiempo real la mutación White-Label, permisos Radar/Simulador, estados/municipios permitidos y tope flexible de agentes
  */
 async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) {
   if (!licenseUser) return;
@@ -2872,26 +2940,68 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     }
   }
 
-  // 2. Permisos Independientes de Módulos: Radar Electoral (Vista 1) vs Simulador (Vista 2)
+  // 2. Permisos Independientes de Módulos: War Room Vista 2 (Principal) y Diagnóstico de Radar (Secundario)
   const canRadar = isMasterAdmin || licenseUser.permisoRadar !== false;
   const canSimulador = isMasterAdmin || licenseUser.permisoSimulador !== false;
 
   const btnHeaderRadar = document.getElementById('btn-header-radar-electoral');
-  const cardRadarBanner = document.getElementById('card-radar-electoral-banner');
+  const btnHeaderRadarSub = document.getElementById('btn-header-radar-sub');
+  const cardRadarInner = document.getElementById('card-radar-inner');
+  const cardRadarStatusPill = document.getElementById('card-radar-status-pill');
+  const cardRadarDesc = document.getElementById('card-radar-desc');
+  const btnCardOpenRadar = document.getElementById('btn-card-open-radar');
+  const btnCardOpenRadarText = document.getElementById('btn-card-open-radar-text');
+
+  // Mantener visible la opción de Diagnóstico de Radar como ventana secundaria, pero mostrar bloqueo explícito si no está autorizado
   if (btnHeaderRadar) {
+    btnHeaderRadar.classList.remove('hidden');
+    btnHeaderRadar.classList.add('flex');
     if (canRadar) {
-      btnHeaderRadar.classList.remove('hidden');
-      btnHeaderRadar.classList.add('flex');
+      btnHeaderRadar.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow-xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-emerald-400';
+      if (btnHeaderRadarSub) {
+        btnHeaderRadarSub.className = 'hidden md:inline text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded font-bold text-emerald-200';
+        btnHeaderRadarSub.innerText = 'Vista Secundaria';
+      }
     } else {
-      btnHeaderRadar.classList.add('hidden');
-      btnHeaderRadar.classList.remove('flex');
+      btnHeaderRadar.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold border border-slate-300 opacity-85 cursor-not-allowed';
+      if (btnHeaderRadarSub) {
+        btnHeaderRadarSub.className = 'inline text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 rounded font-black';
+        btnHeaderRadarSub.innerText = '🔒 Bloqueado / No disponible para esta licencia';
+      }
     }
   }
-  if (cardRadarBanner) {
+
+  if (cardRadarInner) {
     if (canRadar) {
-      cardRadarBanner.classList.remove('hidden');
+      cardRadarInner.className = 'p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-2 border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs transition-all';
+      if (cardRadarStatusPill) {
+        cardRadarStatusPill.className = 'text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded';
+        cardRadarStatusPill.innerText = 'Ventana Secundaria';
+      }
+      if (cardRadarDesc) {
+        cardRadarDesc.innerText = 'Módulo secundario especializado para evaluar cargos de elección, micro-targeting por colonias y descargar el Plan Maestro en PDF.';
+      }
+      if (btnCardOpenRadar) {
+        btnCardOpenRadar.className = 'w-full sm:w-auto px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-[1.02] active:scale-95 cursor-pointer';
+      }
+      if (btnCardOpenRadarText) {
+        btnCardOpenRadarText.innerText = 'Abrir Radar ↗';
+      }
     } else {
-      cardRadarBanner.classList.add('hidden');
+      cardRadarInner.className = 'p-3.5 bg-slate-100 border-2 border-slate-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 opacity-85 transition-all';
+      if (cardRadarStatusPill) {
+        cardRadarStatusPill.className = 'text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded';
+        cardRadarStatusPill.innerText = '🔒 Bloqueado / No disponible para esta licencia';
+      }
+      if (cardRadarDesc) {
+        cardRadarDesc.innerText = '🔒 Bloqueado / No disponible para esta licencia — Tu cuenta opera directamente sobre la ventana principal War Room Vista 2.';
+      }
+      if (btnCardOpenRadar) {
+        btnCardOpenRadar.className = 'w-full sm:w-auto px-3.5 py-2 rounded-lg bg-slate-300 text-slate-600 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shrink-0 cursor-not-allowed';
+      }
+      if (btnCardOpenRadarText) {
+        btnCardOpenRadarText.innerText = '🔒 Bloqueado';
+      }
     }
   }
 
@@ -2940,13 +3050,46 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     radarBadge.innerText = `📍 ${licenseUser.etiquetaRegion || 'Región Autorizada'}`;
   }
 
+  // 4. LÍMITE FLEXIBLE Y ESCALONADO DE AGENTES SINTÉTICOS (TOPE MÁXIMO REGULADO POR EL PANEL MAESTRO)
+  const maxSwarm = isMasterAdmin ? 100000 : (parseInt(licenseUser.maxSwarmSize, 10) || 100000);
+  appState.maxAllowedSwarm = maxSwarm;
+
   const capPill = document.getElementById('radar-license-capacity-pill');
-  const maxSwarm = parseInt(licenseUser.maxSwarmSize, 10) || 100000;
   if (capPill) {
-    capPill.innerText = `Capacidad Autorizada: Hasta ${maxSwarm.toLocaleString()} Agentes`;
+    capPill.innerText = `Capacidad Autorizada: De 50 hasta ${maxSwarm.toLocaleString()} Agentes`;
+  }
+  const ceilingBadge = document.getElementById('swarm-ceiling-badge');
+  if (ceilingBadge) {
+    ceilingBadge.innerText = `Tope Licencia: ${maxSwarm.toLocaleString()} Agentes`;
+  }
+  const sliderMaxLabel = document.getElementById('swarm-slider-max-label');
+  if (sliderMaxLabel) {
+    sliderMaxLabel.innerText = `Máx. autorizado: ${maxSwarm.toLocaleString()} agentes`;
+  }
+  const swarmSlider = document.getElementById('swarm-slider');
+  if (swarmSlider) {
+    swarmSlider.max = String(maxSwarm);
   }
 
-  // 4. Restringir Selector de Cargos en el Radar Electoral (Vista 1)
+  // Habilitar opciones del <select id="select-swarm-size"> desde el tope máximo hacia abajo y bloquear las superiores
+  const swarmSelect = document.getElementById('select-swarm-size');
+  if (swarmSelect) {
+    Array.from(swarmSelect.options).forEach(opt => {
+      const optVal = parseInt(opt.value, 10);
+      if (!opt.dataset.origLabel) {
+        opt.dataset.origLabel = opt.textContent;
+      }
+      if (!isMasterAdmin && optVal > maxSwarm) {
+        opt.disabled = true;
+        opt.textContent = `🔒 ${opt.dataset.origLabel} [Supera tope de ${maxSwarm.toLocaleString()}]`;
+      } else {
+        opt.disabled = false;
+        opt.textContent = opt.dataset.origLabel;
+      }
+    });
+  }
+
+  // 5. Restringir Selector de Cargos en el Radar Electoral
   const cargoSelect = document.getElementById('select-cargo-electoral');
   const allowedCargos = Array.isArray(licenseUser.cargosAutorizados) && licenseUser.cargosAutorizados.length > 0
     ? licenseUser.cargosAutorizados
@@ -2959,26 +3102,12 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     appState.cargoElectoral = allowedCargos[0];
   }
 
-  // 5. Restringir Estados y Municipios en Radar (Vista 1) y War Room (Vista 2)
+  // 6. Restringir Estados y Municipios en Radar y War Room Vista 2
   await syncAuthorizedSelectorsInRadar(licenseUser);
 
-  // 6. Restringir capacidad de agentes sintéticos (maxSwarmSize)
-  document.querySelectorAll('.btn-swarm-size').forEach(btn => {
-    const size = parseInt(btn.getAttribute('data-size'), 10);
-    if (!isMasterAdmin && size > maxSwarm) {
-      btn.disabled = true;
-      btn.classList.add('opacity-40', 'cursor-not-allowed');
-      btn.title = `Bloqueado por licencia (Máximo contratado: ${maxSwarm.toLocaleString()} agentes)`;
-    } else {
-      btn.disabled = false;
-      btn.classList.remove('opacity-40', 'cursor-not-allowed');
-      btn.title = '';
-    }
-  });
-
-  if (appState.swarmSize > maxSwarm) {
-    setExactSwarmSize(maxSwarm);
-  }
+  // 7. Ajustar tamaño activo si supera el tope o actualizar botones rápidos (.btn-swarm-quick)
+  const targetInitialSize = Math.min(appState.swarmSize || 500, maxSwarm);
+  setExactSwarmSize(targetInitialSize);
 }
 
 async function syncAuthorizedSelectorsInRadar(licenseUser) {
@@ -3276,12 +3405,12 @@ function renderMasterLicensesList() {
           <span class="font-black text-indigo-950 text-[10px] uppercase">Módulos Autorizados:</span>
           <div class="flex items-center gap-3 flex-wrap">
             <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-              <input type="checkbox" ${hasRadar ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'radar', this.checked)" class="rounded text-indigo-600">
-              <span>🗳️ Vista 1: Radar Electoral</span>
+              <input type="checkbox" ${hasSim ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'simulador', this.checked)" class="rounded text-indigo-600">
+              <span>📊 Ventana Principal: War Room Vista 2</span>
             </label>
             <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-              <input type="checkbox" ${hasSim ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'simulador', this.checked)" class="rounded text-indigo-600">
-              <span>📊 Vista 2: Simulador Táctico</span>
+              <input type="checkbox" ${hasRadar ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'radar', this.checked)" class="rounded text-indigo-600">
+              <span>🗳️ Ventana Secundaria: Diagnóstico de Radar</span>
             </label>
           </div>
         </div>
@@ -3417,7 +3546,7 @@ window.saveClientLicense = async function(event) {
   const permisoRadar = document.getElementById('lic-permiso-radar')?.checked !== false;
   const permisoSimulador = document.getElementById('lic-permiso-simulador')?.checked !== false;
   if (!permisoRadar && !permisoSimulador) {
-    alert('Selecciona al menos un módulo de acceso (Radar Electoral o Simulador Táctico).');
+    alert('Selecciona al menos un módulo de acceso (War Room Vista 2 o Diagnóstico de Radar).');
     return;
   }
 
@@ -3559,13 +3688,11 @@ window.previewClientLicenseSession = async function(id) {
   await applyLicenseRestrictionsToUI(lic, false);
   closeMasterAdminModal();
 
-  if (lic.permisoRadar !== false) {
-    await openRadarElectoralModal();
-  } else {
-    const modalRadar = document.getElementById('modal-radar-electoral');
-    if (modalRadar) modalRadar.classList.add('hidden');
-  }
-  showToast(`Modo Vista Previa Cliente activo: ${lic.clienteNombre} (${lic.partido})`);
+  // Por arquitectura post-login: War Room Vista 2 es SIEMPRE la ventana principal por defecto
+  const modalRadar = document.getElementById('modal-radar-electoral');
+  if (modalRadar) modalRadar.classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast(`Modo Vista Previa Cliente activo: ${lic.clienteNombre} (${lic.partido}) — War Room Vista 2 Principal`);
 };
 
 window.activateMasterFullAccess = async function() {
