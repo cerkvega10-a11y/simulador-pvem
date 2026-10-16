@@ -1469,22 +1469,82 @@
             </div>
           </div>
 
-          <!-- PERMISOS INDEPENDIENTES DE MÓDULOS: WAR ROOM VISTA 2 (PRINCIPAL) VS RADAR ELECTORAL (SECUNDARIO) -->
-          <div class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
-            <span class="block font-black text-indigo-950 uppercase text-[11px]">A. Permisos Independientes de Módulos (Vistas Autorizadas):</span>
-            <div class="space-y-2">
-              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
-                <input type="checkbox" id="lic-permiso-simulador" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+          <!-- CONTROL DE PERMISOS GRANULARES PARA MÚLTIPLES SOCIOS Y ADMINISTRADORES -->
+          <div class="p-3.5 rounded-xl bg-indigo-50/80 border border-indigo-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="block font-black text-indigo-950 uppercase text-[11px]">A. Nivel de Cuenta y Permisos Granulares (Socios / Administradores):</span>
+              <span class="text-[10px] bg-indigo-200/80 text-indigo-900 font-extrabold px-2 py-0.5 rounded-full">Control de Acceso</span>
+            </div>
+
+            <!-- Selector de Tipo de Cuenta -->
+            <div class="grid grid-cols-2 gap-2 bg-white p-1 rounded-xl border border-indigo-200">
+              <label class="flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border border-transparent font-bold text-xs" id="lbl-tipo-master">
+                <input type="radio" name="lic_tipo_rol" id="lic-tipo-master" value="MASTER" onchange="onRoleTypeChange('MASTER')" class="text-indigo-600">
+                <span>👑 Administrador Total</span>
+              </label>
+              <label class="flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border border-transparent font-bold text-xs bg-indigo-100 text-indigo-950" id="lbl-tipo-socio">
+                <input type="radio" name="lic_tipo_rol" id="lic-tipo-socio" value="SOCIO" checked onchange="onRoleTypeChange('SOCIO')" class="text-indigo-600">
+                <span>👥 Socio / Operador</span>
+              </label>
+            </div>
+
+            <!-- Grid de Casillas Granulares (Checkboxes de Permisos Operativos) -->
+            <div class="space-y-1.5 pt-1" id="granular-permissions-grid">
+              <span class="block text-[10px] font-black uppercase text-indigo-900 tracking-wider">Permisos Operativos por Casilla:</span>
+              
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-perm-crear-licencias" class="mt-0.5 rounded text-indigo-600">
                 <div>
-                  <span class="block text-xs font-black text-slate-900">📊 Ventana Principal: War Room Vista 2 y 7 Pestañas Tácticas</span>
-                  <span class="block text-[10px] font-normal text-slate-500">Permite controlar todos los parámetros del enjambre sintético, ver las 7 pestañas y descargar el Dictamen PDF.</span>
+                  <span class="block text-xs font-black text-slate-900">📝 Crear y Modificar Licencias / Clientes</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite dar de alta o alterar cuentas y territorios en el Panel Maestro.</span>
                 </div>
               </label>
-              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-indigo-200/80">
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-perm-kill-switch" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">⚡ Control de Kill Switch y Fechas de Vigencia</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite suspender accesos o modificar calendarios de expiración.</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-perm-tokens" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">🔑 Gestión de Tokens de Seguridad Maestros</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Visualizar y regenerar hashes de seguridad criptográficos.</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-permiso-simulador" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">📊 Simulación de Enjambre (War Room Vista 2)</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Ejecutar simulaciones de enjambre sintético Monte Carlo y 7 pestañas.</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
                 <input type="checkbox" id="lic-permiso-radar" checked onchange="onLicenseModulePermChange()" class="mt-0.5 rounded text-indigo-600">
                 <div>
-                  <span class="block text-xs font-black text-slate-900">🗳️ Ventana Secundaria: Diagnóstico de Radar y Selector de Cargo</span>
-                  <span class="block text-[10px] font-normal text-slate-500">Si se desmarca, aparecerá como "🔒 Bloqueado / No disponible para esta licencia".</span>
+                  <span class="block text-xs font-black text-slate-900">🗳️ Diagnóstico de Radar Electoral 2027-2030</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Acceso a ventana secundaria de radar y micro-targeting por colonias.</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-perm-descarga-reportes" checked class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">📄 Exportación de Reportes PDF (Plan Maestro y Dictamen)</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Permite descargar expedientes impresos ejecutivos de la sesión.</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2.5 cursor-pointer font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all">
+                <input type="checkbox" id="lic-perm-solo-lectura" class="mt-0.5 rounded text-indigo-600">
+                <div>
+                  <span class="block text-xs font-black text-slate-900">👁️ Modo Sólo Lectura (Auditoría Sin Edición)</span>
+                  <span class="block text-[10px] font-normal text-slate-500">Bloquea cualquier modificación operativa; acceso estrictamente consultivo.</span>
                 </div>
               </label>
             </div>

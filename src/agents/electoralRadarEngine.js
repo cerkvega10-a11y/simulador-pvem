@@ -11,7 +11,8 @@ const {
 } = require('../data/coloniasData');
 
 const {
-  MUNICIPIOS_DATOS_OFICIALES
+  MUNICIPIOS_DATOS_OFICIALES,
+  getOfficialGovernmentDossier
 } = require('../data/officialGovernmentData');
 
 class ElectoralRadarEngine {
@@ -178,8 +179,11 @@ class ElectoralRadarEngine {
   /**
    * Diagnóstico Oficial de las 6 Problemáticas Críticas del Municipio (.gob.mx)
    */
-  getDiagnosticoProblematicas(municipio = 'Ecatepec de Morelos') {
-    const dataOficial = MUNICIPIOS_DATOS_OFICIALES[municipio] || MUNICIPIOS_DATOS_OFICIALES['Ecatepec de Morelos'];
+  getDiagnosticoProblematicas(municipio = 'Ecatepec de Morelos', estado = 'Estado de México') {
+    let dataOficial = MUNICIPIOS_DATOS_OFICIALES[municipio];
+    if (!dataOficial) {
+      dataOficial = getOfficialGovernmentDossier(municipio, estado).datos;
+    }
 
     return {
       municipio,
@@ -972,14 +976,15 @@ Su experiencia y sus bendiciones son el motor de esta campaña. ¡Caminen con no
   generateFullRadarAnalysis(params = {}) {
     const {
       municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
       cargo = 'Presidente Municipal / Alcalde',
       ciclo = '2027',
       candidato = 'Candidato de Transformación Verde',
       coalicion = 'PVEM - Sigamos Haciendo Historia'
     } = params;
 
-    const statsColonias = getColoniasStats(municipio);
-    const problematicasOficiales = this.getDiagnosticoProblematicas(municipio);
+    const statsColonias = getColoniasStats(municipio, estado);
+    const problematicasOficiales = this.getDiagnosticoProblematicas(municipio, estado);
     const bateriaPropuestas = this.getBateriaPropuestas(cargo, municipio);
     const alianzasYSindicatos = this.getAlianzasYSindicatos(municipio, cargo);
     const manualCampana = this.generarManualCampana(municipio, cargo, ciclo, candidato, coalicion);

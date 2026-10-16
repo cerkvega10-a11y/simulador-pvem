@@ -10,6 +10,7 @@ const politicalStrategistAgent = require('./politicalStrategistAgent');
 const dialogueAgent = require('./dialogueAgent');
 const watchdogAuditAgent = require('./watchdogAuditAgent');
 const realAiVerificationAgent = require('./realAiVerificationAgent');
+const coloniasData = require('../data/coloniasData');
 
 class OrchestratorAgent {
   constructor() {
@@ -242,6 +243,15 @@ class OrchestratorAgent {
     finalReport.modoAtaque = auditResult.modoAtaque;
     finalReport.variacionMuestral = auditResult.variacionMuestral;
     finalReport.qaWatchdogCertificacion = auditResult.qaWatchdogCertificacion;
+
+    // Expediente de Micro-Targeting de Colonias Reales por Municipio y Estado
+    const statsColonias = coloniasData.getColoniasStats(municipio, estado);
+    finalReport.microTargetingColonias = statsColonias;
+    finalReport.colonias = statsColonias.colonias;
+    finalReport.coloniasPrioritarias = statsColonias.coloniasPrioritarias;
+    finalReport.municipio = statsColonias.municipio;
+    finalReport.estado = statsColonias.estado;
+    finalReport.esMacroEstatal = statsColonias.esMacroEstatal;
 
     // --- META-AGENTE: Verificación y Autodiagnóstico de IA Real y Datos Oficiales ---
     onProgress({

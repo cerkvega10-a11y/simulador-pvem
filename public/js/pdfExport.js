@@ -162,7 +162,7 @@
       // PÁGINA 5: MATRIZ DE INDICADORES MULTI-DIMENSIONALES Y VOCES DEL ENJAMBRE
       // =======================================================================
       doc.addPage();
-      this.drawHeaderBanner(doc, ctxShared, '4. MATRIZ DE INDICADORES MULTI-DIMENSIONALES Y VOCES DEL ENJAMBRE');
+      this.drawHeaderBanner(doc, ctxShared, '4. MATRIZ DE INDICADORES MULTI-DIMENSIONALES Y MONITOREO DE GOBERNANZA');
       this.drawPage5FuentesYVoces(doc, ctxShared);
       this.drawSecurityFooter(doc, 5, totalPages, ctxShared);
 
@@ -578,15 +578,30 @@
 
       curY += 3.5;
 
-      const rawColonias = reportData?.microTargetingColonias?.coloniasEvaluadas || [];
-      const coloniasPropuesta = rawColonias.map(c => ({
-        nombre: c.nombre || 'Colonia Evaluada',
-        apoyo: `${c.apoyoProyectado ?? c.apoyoBase ?? 55}%`,
-        rechazo: `${Math.max(10, 100 - Number(c.apoyoProyectado ?? c.apoyoBase ?? 55) - 14)}%`,
-        friccion: String(c.prioridadBrigada || '').includes('Resistencia') ? 'Alta' : (String(c.prioridadBrigada || '').includes('Indecisa') ? 'Moderada' : 'Baja'),
-        prioridad: String(c.prioridadBrigada || c.prioridad || 'Estratégica').split('/')[0].trim(),
-        observacion: c.accionRecomendada || c.carenciaPrincipal || 'Atención prioritaria en brigada territorial.'
-      }));
+      let rawColonias = reportData?.microTargetingColonias?.coloniasEvaluadas
+        || reportData?.microTargetingColonias?.colonias
+        || (window.appState?.radarAnalysis?.microTargetingColonias?.coloniasEvaluadas)
+        || (window.appState?.radarAnalysis?.microTargetingColonias?.colonias)
+        || [];
+
+      if (!Array.isArray(rawColonias) || rawColonias.length === 0) {
+        if (typeof coloniasData !== 'undefined' && coloniasData.getColoniasByMunicipio) {
+          rawColonias = coloniasData.getColoniasByMunicipio(municipio, ctx.estado || window.appState?.estado);
+        }
+      }
+
+      const coloniasPropuesta = (rawColonias || []).map(c => {
+        const apVal = Number(c.porcentajeApoyoProyectado ?? c.apoyoProyectado ?? c.apoyoBase ?? 55);
+        const opVal = Number(c.porcentajeOposicion ?? Math.max(10, 100 - apVal - 14));
+        return {
+          nombre: c.nombre || 'Colonia Evaluada',
+          apoyo: `${apVal}%`,
+          rechazo: `${opVal}%`,
+          friccion: String(c.friccionSocial || c.prioridadBrigada || '').includes('Resistencia') || String(c.prioridadBrigada || '').includes('Crítica') ? 'Alta' : (String(c.prioridadBrigada || '').includes('Indecisa') ? 'Moderada' : 'Baja'),
+          prioridad: String(c.prioridadBrigada || c.prioridad || 'Estratégica').split('/')[0].trim(),
+          observacion: c.carenciaPrincipal || c.accionRecomendada || 'Atención prioritaria en brigada territorial.'
+        };
+      });
 
       if (coloniasPropuesta.length === 0) {
         doc.setFillColor(254, 242, 242);
@@ -674,7 +689,7 @@
         {
           fase: 'FASE 3 (DÍAS 61 A 90) — CONSOLIDACIÓN DE RESULTADOS Y CAPITALIZACIÓN',
           color: [217, 119, 6],
-          acciones: `• Evaluación de impacto barrial en ${municipio} para convertir el segmento indeciso en respaldo activo.\n• Ajuste táctico de mensaje conforme a las recomendaciones del enjambre sintético.\n• Difusión de testimonios ciudadanos verificados para blindar la propuesta ante cuestionamientos.`
+          acciones: `• Evaluación de impacto barrial en ${municipio} para convertir el segmento indeciso en respaldo activo.\n• Ajuste táctico de mensaje conforme a las recomendaciones del enjambre sintético.\n• Despliegue de métricas de impacto y comunicación institucional para blindar la propuesta ante cuestionamientos.`
         }
       ];
 
@@ -900,78 +915,96 @@
         curY += rowH;
       });
 
-      // VOCES DEL ENJAMBRE CIUDADANO DE LA SIMULACIÓN ACTIVA
+      // MONITOREO DE RIESGO DE POLARIZACIÓN Y RECOMENDACIONES TÁCTICAS EJECUTIVAS
       curY += 5;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('VOCES Y TESTIMONIOS DEL ENJAMBRE CIUDADANO GENERADOS EN LA SESIÓN', margin, curY);
+      doc.text('MONITOREO EJECUTIVO DE GOBERNANZA, POLARIZACIÓN Y BLINDAJE SOCIAL', margin, curY);
 
       curY += 3.5;
 
-      const rawTestimonios = Array.isArray(reportData.testimonios) && reportData.testimonios.length > 0
-        ? reportData.testimonios.slice(0, 4).map(t => ({
-            nombre: t.perfil || 'Agente Sintético',
-            edad: t.edad || 'Adulto',
-            ocupacion: t.sector || 'Ciudadano',
-            colonia: ctx.municipio || 'Demarcación',
-            voto: t.postura || 'Evaluado',
-            mensaje: t.comentario || '',
-            sectorSocial: t.sector || 'Comunidad',
-            entusiasmo: 70,
-            nse: t.nse || 'C/D+'
-          }))
-        : (Array.isArray(reportData.chatsDelEnjambre) ? reportData.chatsDelEnjambre.slice(0, 4) : []);
+      const res = reportData.resumenEjecutivo || {};
+      const scoreFavor = Number(res.porcentajeFavor || 55);
+      const scoreContra = Number(res.porcentajeContra || Math.max(12, 100 - scoreFavor - 15));
+      const scoreNeutro = Math.max(0, 100 - scoreFavor - scoreContra);
+      const scoreFriccion = Number(res.indiceFriccionSocial?.score ?? 38);
+      const scorePolarizacion = Number(res.indicePolarizacion?.score ?? 32);
 
-      if (rawTestimonios.length === 0) {
-        doc.setFillColor(254, 242, 242);
-        doc.setDrawColor(252, 165, 165);
-        doc.roundedRect(margin, curY, contentWidth, 20, 1.2, 1.2, 'FD');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(185, 28, 28);
-        doc.text('Sin datos suficientes de simulación para compilar testimonios en este módulo.', margin + 4, curY + 9);
-        return;
-      }
+      // 4 Tarjetas de Métricas Ejecutivas
+      const kpis = [
+        { label: 'Consenso Proyectado', val: `${scoreFavor}%`, sub: 'Aprobación Comunitaria', color: [0, 143, 57] },
+        { label: 'Riesgo de Polarización', val: `${scorePolarizacion}/100`, sub: scorePolarizacion > 45 ? 'Atención Prioritaria' : 'Riesgo Controlado', color: [217, 119, 6] },
+        { label: 'Índice de Fricción', val: `${scoreFriccion}/100`, sub: 'Sensibilidad en Redes', color: [185, 28, 28] },
+        { label: 'Viabilidad de Gobernanza', val: `${Math.min(96, 100 - scorePolarizacion + 10)}%`, sub: 'Factibilidad Territorial', color: [2, 132, 199] }
+      ];
 
-      rawTestimonios.forEach(t => {
-        const tH = 22;
+      const kpiW = (contentWidth - 6) / 4;
+      const kpiH = 16;
+      kpis.forEach((k, idx) => {
+        const kX = margin + (idx * (kpiW + 2));
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(226, 232, 240);
-        doc.roundedRect(margin, curY, contentWidth, tH, 1.2, 1.2, 'FD');
+        doc.roundedRect(kX, curY, kpiW, kpiH, 1.2, 1.2, 'FD');
 
-        const v = (t.voto || '').toLowerCase();
-        let bColor = [0, 143, 57];
-        if (v.includes('contra') || v.includes('rechaz')) bColor = [220, 38, 38];
-        else if (v.includes('neutro') || v.includes('indecis')) bColor = [217, 119, 6];
-
-        doc.setFillColor(bColor[0], bColor[1], bColor[2]);
-        doc.rect(margin, curY, 2.5, tH, 'F');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.8);
-        doc.setTextColor(15, 23, 42);
-        doc.text(`${t.nombre} (${t.ocupacion} — ${t.colonia})`, margin + 5, curY + 4.8);
-
-        doc.setFillColor(bColor[0], bColor[1], bColor[2]);
-        doc.roundedRect(margin + contentWidth - 24, curY + 2.2, 21, 4, 0.8, 0.8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(5.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(String(t.voto || 'Voto').substring(0, 12), margin + contentWidth - 22, curY + 5);
-
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(6.2);
-        doc.setTextColor(30, 41, 59);
-        const msgLines = doc.splitTextToSize(`"${t.mensaje || t.argumento || ''}"`, contentWidth - 10);
-        doc.text(msgLines.slice(0, 2), margin + 5, curY + 10.5);
+        doc.setFillColor(k.color[0], k.color[1], k.color[2]);
+        doc.rect(kX, curY, kpiW, 1.5, 'F');
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5.2);
         doc.setTextColor(100, 116, 139);
-        doc.text(`Sector: ${t.sectorSocial || 'Comunidad'}  |  Territorio: ${ctx.municipio}`, margin + 5, curY + tH - 2.5);
+        doc.text(k.label.toUpperCase(), kX + 2, curY + 4.8);
 
-        curY += tH + 2.5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(k.color[0], k.color[1], k.color[2]);
+        doc.text(k.val, kX + 2, curY + 10.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5);
+        doc.setTextColor(71, 85, 105);
+        doc.text(k.sub, kX + 2, curY + 14);
+      });
+
+      curY += kpiH + 4;
+
+      // Matriz de Recomendaciones Tácticas Ejecutivas
+      const recomendaciones = [
+        {
+          eje: 'EJE 1: BLINDAJE CONTRA POLARIZACIÓN Y RUMORES EN CUADRANTES DE RIESGO',
+          desc: `Desplegar estrategia de comunicación directa en ${ctx.municipio} explicando los beneficios técnicos y presupuestales (Ramo 33/FAISMUN) para neutralizar narrativas opositoras antes del despliegue masivo.`
+        },
+        {
+          eje: 'EJE 2: MESA TÉCNICA TRIPARTITA Y PACTO DE GOBERNABILIDAD',
+          desc: 'Instalar mesas de diálogo con líderes de comerciantes, transportistas y servidores públicos para alinear pliegos petitorios e integrarlos como promotores activos de la propuesta.'
+        },
+        {
+          eje: 'EJE 3: DESPLIEGUE OPERATIVO Y CONVERSIÓN DEL SEGMENTO INDECISO',
+          desc: `Focalizar brigadas de contacto institucional en las colonias clasificadas como "Battleground / Indecisa" para consolidar la intención de voto y convertir reservas en respaldo activo.`
+        }
+      ];
+
+      recomendaciones.forEach(r => {
+        const recH = 14.5;
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(margin, curY, contentWidth, recH, 1.2, 1.2, 'FD');
+
+        doc.setFillColor(party.dark[0], party.dark[1], party.dark[2]);
+        doc.rect(margin, curY, 2.5, recH, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
+        doc.text(r.eje, margin + 5, curY + 4.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5.8);
+        doc.setTextColor(51, 65, 85);
+        const descLines = doc.splitTextToSize(r.desc, contentWidth - 8);
+        doc.text(descLines.slice(0, 2), margin + 5, curY + 8.8);
+
+        curY += recH + 2.5;
       });
     },
 

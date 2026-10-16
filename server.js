@@ -260,11 +260,21 @@ app.get('/api/municipalities', (req, res) => {
   const targetState = estado || 'Estado de México';
   const lista = CATALOGO_NACIONAL_32_ESTADOS[targetState] || getMunicipalitiesByStates(targetState).map(x => x.nombre);
 
-  const listado = lista.map(m => ({
-    estado: targetState,
-    nombre: m,
-    tieneDetalleProfundo: !!MUNICIPIOS_EDOMEX_DETALLADOS[m]
-  }));
+  const listado = [
+    {
+      estado: targetState,
+      nombre: 'Todos los municipios del estado',
+      tieneDetalleProfundo: true,
+      esMacroEstatal: true
+    },
+    ...lista
+      .filter(m => !m.toLowerCase().includes('todos'))
+      .map(m => ({
+        estado: targetState,
+        nombre: m,
+        tieneDetalleProfundo: !!MUNICIPIOS_EDOMEX_DETALLADOS[m]
+      }))
+  ];
 
   return res.json({ success: true, municipios: listado });
 });
@@ -595,6 +605,7 @@ app.get('/api/electoral-radar', (req, res) => {
   try {
     const {
       municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
       cargo = 'Presidente Municipal / Alcalde',
       ciclo = '2027',
       prioridad
@@ -604,16 +615,17 @@ app.get('/api/electoral-radar', (req, res) => {
     const cargos = electoralRadarEngine.getCargosElectorales();
     const municipiosDisponibles = coloniasData.getMunicipiosDisponibles();
     const colonias = prioridad
-      ? coloniasData.filterColoniasByPrioridad(municipio, prioridad)
-      : coloniasData.getColoniasByMunicipio(municipio);
-    const stats = coloniasData.getColoniasStats(municipio);
-    const diagnostico = electoralRadarEngine.getDiagnosticoProblematicas(municipio);
+      ? coloniasData.filterColoniasByPrioridad(municipio, prioridad, estado)
+      : coloniasData.getColoniasByMunicipio(municipio, estado);
+    const stats = coloniasData.getColoniasStats(municipio, estado);
+    const diagnostico = electoralRadarEngine.getDiagnosticoProblematicas(municipio, estado);
     const propuestas = electoralRadarEngine.getBateriaPropuestas(cargo, municipio);
     const sindicatos = electoralRadarEngine.getAlianzasYSindicatos(municipio, cargo);
 
     res.json({
       success: true,
       municipio,
+      estado,
       cargo,
       ciclo,
       ciclos,
@@ -636,6 +648,7 @@ app.post('/api/electoral-radar/diagnostico', (req, res) => {
   try {
     const {
       municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
       cargo = 'Presidente Municipal / Alcalde',
       ciclo = '2027',
       candidato = 'Candidato de Transformación Verde',
@@ -644,6 +657,7 @@ app.post('/api/electoral-radar/diagnostico', (req, res) => {
 
     const radarAnalysis = electoralRadarEngine.generateFullRadarAnalysis({
       municipio,
+      estado,
       cargo,
       ciclo,
       candidato,
@@ -827,6 +841,16 @@ app.post('/api/auth/login', (req, res) => {
           municipiosAutorizados: ['TODOS'],
           permisoRadar: true,
           permisoSimulador: true,
+          esAdministradorTotal: true,
+          permisosGranulares: {
+            crearLicencias: true,
+            killSwitch: true,
+            tokensSeguridad: true,
+            simulador: true,
+            radar: true,
+            descargaReportes: true,
+            soloLectura: false
+          },
           propuestaFijaTitulo: '',
           propuestaFijaTexto: '',
           maxSwarmSize: 100000,
@@ -873,11 +897,26 @@ app.post('/api/auth/login', (req, res) => {
       });
     }
 
+    const isMasterRole = Boolean(found.esAdministradorTotal || found.role === 'MASTER_ADMIN' || found.tipoUsuario === 'MASTER_ADMIN');
+    const permisosGranulares = found.permisosGranulares || {
+      crearLicencias: isMasterRole,
+      killSwitch: isMasterRole,
+      tokensSeguridad: isMasterRole,
+      simulador: found.permisoSimulador !== false,
+      radar: found.permisoRadar !== false,
+      descargaReportes: true,
+      soloLectura: false
+    };
+
     return res.json({
       success: true,
-      role: 'CLIENT',
+      role: isMasterRole ? 'MASTER_ADMIN' : (found.tipoUsuario === 'SOCIO_OPERADOR' ? 'SOCIO_OPERADOR' : 'CLIENT'),
       watermark: AUTHORSHIP_WATERMARK,
-      user: found
+      user: {
+        ...found,
+        esAdministradorTotal: isMasterRole,
+        permisosGranulares
+      }
     });
   } catch (err) {
     console.error('Error en /api/auth/login:', err);
@@ -953,6 +992,18 @@ app.post('/api/licenses', (req, res) => {
       municipiosAutorizados,
       permisoRadar: body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true,
       permisoSimulador: body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true,
+      esAdministradorTotal: Boolean(body.esAdministradorTotal),
+      tipoUsuario: body.esAdministradorTotal ? 'MASTER_ADMIN' : (body.tipoUsuario || 'CLIENT'),
+      permisosGranulares: {
+        crearLicencias: body.esAdministradorTotal ? true : (body.permisosGranulares?.crearLicencias ?? (body.permisoCrearLicencias !== undefined ? Boolean(body.permisoCrearLicencias) : false)),
+        killSwitch: body.esAdministradorTotal ? true : (body.permisosGranulares?.killSwitch ?? (body.permisoKillSwitch !== undefined ? Boolean(body.permisoKillSwitch) : false)),
+        tokens: body.esAdministradorTotal ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : false)),
+        tokensSeguridad: body.esAdministradorTotal ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : false)),
+        simulador: body.esAdministradorTotal ? true : (body.permisosGranulares?.simulador ?? (body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true)),
+        radar: body.esAdministradorTotal ? true : (body.permisosGranulares?.radar ?? (body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true)),
+        descargaReportes: body.esAdministradorTotal ? true : (body.permisosGranulares?.descargaReportes ?? (body.permisoDescargaReportes !== undefined ? Boolean(body.permisoDescargaReportes) : true)),
+        soloLectura: body.esAdministradorTotal ? false : Boolean(body.permisosGranulares?.soloLectura ?? body.permisoSoloLectura)
+      },
       propuestaFijaTitulo: String(body.propuestaFijaTitulo || '').trim(),
       propuestaFijaTexto: String(body.propuestaFijaTexto || '').trim(),
       maxSwarmSize: parseInt(body.maxSwarmSize, 10) || (body.isDemo ? 1000 : 100000),

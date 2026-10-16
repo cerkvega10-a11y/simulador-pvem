@@ -109,7 +109,8 @@ async function loadStates() {
  */
 async function loadMunicipalities(estado) {
   const select = document.getElementById('select-municipio');
-  if (!select) return;
+  const radarSelect = document.getElementById('radar-select-municipio');
+  if (!select && !radarSelect) return;
 
   try {
     const res = await fetch(`/api/municipalities?estado=${encodeURIComponent(estado)}`);
@@ -117,17 +118,34 @@ async function loadMunicipalities(estado) {
     if (data.success && data.municipios) {
       let lista = data.municipios;
       const lic = appState.activeSession?.user;
-      if (lic && appState.activeSession?.role !== 'MASTER_ADMIN' && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
-        const filtered = lista.filter(m => lic.municipiosAutorizados.includes(m.nombre));
+      if (lic && appState.activeSession?.role !== 'MASTER_ADMIN' && !lic.esAdministradorTotal && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
+        const filtered = lista.filter(m => lic.municipiosAutorizados.includes(m.nombre) || m.nombre === 'Todos los municipios del estado');
         if (filtered.length > 0) lista = filtered;
       }
 
-      select.innerHTML = lista.map((m, idx) => `
-        <option value="${m.nombre}" ${m.nombre === 'Ecatepec de Morelos' || idx === 0 ? 'selected' : ''}>
-          ${m.nombre} ${m.tieneDetalleProfundo ? '★ (Perfil Detallado)' : ''}
+      // Garantizar que la opción obligatoria "Todos los municipios del estado" esté al inicio
+      if (!lista.some(m => m.nombre === 'Todos los municipios del estado')) {
+        lista.unshift({
+          estado,
+          nombre: 'Todos los municipios del estado',
+          tieneDetalleProfundo: true,
+          esMacroEstatal: true
+        });
+      }
+
+      const optionsHtml = lista.map((m, idx) => `
+        <option value="${m.nombre}" ${idx === 0 ? 'selected' : ''}>
+          ${m.nombre === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m.nombre} ${m.tieneDetalleProfundo && m.nombre !== 'Todos los municipios del estado' ? '★ (Perfil Detallado)' : ''}
         </option>
       `).join('');
-      appState.municipio = select.value;
+
+      if (select) {
+        select.innerHTML = optionsHtml;
+        appState.municipio = select.value;
+      }
+      if (radarSelect) {
+        radarSelect.innerHTML = optionsHtml;
+      }
     }
   } catch (err) {
     console.error('Error cargando municipios:', err);
@@ -2943,9 +2961,49 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     }
   }
 
-  // 2. Permisos Independientes de Módulos: War Room Vista 2 (Principal) y Diagnóstico de Radar (Secundario)
-  const canRadar = isMasterAdmin || licenseUser.permisoRadar !== false;
-  const canSimulador = isMasterAdmin || licenseUser.permisoSimulador !== false;
+  // 2. Permisos Independientes de Módulos y Permisos Granulares
+  const perms = licenseUser.permisosGranulares || {};
+  const isMaster = isMasterAdmin || licenseUser.esAdministradorTotal === true || licenseUser.tipoUsuario === 'MASTER';
+  const canRadar = isMaster || (licenseUser.permisoRadar !== false && perms.radar !== false);
+  const canSimulador = isMaster || (licenseUser.permisoSimulador !== false && perms.simulador !== false);
+  const canDescarga = isMaster || perms.descargaReportes !== false;
+  const isReadOnly = !isMaster && perms.soloLectura === true;
+
+  // Aplicar control sobre descargas de PDF (Plan Maestro y Dictamen Integral)
+  const btnExportPdf = document.getElementById('btn-export-pdf');
+  const btnExportPlan = document.getElementById('btn-download-plan-maestro');
+  [btnExportPdf, btnExportPlan].forEach(btn => {
+    if (btn) {
+      btn.disabled = !canDescarga;
+      if (!canDescarga) {
+        btn.classList.add('opacity-40', 'cursor-not-allowed');
+        btn.title = '🔒 Descarga de reportes bloqueada para este perfil de socio';
+      } else {
+        btn.classList.remove('opacity-40', 'cursor-not-allowed');
+        btn.title = '';
+      }
+    }
+  });
+
+  // Modo Solo Lectura / Bloqueo de Simulación
+  const btnIniciarSim = document.getElementById('btn-iniciar-simulacion');
+  if (btnIniciarSim) {
+    if (!canSimulador || isReadOnly) {
+      btnIniciarSim.disabled = true;
+      btnIniciarSim.classList.add('opacity-60', 'cursor-not-allowed');
+      btnIniciarSim.innerHTML = isReadOnly 
+        ? `<span class="flex items-center gap-1.5 justify-center"><span>👁️</span> <span>Modo Solo Lectura (Ejecución Bloqueada)</span></span>`
+        : `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>War Room No Autorizado para esta Licencia</span></span>`;
+    } else if (!appState.isLocked) {
+      btnIniciarSim.disabled = false;
+      btnIniciarSim.classList.remove('opacity-60', 'cursor-not-allowed');
+    }
+  }
+
+  const propInput = document.getElementById('input-propuesta');
+  const titInput = document.getElementById('input-titulo');
+  if (propInput) propInput.readOnly = isReadOnly;
+  if (titInput) titInput.readOnly = isReadOnly;
 
   const btnHeaderRadar = document.getElementById('btn-header-radar-electoral');
   const btnHeaderRadarSub = document.getElementById('btn-header-radar-sub');
@@ -3150,9 +3208,12 @@ async function syncAuthorizedSelectorsInRadar(licenseUser) {
     const filteredForState = lic.municipiosAutorizados.filter(m => catalogForActiveState.includes(m));
     allowedMunis = filteredForState.length > 0 ? filteredForState : lic.municipiosAutorizados;
   }
+  const finalMunis = ['Todos los municipios del estado', ...allowedMunis.filter(m => !m.toLowerCase().includes('todos'))];
 
-  const muniOptionsHtml = allowedMunis.map((m, idx) => `
-    <option value="${m}" ${idx === 0 ? 'selected' : ''}>${m}</option>
+  const muniOptionsHtml = finalMunis.map((m, idx) => `
+    <option value="${m}" ${idx === 0 ? 'selected' : ''}>
+      ${m === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m}
+    </option>
   `).join('');
 
   if (radarMuniSelect) {
@@ -3160,7 +3221,7 @@ async function syncAuthorizedSelectorsInRadar(licenseUser) {
   }
   if (mainMuniSelect) {
     mainMuniSelect.innerHTML = muniOptionsHtml;
-    appState.municipio = allowedMunis[0] || 'Ecatepec de Morelos';
+    appState.municipio = finalMunis[0];
   }
 }
 
@@ -3182,13 +3243,17 @@ window.onRadarStateChange = async function(selectedState) {
     allowedMunis = filtered.length > 0 ? filtered : lic.municipiosAutorizados;
   }
 
-  const muniOptionsHtml = allowedMunis.map((m, idx) => `
-    <option value="${m}" ${idx === 0 ? 'selected' : ''}>${m}</option>
+  const finalMunis = ['Todos los municipios del estado', ...allowedMunis.filter(m => !m.toLowerCase().includes('todos'))];
+
+  const muniOptionsHtml = finalMunis.map((m, idx) => `
+    <option value="${m}" ${idx === 0 ? 'selected' : ''}>
+      ${m === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m}
+    </option>
   `).join('');
 
   if (radarMuniSelect) radarMuniSelect.innerHTML = muniOptionsHtml;
   if (mainMuniSelect) mainMuniSelect.innerHTML = muniOptionsHtml;
-  if (allowedMunis[0]) appState.municipio = allowedMunis[0];
+  if (finalMunis[0]) appState.municipio = finalMunis[0];
 };
 
 window.onLicenseModulePermChange = function() {
@@ -3382,27 +3447,54 @@ function renderMasterLicensesList() {
     return;
   }
 
+  const activeUser = appState.activeSession?.user;
+  const activeIsMaster = appState.activeSession?.role === 'MASTER_ADMIN' || activeUser?.esAdministradorTotal === true || activeUser?.tipoUsuario === 'MASTER';
+  const activePerms = activeUser?.permisosGranulares || {};
+  const canUseKillSwitch = activeIsMaster || activePerms.killSwitch !== false;
+  const canManageTokens = activeIsMaster || activePerms.tokens !== false;
+  const canEditLicenses = activeIsMaster || activePerms.crearLicencias !== false;
+
   container.innerHTML = masterLicensesCache.map(lic => {
     const now = new Date();
     const exp = new Date(`${lic.fechaExpiracion}T23:59:59`);
     const isExpired = now > exp;
     const isActive = lic.activo && !isExpired;
 
+    const isMasterUser = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER';
+    const roleBadge = isMasterUser
+      ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300">👑 MASTER TOTAL</span>`
+      : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300">👥 SOCIO OPERADOR</span>`;
+
     const statusBadge = isActive
       ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 LICENCIA ACTIVA</span>`
       : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🔴 BLOQUEADA / EXPIRADA</span>`;
 
+    const perms = lic.permisosGranulares || {};
+    const permBadges = isMasterUser
+      ? `<span class="text-[10px] text-purple-700 font-bold">✨ Acceso Irrestricto a todos los módulos y llaves maestras</span>`
+      : `
+        <div class="flex flex-wrap gap-1 mt-1">
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.crearLicencias !== false ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-400 line-through'}">Licencias</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.killSwitch !== false ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-400 line-through'}">Kill Switch</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.tokens !== false ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-400 line-through'}">Tokens</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.simulador !== false ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-400 line-through'}">War Room</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.radar !== false ? 'bg-teal-100 text-teal-800 border border-teal-200' : 'bg-slate-100 text-slate-400 line-through'}">Radar</span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.descargaReportes !== false ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' : 'bg-slate-100 text-slate-400 line-through'}">Reportes PDF</span>
+          ${perms.soloLectura ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-200">Solo Lectura</span>` : ''}
+        </div>
+      `;
+
     const estadosStr = (lic.estadosAutorizados || ['Estado de México']).join(', ');
     const munisStr = (lic.municipiosAutorizados || []).slice(0, 6).join(', ') + ((lic.municipiosAutorizados || []).length > 6 ? ` (+${lic.municipiosAutorizados.length - 6} más)` : '');
-    const hasRadar = lic.permisoRadar !== false;
-    const hasSim = lic.permisoSimulador !== false;
+    const tokenDisplay = canManageTokens ? (lic.tokenSeguridad || 'TK-AUTORIZADO-XXXX') : '•••••••••••• (Restringido)';
 
     return `
       <div class="p-4 rounded-xl border ${isActive ? 'border-slate-200 bg-slate-50/70' : 'border-rose-200 bg-rose-50/30'} space-y-3 text-xs shadow-2xs">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white">${lic.partido}</span>
             <h4 class="font-black text-slate-900 text-sm">${lic.clienteNombre}</h4>
+            ${roleBadge}
             ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS</span>` : ''}
           </div>
           ${statusBadge}
@@ -3416,8 +3508,8 @@ function renderMasterLicensesList() {
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">🛡️ Token de Seguridad:</span>
             <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="font-mono font-extrabold text-indigo-950 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded text-[10px] select-all">${lic.tokenSeguridad || 'TK-AUTORIZADO-XXXX'}</span>
-              <button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');" class="text-slate-400 hover:text-slate-900 p-0.5 rounded cursor-pointer" title="Copiar Token">📋</button>
+              <span class="font-mono font-extrabold text-indigo-950 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded text-[10px] select-all">${tokenDisplay}</span>
+              ${canManageTokens ? `<button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');" class="text-slate-400 hover:text-slate-900 p-0.5 rounded cursor-pointer" title="Copiar Token">📋</button>` : ''}
             </div>
           </div>
           <div>
@@ -3433,32 +3525,25 @@ function renderMasterLicensesList() {
             <span class="text-[10px] text-slate-600">Inicio: <b>${lic.fechaInicio}</b> • Modifica la fecha para alargar o acortar acceso al instante</span>
           </div>
           <div class="flex items-center gap-1.5 flex-wrap">
-            <input type="date" id="quick-exp-${lic.id}" value="${lic.fechaExpiracion}"
-              class="px-2 py-1 rounded border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500">
-            <button type="button" onclick="updateLicenseExpirationQuick('${lic.id}')"
-              class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all">
+            <input type="date" id="quick-exp-${lic.id}" value="${lic.fechaExpiracion}" ${!canUseKillSwitch ? 'disabled' : ''}
+              class="px-2 py-1 rounded border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 ${!canUseKillSwitch ? 'opacity-60 cursor-not-allowed' : ''}">
+            <button type="button" onclick="updateLicenseExpirationQuick('${lic.id}')" ${!canUseKillSwitch ? 'disabled' : ''}
+              class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
               Guardar Fecha
             </button>
-            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 30)" title="Alargar +30 días"
-              class="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] cursor-pointer">
+            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 30)" ${!canUseKillSwitch ? 'disabled' : ''} title="Alargar +30 días"
+              class="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
               +30d
             </button>
           </div>
         </div>
 
-        <!-- PERMISOS INDEPENDIENTES DE MÓDULOS EN TIEMPO REAL -->
-        <div class="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-          <span class="font-black text-indigo-950 text-[10px] uppercase">Módulos Autorizados:</span>
-          <div class="flex items-center gap-3 flex-wrap">
-            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-              <input type="checkbox" ${hasSim ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'simulador', this.checked)" class="rounded text-indigo-600">
-              <span>📊 Ventana Principal: War Room Vista 2</span>
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-              <input type="checkbox" ${hasRadar ? 'checked' : ''} onchange="toggleLicenseModulePermQuick('${lic.id}', 'radar', this.checked)" class="rounded text-indigo-600">
-              <span>🗳️ Ventana Secundaria: Diagnóstico de Radar</span>
-            </label>
+        <!-- PERMISOS Y ROLES -->
+        <div class="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-200/80 space-y-1.5">
+          <div class="flex items-center justify-between flex-wrap gap-2 text-[11px]">
+            <span class="font-black text-indigo-950 text-[10px] uppercase">Permisos del Perfil:</span>
           </div>
+          ${permBadges}
         </div>
 
         <div class="text-[11px] text-slate-600 space-y-1">
@@ -3471,16 +3556,16 @@ function renderMasterLicensesList() {
             class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all cursor-pointer">
             👁️ Simular como este Cliente
           </button>
-          <button type="button" onclick="editClientLicense('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer">
-            ✏️ Editar Completo
+          <button type="button" onclick="editClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
+            class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
+            ✏️ Editar
           </button>
-          <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg ${lic.activo ? 'bg-amber-100 hover:bg-amber-200 text-amber-900' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'} font-bold text-[11px] transition-all cursor-pointer">
+          <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')" ${!canUseKillSwitch ? 'disabled' : ''}
+            class="px-3 py-1.5 rounded-lg ${lic.activo ? 'bg-amber-100 hover:bg-amber-200 text-amber-900' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'} font-bold text-[11px] transition-all cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
             🔌 ${lic.activo ? 'Suspender (Kill Switch)' : 'Reactivar'}
           </button>
-          <button type="button" onclick="deleteClientLicense('${lic.id}')"
-            class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-all cursor-pointer">
+          <button type="button" onclick="deleteClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
+            class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
             🗑️
           </button>
         </div>
@@ -3551,6 +3636,45 @@ window.toggleLicenseModulePermQuick = async function(id, modType, checked) {
   }
 };
 
+window.onRoleTypeChange = function(tipo) {
+  const isMaster = (tipo === 'MASTER');
+  const rMaster = document.getElementById('lic-tipo-master');
+  const rSocio = document.getElementById('lic-tipo-socio');
+  const lblMaster = document.getElementById('lbl-tipo-master');
+  const lblSocio = document.getElementById('lbl-tipo-socio');
+
+  if (rMaster) rMaster.checked = isMaster;
+  if (rSocio) rSocio.checked = !isMaster;
+
+  if (lblMaster && lblSocio) {
+    if (isMaster) {
+      lblMaster.className = 'flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border font-bold text-xs bg-amber-100 text-amber-950 border-amber-300 shadow-xs';
+      lblSocio.className = 'flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border border-transparent font-bold text-xs text-slate-600 hover:bg-slate-50';
+    } else {
+      lblSocio.className = 'flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border font-bold text-xs bg-indigo-100 text-indigo-950 border-indigo-300 shadow-xs';
+      lblMaster.className = 'flex items-center justify-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all border border-transparent font-bold text-xs text-slate-600 hover:bg-slate-50';
+    }
+  }
+
+  const chkCrear = document.getElementById('lic-perm-crear-licencias');
+  const chkKill = document.getElementById('lic-perm-kill-switch');
+  const chkTokens = document.getElementById('lic-perm-tokens');
+  const chkSim = document.getElementById('lic-permiso-simulador');
+  const chkRadar = document.getElementById('lic-permiso-radar');
+  const chkDescarga = document.getElementById('lic-perm-descarga-reportes');
+  const chkSolo = document.getElementById('lic-perm-solo-lectura');
+
+  if (isMaster) {
+    if (chkCrear) chkCrear.checked = true;
+    if (chkKill) chkKill.checked = true;
+    if (chkTokens) chkTokens.checked = true;
+    if (chkSim) chkSim.checked = true;
+    if (chkRadar) chkRadar.checked = true;
+    if (chkDescarga) chkDescarga.checked = true;
+    if (chkSolo) chkSolo.checked = false;
+  }
+};
+
 window.resetLicenseForm = function() {
   document.getElementById('lic-id').value = '';
   document.getElementById('lic-cliente-nombre').value = '';
@@ -3561,12 +3685,25 @@ window.resetLicenseForm = function() {
   document.getElementById('lic-etiqueta-region').value = '';
   document.getElementById('lic-form-title').innerText = '➕ Crear / Configurar Licencia de Cliente';
 
-  const permRadar = document.getElementById('lic-permiso-radar');
-  const permSim = document.getElementById('lic-permiso-simulador');
+  window.onRoleTypeChange('SOCIO');
+  const chkCrear = document.getElementById('lic-perm-crear-licencias');
+  const chkKill = document.getElementById('lic-perm-kill-switch');
+  const chkTokens = document.getElementById('lic-perm-tokens');
+  const chkSim = document.getElementById('lic-permiso-simulador');
+  const chkRadar = document.getElementById('lic-permiso-radar');
+  const chkDescarga = document.getElementById('lic-perm-descarga-reportes');
+  const chkSolo = document.getElementById('lic-perm-solo-lectura');
+
+  if (chkCrear) chkCrear.checked = false;
+  if (chkKill) chkKill.checked = false;
+  if (chkTokens) chkTokens.checked = false;
+  if (chkSim) chkSim.checked = true;
+  if (chkRadar) chkRadar.checked = true;
+  if (chkDescarga) chkDescarga.checked = true;
+  if (chkSolo) chkSolo.checked = false;
+
   const fixedTit = document.getElementById('lic-propuesta-fija-titulo');
   const fixedTxt = document.getElementById('lic-propuesta-fija-texto');
-  if (permRadar) permRadar.checked = true;
-  if (permSim) permSim.checked = true;
   if (fixedTit) fixedTit.value = '';
   if (fixedTxt) fixedTxt.value = '';
   onLicenseModulePermChange();
@@ -3589,8 +3726,22 @@ window.saveClientLicense = async function(event) {
   const nivelGeografico = document.getElementById('lic-nivel-geo')?.value || 'Municipal / Alcaldía';
   let etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || '';
 
-  const permisoRadar = document.getElementById('lic-permiso-radar')?.checked !== false;
-  const permisoSimulador = document.getElementById('lic-permiso-simulador')?.checked !== false;
+  // Rol y Permisos Granulares
+  const tipoUsuario = document.querySelector('input[name="lic-tipo-usuario"]:checked')?.value || 'SOCIO';
+  const esAdministradorTotal = tipoUsuario === 'MASTER';
+
+  const permisosGranulares = {
+    crearLicencias: esAdministradorTotal || (document.getElementById('lic-perm-crear-licencias')?.checked ?? true),
+    killSwitch: esAdministradorTotal || (document.getElementById('lic-perm-kill-switch')?.checked ?? true),
+    tokens: esAdministradorTotal || (document.getElementById('lic-perm-tokens')?.checked ?? true),
+    simulador: esAdministradorTotal || (document.getElementById('lic-permiso-simulador')?.checked ?? true),
+    radar: esAdministradorTotal || (document.getElementById('lic-permiso-radar')?.checked ?? true),
+    descargaReportes: esAdministradorTotal || (document.getElementById('lic-perm-descarga-reportes')?.checked ?? true),
+    soloLectura: !esAdministradorTotal && (document.getElementById('lic-perm-solo-lectura')?.checked ?? false)
+  };
+
+  const permisoRadar = permisosGranulares.radar !== false;
+  const permisoSimulador = permisosGranulares.simulador !== false;
   if (!permisoRadar && !permisoSimulador) {
     alert('Selecciona al menos un módulo de acceso (War Room Vista 2 o Diagnóstico de Radar).');
     return;
@@ -3649,6 +3800,9 @@ window.saveClientLicense = async function(event) {
     estadosAutorizados,
     cargosAutorizados,
     municipiosAutorizados,
+    tipoUsuario,
+    esAdministradorTotal,
+    permisosGranulares,
     permisoRadar,
     permisoSimulador,
     propuestaFijaTitulo,
@@ -3692,12 +3846,34 @@ window.editClientLicense = async function(id) {
   document.getElementById('lic-etiqueta-region').value = lic.etiquetaRegion || '';
   document.getElementById('lic-form-title').innerText = `✏️ Editando: ${lic.clienteNombre}`;
 
-  const permRadar = document.getElementById('lic-permiso-radar');
-  const permSim = document.getElementById('lic-permiso-simulador');
+  // Rol y Permisos Granulares
+  const isMaster = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER';
+  const radioMaster = document.getElementById('lic-tipo-master');
+  const radioSocio = document.getElementById('lic-tipo-socio');
+  if (isMaster) {
+    if (radioMaster) radioMaster.checked = true;
+  } else {
+    if (radioSocio) radioSocio.checked = true;
+  }
+  if (typeof window.onRoleTypeChange === 'function') {
+    window.onRoleTypeChange(isMaster ? 'MASTER' : 'SOCIO');
+  }
+
+  const p = lic.permisosGranulares || {};
+  const setCheck = (chkId, val) => {
+    const el = document.getElementById(chkId);
+    if (el) el.checked = Boolean(val);
+  };
+  setCheck('lic-perm-crear-licencias', isMaster || p.crearLicencias !== false);
+  setCheck('lic-perm-kill-switch', isMaster || p.killSwitch !== false);
+  setCheck('lic-perm-tokens', isMaster || p.tokens !== false);
+  setCheck('lic-permiso-simulador', isMaster || p.simulador !== false || lic.permisoSimulador !== false);
+  setCheck('lic-permiso-radar', isMaster || p.radar !== false || lic.permisoRadar !== false);
+  setCheck('lic-perm-descarga-reportes', isMaster || p.descargaReportes !== false);
+  setCheck('lic-perm-solo-lectura', !isMaster && p.soloLectura === true);
+
   const fixedTit = document.getElementById('lic-propuesta-fija-titulo');
   const fixedTxt = document.getElementById('lic-propuesta-fija-texto');
-  if (permRadar) permRadar.checked = lic.permisoRadar !== false;
-  if (permSim) permSim.checked = lic.permisoSimulador !== false;
   if (fixedTit) fixedTit.value = lic.propuestaFijaTitulo || '';
   if (fixedTxt) fixedTxt.value = lic.propuestaFijaTexto || '';
   onLicenseModulePermChange();
