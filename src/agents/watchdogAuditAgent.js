@@ -40,10 +40,15 @@ class WatchdogAuditAgent {
 
     if (hasCentralKey || hasClientKey) {
       try {
+        const isCustom = Boolean(inputData.aiConfig?.custom);
+        const provider = inputData.aiConfig?.provider || 'gemini';
+        const model = inputData.aiConfig?.model || (provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-1.5-pro') : 'default');
+        const apiKey = inputData.aiConfig?.apiKey || (provider === 'gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '') : '');
+
         const activeAiConfig = {
-          provider: 'gemini',
-          model: process.env.GEMINI_MODEL || inputData.aiConfig?.model || 'gemini-1.5-pro',
-          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || inputData.aiConfig?.apiKey || '',
+          provider,
+          model,
+          apiKey,
           ...(inputData.aiConfig || {})
         };
         llmEvaluation = await freeLLMService.evaluateProposalWithLLM(
@@ -54,7 +59,11 @@ class WatchdogAuditAgent {
           activeAiConfig
         );
         if (llmEvaluation) {
-          motorInferenciaUsado = 'Google Gemini Pro (Motor Centralizado GovTech) + Watchdog Territorial';
+          if (isCustom) {
+            motorInferenciaUsado = `${provider.toUpperCase()} (${model}) [Modelo Avanzado Dedicado] + Watchdog Territorial`;
+          } else {
+            motorInferenciaUsado = 'Google Gemini Pro (Motor Centralizado GovTech) + Watchdog Territorial';
+          }
         }
       } catch (llmErr) {
         console.warn('[Watchdog] Fallback a inferencia territorial nativa:', llmErr.message);

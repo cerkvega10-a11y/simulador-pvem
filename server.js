@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // Carga segura de variables de entorno desde .env (Protegido contra escaneo de GitHub)
 const envFilePath = path.join(__dirname, '.env');
@@ -342,13 +343,8 @@ const handleSimulationStream = async (req, res, inputData) => {
     status: 'active'
   });
 
-  // Inyección de Motor de IA Centralizado Seguro (Google Gemini Pro - Opción A)
-  inputData.aiConfig = {
-    provider: 'gemini',
-    model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
-    centralized: true
-  };
+  // Enrutamiento Dinámico de Motor de IA (Centralizado de la Matriz o Avanzado Dedicado Cifrado por Licencia)
+  inputData.aiConfig = resolveAiConfigForSimulation(inputData);
 
   try {
     await orchestratorAgent.runSimulationPipeline(inputData, (progress) => {
@@ -385,13 +381,8 @@ app.get('/api/simulate/stream', async (req, res) => {
 app.post('/api/simulate', async (req, res) => {
   try {
     const inputData = req.body || {};
-    // Inyección de Motor de IA Centralizado Seguro (Google Gemini Pro - Opción A)
-    inputData.aiConfig = {
-      provider: 'gemini',
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
-      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
-      centralized: true
-    };
+    // Enrutamiento Dinámico de Motor de IA (Centralizado de la Matriz o Avanzado Dedicado Cifrado por Licencia)
+    inputData.aiConfig = resolveAiConfigForSimulation(inputData);
     const report = await orchestratorAgent.runSimulationPipeline(inputData);
     res.json({ success: true, report });
   } catch (error) {
@@ -655,6 +646,138 @@ function saveLicensesStore(list) {
   }
 }
 
+// =========================================================================
+// 9.0. BLINDAJE CRIPTOGRÁFICO Y GESTIÓN DE MODELOS DE IA DEDICADOS (AES-256-GCM)
+// =========================================================================
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_KEY || 'govtech-warroom-master-aes256-encryption-secret-2027';
+
+function getEncryptionKey() {
+  return crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest();
+}
+
+function encryptApiKey(text) {
+  if (!text || typeof text !== 'string') return '';
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  try {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', getEncryptionKey(), iv);
+    let encrypted = cipher.update(trimmed, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+    return `enc:${iv.toString('hex')}:${authTag}:${encrypted}`;
+  } catch (err) {
+    console.error('Error cifrando API Key:', err.message);
+    return '';
+  }
+}
+
+function decryptApiKey(cipherText) {
+  if (!cipherText || typeof cipherText !== 'string') return '';
+  if (!cipherText.startsWith('enc:')) {
+    return cipherText;
+  }
+  try {
+    const parts = cipherText.split(':');
+    if (parts.length !== 4) return '';
+    const iv = Buffer.from(parts[1], 'hex');
+    const authTag = Buffer.from(parts[2], 'hex');
+    const encryptedText = parts[3];
+    const decipher = crypto.createDecipheriv('aes-256-gcm', getEncryptionKey(), iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (err) {
+    console.error('Error descifrando API Key:', err.message);
+    return '';
+  }
+}
+
+function maskApiKey(cipherText) {
+  if (!cipherText) return '';
+  const plain = decryptApiKey(cipherText);
+  if (!plain) return '';
+  if (plain.length <= 8) return '••••••••';
+  return `${plain.slice(0, 4)}...${plain.slice(-4)}`;
+}
+
+function sanitizeLicenseForClient(lic) {
+  if (!lic) return null;
+  const { customApiKeyEncrypted, ...safeLic } = lic;
+  return {
+    ...safeLic,
+    hasCustomKey: Boolean(customApiKeyEncrypted),
+    customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
+    aiModel: lic.aiModel || 'gemini-default'
+  };
+}
+
+function resolveAiConfigForSimulation(inputData = {}) {
+  licensesStore = loadLicensesStore();
+  const licId = inputData.licenseId || inputData.activeSession?.user?.id;
+  const username = inputData.username || inputData.activeSession?.user?.username;
+
+  let matchedLic = null;
+  if (licId) {
+    matchedLic = licensesStore.find(l => l.id === licId);
+  } else if (username) {
+    matchedLic = licensesStore.find(l => l.username.toLowerCase() === username.toLowerCase());
+  }
+
+  // Caso 1: Licencia con API Key avanzada personalizada cifrada en base de datos
+  if (matchedLic && matchedLic.customApiKeyEncrypted) {
+    const decryptedKey = decryptApiKey(matchedLic.customApiKeyEncrypted);
+    if (decryptedKey) {
+      const model = matchedLic.aiModel || 'gpt-4o';
+      let provider = 'openai';
+      let mappedModel = model;
+
+      if (model.startsWith('gemini')) {
+        provider = 'gemini';
+        mappedModel = model === 'gemini-default' ? (process.env.GEMINI_MODEL || 'gemini-1.5-pro') : model;
+      } else if (model.includes('claude')) {
+        provider = 'openrouter';
+        mappedModel = 'anthropic/claude-3.5-sonnet';
+      } else if (model.includes('llama')) {
+        provider = 'groq';
+        mappedModel = 'llama-3.3-70b-versatile';
+      } else if (model.startsWith('gpt')) {
+        provider = 'openai';
+        mappedModel = model;
+      }
+
+      return {
+        provider,
+        model: mappedModel,
+        apiKey: decryptedKey,
+        custom: true,
+        centralized: false,
+        licenseId: matchedLic.id,
+        clientName: matchedLic.clienteNombre
+      };
+    }
+  }
+
+  // Caso 2: Licencia con variante de Gemini seleccionada sin clave propia (usa credenciales centrales)
+  if (matchedLic && matchedLic.aiModel && matchedLic.aiModel.startsWith('gemini') && matchedLic.aiModel !== 'gemini-default') {
+    return {
+      provider: 'gemini',
+      model: matchedLic.aiModel,
+      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
+      centralized: true
+    };
+  }
+
+  // Caso 3: Motor Centralizado General de la Matriz (Google Gemini Pro - Plug & Play)
+  return {
+    provider: 'gemini',
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
+    centralized: true
+  };
+}
+
 // Catálogo de Cuentas de Administrador Maestro Autorizadas
 const MASTER_ADMIN_ACCOUNTS = [
   {
@@ -803,7 +926,8 @@ app.post('/api/auth/login', (req, res) => {
 // 9.2. Listar Licencias (Para Panel de Control Maestro)
 app.get('/api/licenses', (req, res) => {
   licensesStore = loadLicensesStore();
-  res.json({ success: true, licenses: licensesStore, watermark: AUTHORSHIP_WATERMARK });
+  const safeList = licensesStore.map(lic => sanitizeLicenseForClient(lic));
+  res.json({ success: true, licenses: safeList, watermark: AUTHORSHIP_WATERMARK });
 });
 
 // 9.3. Crear o Actualizar Licencia de Cliente Político
@@ -852,6 +976,19 @@ app.post('/api/licenses', (req, res) => {
     if (!fechaInicio) fechaInicio = '2026-01-01';
     if (!fechaExpiracion) fechaExpiracion = '2027-12-31';
 
+    // Inyección de API Key Personalizada y Selector de Modelo Avanzado (Cifrado AES-256)
+    const aiModel = String(body.aiModel || (existingLic ? existingLic.aiModel : 'gemini-default')).trim();
+    const incomingKey = String(body.customApiKey || '').trim();
+    let customApiKeyEncrypted = '';
+
+    if (incomingKey && !incomingKey.includes('••••') && !incomingKey.includes('...')) {
+      // Nueva llave ingresada por el administrador matriz: se almacena con cifrado AES-256
+      customApiKeyEncrypted = encryptApiKey(incomingKey);
+    } else if (existingLic && existingLic.customApiKeyEncrypted && incomingKey !== 'CLEAR') {
+      // Mantener la clave existente si no se alteró
+      customApiKeyEncrypted = existingLic.customApiKeyEncrypted;
+    }
+
     const licenseObj = {
       id,
       clienteNombre: String(body.clienteNombre || 'Cliente Político').trim(),
@@ -880,6 +1017,8 @@ app.post('/api/licenses', (req, res) => {
         descargaReportes: body.esAdministradorTotal ? true : (body.permisosGranulares?.descargaReportes ?? (body.permisoDescargaReportes !== undefined ? Boolean(body.permisoDescargaReportes) : true)),
         soloLectura: body.esAdministradorTotal ? false : Boolean(body.permisosGranulares?.soloLectura ?? body.permisoSoloLectura)
       },
+      aiModel,
+      customApiKeyEncrypted,
       propuestaFijaTitulo: String(body.propuestaFijaTitulo || '').trim(),
       propuestaFijaTexto: String(body.propuestaFijaTexto || '').trim(),
       maxSwarmSize: parseInt(body.maxSwarmSize, 10) || (body.isDemo ? 1000 : 100000),
@@ -897,7 +1036,9 @@ app.post('/api/licenses', (req, res) => {
     }
 
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: licenseObj, licenses: licensesStore });
+    const safeLic = sanitizeLicenseForClient(licenseObj);
+    const safeList = licensesStore.map(l => sanitizeLicenseForClient(l));
+    res.json({ success: true, license: safeLic, licenses: safeList });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -914,7 +1055,7 @@ app.patch('/api/licenses/:id/toggle', (req, res) => {
     }
     lic.activo = !lic.activo;
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: lic, licenses: licensesStore });
+    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -943,7 +1084,7 @@ app.patch('/api/licenses/:id/expiration', (req, res) => {
       lic.fechaInicio = String(fechaInicio).trim();
     }
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: lic, licenses: licensesStore });
+    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -962,7 +1103,7 @@ app.patch('/api/licenses/:id/permissions', (req, res) => {
     if (permisoRadar !== undefined) lic.permisoRadar = Boolean(permisoRadar);
     if (permisoSimulador !== undefined) lic.permisoSimulador = Boolean(permisoSimulador);
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: lic, licenses: licensesStore });
+    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -975,7 +1116,7 @@ app.delete('/api/licenses/:id', (req, res) => {
     licensesStore = loadLicensesStore();
     licensesStore = licensesStore.filter(l => l.id !== id);
     saveLicensesStore(licensesStore);
-    res.json({ success: true, licenses: licensesStore });
+    res.json({ success: true, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -987,7 +1128,7 @@ app.post('/api/licenses/sync-vault', (req, res) => {
     const { vaultLicenses = [] } = req.body || {};
     if (!Array.isArray(vaultLicenses) || vaultLicenses.length === 0) {
       licensesStore = loadLicensesStore();
-      return res.json({ success: true, count: 0, licenses: licensesStore });
+      return res.json({ success: true, count: 0, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
     }
 
     licensesStore = loadLicensesStore();
@@ -1010,7 +1151,7 @@ app.post('/api/licenses/sync-vault', (req, res) => {
       console.log(`[VAULT-SYNC] Sincronización exitosa: ${addedCount} licencias restauradas y blindadas.`);
     }
 
-    res.json({ success: true, addedCount, licenses: licensesStore });
+    res.json({ success: true, addedCount, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

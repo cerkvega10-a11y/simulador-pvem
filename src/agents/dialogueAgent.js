@@ -19,10 +19,11 @@ class DialogueAgent {
 
     if (hasCentralKey || hasClientKey) {
       try {
+        const provider = aiConfig?.provider || 'gemini';
         const activeAiConfig = {
-          provider: 'gemini',
-          model: process.env.GEMINI_MODEL || aiConfig?.model || 'gemini-1.5-pro',
-          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || aiConfig?.apiKey || '',
+          provider,
+          model: aiConfig?.model || (provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-1.5-pro') : 'default'),
+          apiKey: aiConfig?.apiKey || (provider === 'gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '') : ''),
           ...(aiConfig || {})
         };
         const llmDebates = await freeLLMService.generateDebatesWithLLM(

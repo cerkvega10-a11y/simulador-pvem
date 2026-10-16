@@ -1282,6 +1282,8 @@ async function startSimulation() {
     filtrosDemograficos: appState.filtrosDemograficos,
     swarmSize: appState.swarmSize,
     webSearchActive: appState.webSearchActive,
+    licenseId: appState.activeSession?.user?.id || '',
+    username: appState.activeSession?.user?.username || '',
     aiConfig: appState.aiConfig
   };
 
@@ -3335,6 +3337,17 @@ function renderMasterLicensesList() {
           ${permBadges}
         </div>
 
+        <!-- MOTOR DE IA Y CREDENCIALES CIFRADAS -->
+        <div class="p-2.5 rounded-lg bg-purple-50/60 border border-purple-200/80 flex flex-wrap items-center justify-between gap-1 text-[11px]">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="font-black text-purple-950 text-[10px] uppercase">⚡ Motor de IA:</span>
+            <span class="px-2 py-0.5 rounded font-black text-[10px] bg-purple-100 text-purple-900 border border-purple-300">${getAIModelDisplay(lic.aiModel)}</span>
+          </div>
+          <div>
+            ${lic.hasCustomKey ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">🔒 Key Cifrada: ${lic.customApiKeyMasked}</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-300">🌐 API Central Matriz</span>`}
+          </div>
+        </div>
+
         <div class="text-[11px] text-slate-600 space-y-1">
           <div><b>🇲🇽 Estado(s):</b> ${estadosStr} | <b>📍 Región:</b> ${lic.etiquetaRegion} (${munisStr})</div>
           <div><b>🗳️ Cargos Autorizados:</b> ${(lic.cargosAutorizados || []).join(' • ')}</div>
@@ -3464,6 +3477,39 @@ window.onRoleTypeChange = function(tipo) {
   }
 };
 
+window.toggleCustomKeyVisibility = function() {
+  const input = document.getElementById('lic-custom-api-key');
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+};
+
+window.onLicenseAIModelChange = function() {
+  const sel = document.getElementById('lic-ai-model-select');
+  const keyInput = document.getElementById('lic-custom-api-key');
+  if (!sel || !keyInput) return;
+  const val = sel.value;
+  if (val.startsWith('gemini')) {
+    if (!keyInput.placeholder.includes('••••')) {
+      keyInput.placeholder = 'Dejar vacío para usar la API centralizada general...';
+    }
+  } else {
+    if (!keyInput.placeholder.includes('••••')) {
+      keyInput.placeholder = `Ingresa API Key para ${getAIModelDisplay(val)} (AES-256 Cifrado)...`;
+    }
+  }
+};
+
+function getAIModelDisplay(aiModel) {
+  if (!aiModel || aiModel === 'gemini-default') return 'Gemini Pro Central';
+  if (aiModel === 'gemini-1.5-pro') return 'Gemini 1.5 Pro';
+  if (aiModel === 'gemini-2.0-flash') return 'Gemini 2.0 Flash';
+  if (aiModel === 'gpt-4o') return 'OpenAI GPT-4o';
+  if (aiModel === 'gpt-4o-mini') return 'OpenAI GPT-4o Mini';
+  if (aiModel === 'claude-3-5-sonnet') return 'Claude 3.5 Sonnet';
+  if (aiModel === 'llama-3.3-70b') return 'Groq Llama 3.3 70B';
+  return aiModel;
+}
+
 window.resetLicenseForm = function() {
   document.getElementById('lic-id').value = '';
   document.getElementById('lic-cliente-nombre').value = '';
@@ -3473,6 +3519,17 @@ window.resetLicenseForm = function() {
   document.getElementById('lic-max-swarm').value = '100000';
   document.getElementById('lic-etiqueta-region').value = '';
   document.getElementById('lic-form-title').innerText = '➕ Crear / Configurar Licencia de Cliente';
+
+  // Restablecer Modelo de IA y API Key
+  const selAi = document.getElementById('lic-ai-model-select');
+  if (selAi) selAi.value = 'gemini-default';
+  const customKey = document.getElementById('lic-custom-api-key');
+  const badgeKey = document.getElementById('lic-key-badge-status');
+  if (customKey) {
+    customKey.value = '';
+    customKey.placeholder = 'Dejar vacío para usar la API centralizada general...';
+  }
+  if (badgeKey) badgeKey.innerText = '';
 
   window.onRoleTypeChange('SOCIO');
   const chkCrear = document.getElementById('lic-perm-crear-licencias');
@@ -3514,6 +3571,10 @@ window.saveClientLicense = async function(event) {
   const fechaExpiracion = document.getElementById('lic-fecha-expiracion')?.value || '2027-07-31';
   const nivelGeografico = document.getElementById('lic-nivel-geo')?.value || 'Municipal / Alcaldía';
   let etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || '';
+
+  // Modelo de IA y API Key Personalizada Cifrada
+  const aiModel = document.getElementById('lic-ai-model-select')?.value || 'gemini-default';
+  const customApiKey = document.getElementById('lic-custom-api-key')?.value?.trim() || '';
 
   // Rol y Permisos Granulares
   const tipoUsuario = document.querySelector('input[name="lic-tipo-usuario"]:checked')?.value || 'SOCIO';
@@ -3596,6 +3657,8 @@ window.saveClientLicense = async function(event) {
     permisoSimulador,
     propuestaFijaTitulo,
     propuestaFijaTexto,
+    aiModel,
+    customApiKey,
     activo: true
   };
 
@@ -3634,6 +3697,26 @@ window.editClientLicense = async function(id) {
   document.getElementById('lic-nivel-geo').value = lic.nivelGeografico || 'Municipal / Alcaldía';
   document.getElementById('lic-etiqueta-region').value = lic.etiquetaRegion || '';
   document.getElementById('lic-form-title').innerText = `✏️ Editando: ${lic.clienteNombre}`;
+
+  // Cargar selección de Modelo de IA y estado de API Key
+  const selAi = document.getElementById('lic-ai-model-select');
+  if (selAi) selAi.value = lic.aiModel || 'gemini-default';
+
+  const customKey = document.getElementById('lic-custom-api-key');
+  const badgeKey = document.getElementById('lic-key-badge-status');
+  if (customKey) {
+    customKey.value = '';
+    if (lic.hasCustomKey) {
+      customKey.placeholder = '•••••••• (Cifrada en servidor - escribe para reemplazar)';
+      if (badgeKey) badgeKey.innerText = `✓ Clave Activa Cifrada (${lic.customApiKeyMasked || 'AES-256'})`;
+    } else {
+      customKey.placeholder = 'Dejar vacío para usar la API centralizada general...';
+      if (badgeKey) badgeKey.innerText = '';
+    }
+  }
+  if (typeof window.onLicenseAIModelChange === 'function') {
+    window.onLicenseAIModelChange();
+  }
 
   // Rol y Permisos Granulares
   const isMaster = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER';

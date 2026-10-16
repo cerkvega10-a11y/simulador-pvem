@@ -18,6 +18,13 @@ class FreeLLMService {
         availableModels: ['gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash'],
         freeKeyUrl: 'https://aistudio.google.com/'
       },
+      openai: {
+        name: 'OpenAI (GPT-4o / GPT-4o Mini / Enterprise)',
+        endpoint: 'https://api.openai.com/v1/chat/completions',
+        defaultModel: 'gpt-4o',
+        availableModels: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+        freeKeyUrl: 'https://platform.openai.com/api-keys'
+      },
       openrouter: {
         name: 'OpenRouter (Modelos Gratuitos :free)',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
@@ -170,8 +177,9 @@ class FreeLLMService {
    * Evalúa la coherencia, absurdo y viabilidad política con IA real
    */
   async evaluateProposalWithLLM(propuestaTexto, municipio, estado, problematicasLocales, aiConfig) {
-    const { primaryKey, backupKey } = this.getGeminiKeys(aiConfig?.apiKey);
-    const effectiveKey = primaryKey || backupKey;
+    const isGemini = (!aiConfig?.provider || aiConfig?.provider === 'gemini');
+    const { primaryKey, backupKey } = isGemini ? this.getGeminiKeys(aiConfig?.apiKey) : { primaryKey: '', backupKey: '' };
+    const effectiveKey = aiConfig?.apiKey || primaryKey || backupKey;
     const effectiveProvider = (aiConfig?.provider && aiConfig.provider !== 'native') 
       ? aiConfig.provider 
       : (effectiveKey ? 'gemini' : null);
@@ -256,8 +264,9 @@ Devuelve EXCLUSIVAMENTE un JSON con:
    * Genera hilos de debate inter-agentes vivos con IA
    */
   async generateDebatesWithLLM(propuestaTexto, tituloProyecto, municipio, estado, problematicasLocales, aiConfig) {
-    const { primaryKey, backupKey } = this.getGeminiKeys(aiConfig?.apiKey);
-    const effectiveKey = primaryKey || backupKey;
+    const isGemini = (!aiConfig?.provider || aiConfig?.provider === 'gemini');
+    const { primaryKey, backupKey } = isGemini ? this.getGeminiKeys(aiConfig?.apiKey) : { primaryKey: '', backupKey: '' };
+    const effectiveKey = aiConfig?.apiKey || primaryKey || backupKey;
     const effectiveProvider = (aiConfig?.provider && aiConfig.provider !== 'native') 
       ? aiConfig.provider 
       : (effectiveKey ? 'gemini' : null);
