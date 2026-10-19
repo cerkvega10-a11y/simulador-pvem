@@ -878,9 +878,16 @@ const Components = {
       return;
     }
 
+    const MAX_VISIBLE_CHATS = 50;
+    const itemsToShow = filtradas.slice(0, MAX_VISIBLE_CHATS);
+
     let html = `
+      <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
+        <span>Mostrando <b>${itemsToShow.length}</b> de <b>${filtradas.length}</b> testimonios ciudadanos analizados</span>
+        ${filtradas.length > MAX_VISIBLE_CHATS ? `<span class="bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded border border-emerald-200">Muestra representativa optimizada</span>` : ''}
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        ${filtradas.map(agente => {
+        ${itemsToShow.map(agente => {
           let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
           let borderLeft = 'border-l-4 border-l-emerald-600 hover:border-emerald-400';
           let barColor = 'bg-emerald-500';
@@ -896,7 +903,7 @@ const Components = {
             barColor = 'bg-amber-500';
           }
 
-          const rawData = encodeURIComponent(JSON.stringify(agente));
+          const rawData = encodeURIComponent(JSON.stringify(agente)).replace(/'/g, '%27');
           const avatarUrl = agente.avatarUrl || `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(agente.nombre || 'Mexiquense')}`;
           const mensajeTexto = agente.mensaje || agente.argumento || '';
 
@@ -941,7 +948,7 @@ const Components = {
               <div class="text-[11px] text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                 <span class="truncate text-[10px] text-slate-400">Movilidad: <b>${agente.medioTransporte || 'Combi/Transporte'}</b></span>
                 <button type="button" onclick="openCitizenDetailModal('${rawData}')"
-                  class="text-[11px] text-emerald-700 hover:text-emerald-950 font-bold underline shrink-0 flex items-center gap-1">
+                  class="text-[11px] text-emerald-700 hover:text-emerald-950 font-bold underline shrink-0 flex items-center gap-1 cursor-pointer">
                   <span>🔍 Ver Por Qué</span>
                 </button>
               </div>

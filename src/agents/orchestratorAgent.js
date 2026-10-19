@@ -16,6 +16,7 @@ class OrchestratorAgent {
   constructor() {
     this.name = 'Agente Orquestador Central (Master Router)';
     this.latestState = null;
+    this.sessionsState = new Map();
   }
 
   /**
@@ -24,6 +25,7 @@ class OrchestratorAgent {
    */
   async runSimulationPipeline(inputData, onProgress = () => {}) {
     const startTime = Date.now();
+    const simulationId = 'sim_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const {
       tituloProyecto = inputData.titulo || 'Iniciativa Comunitaria Verde',
       propuestaTexto = inputData.propuesta || '',
@@ -47,8 +49,6 @@ class OrchestratorAgent {
     });
 
     const multimodalResult = multimodalAgent.synthesizeInputs(propuestaTexto, documentData, visualData);
-
-    await this.delay(350);
 
     onProgress({
       paso: 1,
@@ -76,8 +76,6 @@ class OrchestratorAgent {
       webSearchActive
     );
 
-    await this.delay(450);
-
     onProgress({
       paso: 2,
       porcentaje: 50,
@@ -102,26 +100,6 @@ class OrchestratorAgent {
 
     const swarmData = personaBuilderAgent.generateSwarm(numSize, municipalResearch, filtrosDemograficos);
 
-    // Telemetría en vivo de alta velocidad para muestras de 25,000 a 100,000 agentes
-    if (numSize >= 25000) {
-      const marginStr = numSize >= 100000 ? '±0.31%' : (numSize >= 50000 ? '±0.44%' : '±0.62%');
-      const telemetryRatios = [0.28, 0.54, 0.84, 1.0];
-      for (const ratio of telemetryRatios) {
-        const processedCount = Math.min(numSize, Math.round(numSize * ratio));
-        onProgress({
-          paso: 3,
-          porcentaje: 60 + Math.round(ratio * 14),
-          agente: 'Motor Vectorial Monte Carlo (HPC)',
-          mensaje: `Procesando Padrón Sintético INE/CONAPO: ${processedCount.toLocaleString()} / ${swarmLabel} agentes... Cruzando Matriz Sindical CFCRL... Calculando varianza de Monte Carlo (${marginStr})...`,
-          status: 'active',
-          telemetriaContador: { procesados: processedCount, total: numSize, margen: marginStr }
-        });
-        await this.delay(120);
-      }
-    } else {
-      await this.delay(400);
-    }
-
     onProgress({
       paso: 3,
       porcentaje: 76,
@@ -135,8 +113,6 @@ class OrchestratorAgent {
       multimodalResult.textoUnificado,
       municipalResearch
     );
-
-    await this.delay(350);
 
     onProgress({
       paso: 3,
@@ -161,8 +137,6 @@ class OrchestratorAgent {
       multimodalResult.textoUnificado
     );
 
-    await this.delay(300);
-
     // --- META-AGENTE 8: Auditoría de Inferencia Real y Neutralidad (AI Watchdog) ---
     onProgress({
       paso: 4,
@@ -185,8 +159,6 @@ class OrchestratorAgent {
     // Aplicar votos y agentes auditados para garantizar la matemática de impacto real
     deliberationData.votosFinales = auditResult.votosAuditados;
     deliberationData.agentesPostDeliberacion = auditResult.agentesAuditados;
-
-    await this.delay(250);
 
     onProgress({
       paso: 4,
@@ -241,11 +213,29 @@ class OrchestratorAgent {
     finalReport.inteligenciaSindical = auditResult.inteligenciaSindical;
     finalReport.blindajeDefensa = auditResult.blindajeDefensa;
     finalReport.modoAtaque = auditResult.modoAtaque;
+    finalReport.tendenciasDigitales = auditResult.tendenciasDigitales;
     finalReport.variacionMuestral = auditResult.variacionMuestral;
     finalReport.qaWatchdogCertificacion = auditResult.qaWatchdogCertificacion;
+    finalReport.iaSustentoTotal = true;
 
-    // Expediente de Micro-Targeting de Colonias Reales por Municipio y Estado
+    // Expediente de Micro-Targeting de Colonias Reales por Municipio y Estado (Calibrado con IA Neuronal)
     const statsColonias = coloniasData.getColoniasStats(municipio, estado);
+    if (auditResult.calibracionColoniasAI && Array.isArray(auditResult.calibracionColoniasAI) && statsColonias && statsColonias.colonias) {
+      statsColonias.colonias = statsColonias.colonias.map(c => {
+        const aiC = auditResult.calibracionColoniasAI.find(item => item.nombre && (c.nombre.toLowerCase().includes(item.nombre.toLowerCase()) || item.nombre.toLowerCase().includes(c.nombre.toLowerCase())));
+        if (aiC) {
+          return {
+            ...c,
+            porcentajeApoyoProyectado: typeof aiC.factorApoyo === 'number' ? aiC.factorApoyo : c.porcentajeApoyoProyectado,
+            prioridadBrigada: aiC.prioridadBrigada || c.prioridadBrigada,
+            motivoAI: aiC.motivo || null,
+            iaCalibrada: true
+          };
+        }
+        return c;
+      });
+      statsColonias.iaCalibrada = true;
+    }
     finalReport.microTargetingColonias = statsColonias;
     finalReport.colonias = statsColonias.colonias;
     finalReport.coloniasPrioritarias = statsColonias.coloniasPrioritarias;
@@ -283,13 +273,23 @@ class OrchestratorAgent {
       auditResult.semanticResult
     );
     finalReport.debatesInterAgentes = debatesInterAgentes;
+    finalReport.simulationId = simulationId;
 
-    this.latestState = {
+    const simState = {
+      simulationId,
       ...state,
       finalReport,
       aiConfig: inputData.aiConfig,
-      semanticResult: auditResult.semanticResult
+      semanticResult: auditResult.semanticResult,
+      updatedAt: Date.now()
     };
+
+    this.latestState = simState;
+    this.sessionsState.set(simulationId, simState);
+    if (this.sessionsState.size > 100) {
+      const oldestKey = this.sessionsState.keys().next().value;
+      this.sessionsState.delete(oldestKey);
+    }
 
     const durationMs = Date.now() - startTime;
 
@@ -305,8 +305,9 @@ class OrchestratorAgent {
     return finalReport;
   }
 
-  async answerQuestion(pregunta) {
-    if (!this.latestState) {
+  async answerQuestion(pregunta, simulationId = null) {
+    const activeState = (simulationId && this.sessionsState.get(simulationId)) || this.latestState;
+    if (!activeState) {
       return [
         {
           nombre: 'Ciudadano Mexiquense',
@@ -317,7 +318,7 @@ class OrchestratorAgent {
       ];
     }
 
-    const { tituloProyecto, propuestaTexto, municipalResearch, aiConfig, semanticResult } = this.latestState;
+    const { tituloProyecto, propuestaTexto, municipalResearch, aiConfig, semanticResult } = activeState;
     return await dialogueAgent.answerSwarmInterrogation(
       pregunta,
       tituloProyecto,

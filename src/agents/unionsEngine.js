@@ -10,7 +10,7 @@ class UnionsEngine {
   /**
    * Evalúa las 12 Fuerzas Sindicales frente a la propuesta y el municipio
    */
-  evaluateUnions(propuestaTexto = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', semanticResult = {}) {
+  evaluateUnions(propuestaTexto = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', semanticResult = {}, aiUnionData = null) {
     const txt = (propuestaTexto || '').toLowerCase();
     const temas = semanticResult.temas || {};
     const esPunitivo = semanticResult.tipo === 'PUNITIVO' || txt.includes('aumento') || txt.includes('tarifa') || txt.includes('retiro') || txt.includes('multa') || txt.includes('clausura');
@@ -116,9 +116,51 @@ class UnionsEngine {
       }
     ];
 
-    // Evaluar cada fuerza gremial
+    // Si contamos con Inteligencia Sindical generada por IA (Groq / LLM)
+    if (aiUnionData && Array.isArray(aiUnionData.fuerzas) && aiUnionData.fuerzas.length > 0) {
+      const fuerzasEvaluadas = FUERZAS_BASE.map(f => {
+        const aiF = aiUnionData.fuerzas.find(item => item.id === f.id || (item.gremio && item.gremio.toLowerCase().includes(f.id)));
+        let favor = aiF && typeof aiF.favor === 'number' ? aiF.favor : 50;
+        let contra = aiF && typeof aiF.contra === 'number' ? aiF.contra : 30;
+        let neutro = Math.max(0, 100 - favor - contra);
+        const match = f.sensibilidad.some(s => txt.includes(s)) || (aiF && Boolean(aiF.esAfectadoDirecto));
+
+        let postura = aiF?.postura || (contra > favor ? 'En Contra' : (favor < 52 ? 'Reserva Crítica / Negociación' : 'A Favor'));
+        let nivelRiesgo = aiF?.nivelRiesgo || (contra >= 65 ? 'Crítico' : (contra >= 40 ? 'Alto' : 'Medio'));
+
+        return {
+          id: f.id,
+          gremio: f.gremio,
+          siglas: f.siglas,
+          postura,
+          favor,
+          contra,
+          neutro,
+          nivelRiesgo,
+          esAfectadoDirecto: match,
+          pliegoPetitorio: aiF?.pliegoPetitorio || f.pliegoBase,
+          liderTestimonio: aiF?.liderTestimonio || f.liderTestimonio
+        };
+      });
+
+      const riesgoParoScore = typeof aiUnionData.riesgoParoScore === 'number' ? Math.max(5, Math.min(98, aiUnionData.riesgoParoScore)) : 35;
+      const semaforo = aiUnionData.semaforo || (riesgoParoScore >= 65 ? 'Rojo' : (riesgoParoScore >= 40 ? 'Amarillo' : 'Verde'));
+      const semaforoTexto = aiUnionData.semaforoTexto || (semaforo === 'Rojo' ? 'Alerta Máxima: Riesgo Inminente de Paro y Bloqueo Vial' : (semaforo === 'Amarillo' ? 'Alerta Preventiva: Fricción Sindical Focalizada' : 'Riesgo Mínimo de Movilización Gremial'));
+      const dictamenSindical = aiUnionData.dictamenSindical || `Evaluación de Inteligencia Artificial certificada para ${municipio}.`;
+
+      return {
+        riesgoParoScore,
+        semaforo,
+        semaforoTexto,
+        dictamenSindical,
+        totalFuerzas: fuerzasEvaluadas.length,
+        fuerzas: fuerzasEvaluadas,
+        iaGenerada: true
+      };
+    }
+
+    // Evaluación nativa de respaldo
     const fuerzasEvaluadas = FUERZAS_BASE.map(f => {
-      // Coincidencia con palabras clave
       const match = f.sensibilidad.some(s => txt.includes(s));
       let favor = 55;
       let contra = 25;
@@ -127,28 +169,32 @@ class UnionsEngine {
 
       if (match) {
         if (esPunitivo) {
-          contra = Math.min(Math.round(65 + Math.random() * 20), 92);
-          favor = Math.max(Math.round(12 + Math.random() * 8), 5);
-          neutro = 100 - contra - favor;
-          nivelRiesgo = contra >= 75 ? 'Crítico' : 'Alto';
+          contra = Math.min(Math.round(65 + Math.random() * 20), 85);
+          favor = Math.max(Math.round(8 + Math.random() * 10), 5);
+          neutro = Math.max(100 - contra - favor, 3);
+          nivelRiesgo = contra >= 70 ? 'Crítico' : 'Alto';
         } else if (esBeneficio) {
-          favor = Math.min(Math.round(68 + Math.random() * 18), 88);
-          contra = Math.max(Math.round(10 + Math.random() * 10), 6);
-          neutro = 100 - favor - contra;
+          favor = Math.min(Math.round(68 + Math.random() * 16), 85);
+          contra = Math.max(Math.round(8 + Math.random() * 10), 5);
+          neutro = Math.max(100 - favor - contra, 3);
           nivelRiesgo = 'Bajo';
         } else {
-          favor = Math.round(48 + Math.random() * 15);
-          contra = Math.round(30 + Math.random() * 12);
-          neutro = 100 - favor - contra;
-          nivelRiesgo = contra >= 40 ? 'Alto' : 'Medio';
+          favor = Math.round(45 + Math.random() * 12);
+          contra = Math.round(28 + Math.random() * 10);
+          neutro = Math.max(100 - favor - contra, 5);
+          nivelRiesgo = contra >= 38 ? 'Alto' : 'Medio';
         }
       } else {
-        // Gremio colateral
-        favor = Math.round(50 + (Math.random() * 10 - 5));
-        contra = Math.round(24 + (Math.random() * 8 - 4));
-        neutro = 100 - favor - contra;
+        favor = Math.round(50 + (Math.random() * 8 - 4));
+        contra = Math.round(22 + (Math.random() * 6 - 3));
+        neutro = Math.max(100 - favor - contra, 5);
         nivelRiesgo = 'Bajo';
       }
+
+      const totalSuma = favor + contra + neutro;
+      favor = Math.round((favor / totalSuma) * 100);
+      contra = Math.round((contra / totalSuma) * 100);
+      neutro = Math.max(0, 100 - favor - contra);
 
       let postura = 'A Favor';
       if (contra > favor) postura = 'En Contra';
@@ -169,8 +215,6 @@ class UnionsEngine {
       };
     });
 
-    // Calcular Semáforo de Riesgo de Paro / Bloqueo Vial (0-100)
-    // Sindicatos de transporte, comerciantes y agua tienen mayor capacidad de colapso vial
     const pesoTransporte = fuerzasEvaluadas.find(f => f.id === 'transporte')?.contra || 25;
     const pesoComercio = fuerzasEvaluadas.find(f => f.id === 'comerciantes')?.contra || 25;
     const pesoAgua = fuerzasEvaluadas.find(f => f.id === 'agua_limpia')?.contra || 20;
@@ -210,3 +254,4 @@ class UnionsEngine {
 }
 
 module.exports = new UnionsEngine();
+

@@ -13,17 +13,17 @@ class DialogueAgent {
    * Genera hilos de discusión interactiva entre agentes del enjambre
    */
   async generateDebateThreads(projectTitle, projectText, municipalResearch, swarmAgents, aiConfig = {}, semanticResult = null) {
-    // 1. Consulta al Motor Centralizado de IA (Google Gemini Pro / Enterprise)
-    const hasCentralKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
+    // 1. Consulta al Motor Centralizado de IA (Groq / Gemini / Enterprise)
+    const hasCentralKey = Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
     const hasClientKey = Boolean(aiConfig && aiConfig.apiKey);
 
     if (hasCentralKey || hasClientKey) {
       try {
-        const provider = aiConfig?.provider || 'gemini';
+        const provider = aiConfig?.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
         const activeAiConfig = {
           provider,
-          model: aiConfig?.model || (provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-1.5-pro') : 'default'),
-          apiKey: aiConfig?.apiKey || (provider === 'gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '') : ''),
+          model: aiConfig?.model || (provider === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro')),
+          apiKey: aiConfig?.apiKey || (provider === 'groq' ? process.env.GROQ_API_KEY : (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '')),
           ...(aiConfig || {})
         };
         const llmDebates = await freeLLMService.generateDebatesWithLLM(

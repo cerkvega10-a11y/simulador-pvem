@@ -1349,7 +1349,8 @@ async function startSimulation() {
     webSearchActive: appState.webSearchActive,
     licenseId: appState.activeSession?.user?.id || '',
     username: appState.activeSession?.user?.username || '',
-    aiConfig: appState.aiConfig
+    aiConfig: appState.aiConfig,
+    runId: 'run_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
   };
 
   let simulationCompleted = false;

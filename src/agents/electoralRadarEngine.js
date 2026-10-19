@@ -808,9 +808,9 @@ class ElectoralRadarEngine {
   /**
    * Manual de Diseño de Campaña: Naming Ganador, Discursos Segmentados, Punto de Arranque y Proyección
    */
-  generarManualCampana(municipio = 'Ecatepec de Morelos', cargo = 'Presidente Municipal / Alcalde', ciclo = '2027', candidato = 'Candidato Verde', coalicion = 'PVEM - Sigamos Haciendo Historia') {
-    const colonias = getColoniasByMunicipio(municipio);
-    const statsMuni = getColoniasStats(municipio);
+  generarManualCampana(municipio = 'Ecatepec de Morelos', cargo = 'Presidente Municipal / Alcalde', ciclo = '2027', candidato = 'Candidato Verde', coalicion = 'PVEM - Sigamos Haciendo Historia', estado = 'Estado de México') {
+    const colonias = getColoniasByMunicipio(municipio, estado);
+    const statsMuni = getColoniasStats(municipio, estado);
 
     // Selección táctica del Punto de Arranque Territorial ("Banderazo de Salida")
     // Criterio: Colonia clasificada como "Zona Indecisa / Swarm Battleground" o "Bastión",
@@ -987,7 +987,7 @@ Su experiencia y sus bendiciones son el motor de esta campaña. ¡Caminen con no
     const problematicasOficiales = this.getDiagnosticoProblematicas(municipio, estado);
     const bateriaPropuestas = this.getBateriaPropuestas(cargo, municipio);
     const alianzasYSindicatos = this.getAlianzasYSindicatos(municipio, cargo);
-    const manualCampana = this.generarManualCampana(municipio, cargo, ciclo, candidato, coalicion);
+    const manualCampana = this.generarManualCampana(municipio, cargo, ciclo, candidato, coalicion, estado);
 
     // Calcular KPI Global del Radar
     const apoyoBasePromedio = statsColonias.promedioApoyoProyectado || 50;

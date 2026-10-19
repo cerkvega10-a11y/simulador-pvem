@@ -16,6 +16,11 @@ yarn-error.log*
 .system_generated/
 scratch/
 
+# Bases de datos JSON locales con credenciales y telemetria
+src/data/licensesStore.json
+src/data/accessLogs.json
+*.json.bak
+
 # Archivos de Sistema Operativo
 .DS_Store
 Thumbs.db

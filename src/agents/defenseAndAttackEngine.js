@@ -9,11 +9,34 @@ class DefenseAndAttackEngine {
   /**
    * Genera las 20 Preguntas Letales y Respuestas Maestras (Blindaje y Defensa)
    */
-  generateDefenseMatrix(propuestaTexto = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', votosFinales = {}, municipalResearch = {}) {
+  generateDefenseMatrix(propuestaTexto = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', votosFinales = {}, municipalResearch = {}, aiDefenseData = null) {
     const muni = municipio || 'Ecatepec de Morelos';
     const contra = votosFinales.porcentajeContra || 28;
     const favor = votosFinales.porcentajeFavor || 60;
     const neutro = votosFinales.porcentajeNeutro || 12;
+
+    // Si contamos con las 20 preguntas generadas por IA (Groq / LLM) específicamente para esta propuesta
+    if (aiDefenseData && Array.isArray(aiDefenseData.preguntas) && aiDefenseData.preguntas.length >= 10) {
+      return {
+        totalPreguntas: aiDefenseData.preguntas.length,
+        bloques: [
+          { nombre: 'Financiero y Presupuestal', rango: 'Preguntas 1 a 5' },
+          { nombre: 'Impacto Social y Pobreza', rango: 'Preguntas 6 a 10' },
+          { nombre: 'Conflicto Sindical y Gremial', rango: 'Preguntas 11 a 15' },
+          { nombre: 'Técnico, Legal y de Ejecución', rango: 'Preguntas 16 a 20' }
+        ],
+        preguntas: aiDefenseData.preguntas.map((p, idx) => ({
+          numero: p.numero || idx + 1,
+          bloque: p.bloque || (idx < 5 ? 'Financiero y Presupuestal' : (idx < 10 ? 'Impacto Social y Pobreza' : (idx < 15 ? 'Conflicto Sindical y Gremial' : 'Técnico, Legal y de Ejecución'))),
+          dardo: p.dardo || '',
+          peligro: p.peligro || 'Peligro Crítico — Cuarto de Guerra',
+          sectorAtacante: p.sectorAtacante || 'Comisión Especial / Medios',
+          escudo: p.escudo || '',
+          pivotePolitico: p.pivotePolitico || ''
+        })),
+        iaGenerada: true
+      };
+    }
 
     const preguntas = [
       // ==========================================
@@ -228,10 +251,27 @@ class DefenseAndAttackEngine {
   /**
    * Genera el Arsenal de Contraataque y Demolición de Contrincante (Modo Ataque / Oposición)
    */
-  generateAttackDossier(propuestaRivalTexto = '', partidoRival = 'MORENA', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', municipalResearch = {}) {
+  generateAttackDossier(propuestaRivalTexto = '', partidoRival = 'MORENA', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', municipalResearch = {}, aiAttackData = null) {
     const muni = municipio || 'Ecatepec de Morelos';
     const rival = partidoRival || 'MORENA';
     const txt = (propuestaRivalTexto || '').toLowerCase();
+
+    // Si contamos con expediente de ataque generado por IA (Groq / LLM) específicamente para esta propuesta rival
+    if (aiAttackData && Array.isArray(aiAttackData.soundbites) && aiAttackData.soundbites.length > 0 && aiAttackData.guionDebate) {
+      return {
+        partidoRival: rival,
+        municipio: muni,
+        estado,
+        rechazoEstimado: typeof aiAttackData.rechazoEstimado === 'number' ? aiAttackData.rechazoEstimado : 72,
+        aprobacionRival: typeof aiAttackData.aprobacionRival === 'number' ? aiAttackData.aprobacionRival : 28,
+        sectoresAgraviados: aiAttackData.sectoresAgraviados || [],
+        planCaptura: aiAttackData.planCaptura || { focoTerritorial: `Bastiones en ${muni}`, lugaresVisita: [], promesaCompromiso: '' },
+        soundbites: aiAttackData.soundbites || [],
+        guionDebate: aiAttackData.guionDebate || {},
+        contrapropuestaGanadora: aiAttackData.contrapropuestaGanadora || {},
+        iaGenerada: true
+      };
+    }
 
     // 1. Detección de Fisuras Temáticas de la Propuesta Rival
     let rechazoEstimado = 68;

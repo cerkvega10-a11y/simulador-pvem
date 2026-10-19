@@ -2,6 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// Capturadores globales para evitar caídas imprevistas del proceso Node.js
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Node.js Unhandled Rejection]:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Node.js Uncaught Exception crítico]:', err);
+});
+
 // Carga segura de variables de entorno desde .env (Protegido contra escaneo de GitHub)
 const envFilePath = path.join(__dirname, '.env');
 if (fs.existsSync(envFilePath)) {
@@ -47,6 +55,7 @@ const presets = require('./src/data/presets');
 const realAiVerificationAgent = require('./src/agents/realAiVerificationAgent');
 const electoralRadarEngine = require('./src/agents/electoralRadarEngine');
 const coloniasData = require('./src/data/coloniasData');
+const freeLLMService = require('./src/services/freeLLMService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -318,11 +327,38 @@ app.post('/api/upload/multimodal', upload.single('file'), async (req, res) => {
   }
 });
 
+// Mapa para evitar doble descuento de simulaciones en reconexiones o fallbacks (5 min TTL)
+const recentDeductedRunIds = new Map();
+
 // Función para verificar y descontar cuota de propuestas (Kill Switch Demo 3 corridas / 7 días)
 function checkAndIncrementSimulationLimit(inputData = {}) {
   const allLicenses = loadLicensesStore();
   const licId = inputData.licenseId || inputData.activeSession?.user?.id;
   const username = inputData.username || inputData.activeSession?.user?.username;
+  const runId = inputData.runId;
+
+  // Limpiar corridas con más de 5 minutos
+  const nowMs = Date.now();
+  for (const [rId, ts] of recentDeductedRunIds.entries()) {
+    if (nowMs - ts > 5 * 60 * 1000) recentDeductedRunIds.delete(rId);
+  }
+
+  // Si esta corrida ya fue descontada por la conexión SSE inicial, no duplicar el cargo en el fallback
+  if (runId && recentDeductedRunIds.has(runId)) {
+    const matched = licId ? allLicenses.find(l => l.id === licId) : (username ? allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase()) : null);
+    const isDemo = Boolean(matched?.isDemo);
+    const maxSims = isDemo ? 3 : (matched?.max_simulations || 999999);
+    const count = typeof matched?.simulations_count === 'number' ? matched.simulations_count : 0;
+    return {
+      allowed: true,
+      isDemo,
+      simulations_count: count,
+      max_simulations: maxSims,
+      remaining: Math.max(0, maxSims - count),
+      licenseId: matched?.id,
+      deduplicated: true
+    };
+  }
 
   // Si es Administrador Maestro (Cerkvega92, Aland, o rol MASTER_ADMIN), simulaciones ilimitadas
   const isMasterSession = Boolean(
@@ -410,6 +446,9 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
   // Incrementar contador y guardar
   matchedLic.simulations_count += 1;
   saveLicensesStore(allLicenses);
+  if (runId) {
+    recentDeductedRunIds.set(runId, Date.now());
+  }
 
   const remaining = Math.max(0, maxSimulations - matchedLic.simulations_count);
   return {
@@ -526,48 +565,67 @@ app.post('/api/simulate', async (req, res) => {
 
 // 7. Estado del Motor de IA Centralizado (Plug & Play - Cero Exposición de Llaves)
 app.get('/api/ai-engine/status', (req, res) => {
-  const hasKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
-  const model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+  const hasGroq = Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_'));
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy'));
+  const activeEngine = hasGroq ? 'Groq Cloud (Llama 3.3 70B Versatile - Ultra Rápido)' : (hasGemini ? 'Google Gemini Pro' : 'INEGI-ABM Demográfico');
+  const activeModel = hasGroq ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro');
+  const isOnline = hasGroq || hasGemini;
+
   res.json({
     success: true,
-    engine: 'Google Gemini Pro / Enterprise Neural Swarm',
-    model,
+    engine: activeEngine,
+    model: activeModel,
+    provider: hasGroq ? 'groq' : (hasGemini ? 'gemini' : 'native'),
     mode: 'Centralized Server-Managed (Plug & Play)',
-    hasCentralKey: hasKey,
-    status: hasKey ? 'ONLINE_ACTIVE' : 'STANDBY_HYBRID',
-    description: 'Motor centralizado de alta precisión gestionado por la administración matriz. Credenciales encapsuladas en servidor seguro.'
+    hasCentralKey: isOnline,
+    status: isOnline ? 'ONLINE_ACTIVE' : 'STANDBY_HYBRID',
+    description: isOnline 
+      ? `Motor de Inferencia Neuronal Activo (${activeEngine}). Conexión certificada.` 
+      : 'Modo híbrido demográfico autónomo.'
   });
 });
 
 app.post('/api/test-connection', async (req, res) => {
-  const hasKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
-  const selectedModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+  try {
+    const inputData = req.body || {};
+    const aiConfig = resolveAiConfigForSimulation(inputData);
+    
+    // Ejecutar ping de conexion real hacia el proveedor configurado (Gemini / Groq / OpenAI / Ollama)
+    const pingResult = await freeLLMService.pingConnection(aiConfig);
 
-  if (hasKey) {
+    if (pingResult.connected) {
+      return res.json({
+        success: true,
+        connected: true,
+        provider: pingResult.provider,
+        model: pingResult.model,
+        latencyMs: pingResult.latencyMs,
+        message: `¡Conexión verificada con ${pingResult.provider.toUpperCase()} (${pingResult.model})! Latencia real: ${pingResult.latencyMs}ms.`
+      });
+    }
+
     return res.json({
-      success: true,
-      provider: 'gemini',
-      model: selectedModel,
-      message: `¡Motor Centralizado Activo! Conexión verificada con Google Gemini (${selectedModel}) bajo gestión matriz segura.`
+      success: false,
+      connected: false,
+      provider: pingResult.provider,
+      latencyMs: pingResult.latencyMs,
+      error: pingResult.error || 'Credenciales no configuradas',
+      message: `No se pudo conectar con el motor de IA (${pingResult.provider}): ${pingResult.error || 'Configura tu API Key en .env o en tu licencia'}.`
     });
+  } catch (err) {
+    console.error('Error en /api/test-connection:', err);
+    return res.status(500).json({ success: false, connected: false, error: err.message });
   }
-
-  return res.json({
-    success: true,
-    provider: 'native',
-    model: 'INEGI-ABM Híbrido',
-    message: 'Motor Híbrido Semántico Activo y Calibrado. Operación autónoma sin interrupciones.'
-  });
 });
 
 // 8. Interrogar interactivamente al Enjambre Ciudadano
 app.post('/api/swarm/ask', async (req, res) => {
   try {
-    const { pregunta } = req.body || {};
+    const { pregunta, simulationId } = req.body || {};
     if (!pregunta || !pregunta.trim()) {
       return res.status(400).json({ success: false, error: 'Pregunta requerida' });
     }
-    const answers = await orchestratorAgent.answerQuestion(pregunta.trim());
+    const answers = await orchestratorAgent.answerQuestion(pregunta.trim(), simulationId);
     res.json({ success: true, answers });
   } catch (error) {
     console.error('Error en interrogación al enjambre:', error);
@@ -578,8 +636,8 @@ app.post('/api/swarm/ask', async (req, res) => {
 // 8.1. Diagnóstico y Verificación de IA Real en Vivo (Anti-Random Check)
 app.post('/api/verify-ai', (req, res) => {
   try {
-    const { proposalText, municipio = 'Ecatepec de Morelos', estado = 'México' } = req.body || {};
-    const latest = orchestratorAgent.latestState || {};
+    const { proposalText, municipio = 'Ecatepec de Morelos', estado = 'México', simulationId } = req.body || {};
+    const latest = (simulationId && orchestratorAgent.sessionsState.get(simulationId)) || orchestratorAgent.latestState || {};
     const text = proposalText || latest.propuestaTexto || 'Propuesta Ciudadana';
     const semanticResult = latest.semanticResult || { entidades: { montos: [], plazos: [], medidas: [], prohibiciones: [] }, tipo: 'ESTANDAR' };
     const chats = latest.finalReport?.chatsDelEnjambre || [];
@@ -840,15 +898,16 @@ function loadLicensesStore() {
           simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
           max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
           isDemo: Boolean(lic.isDemo),
-          ...lic
         }));
       }
+    } else {
+      // Inicializar archivo persistente solo si no existe en disco
+      saveLicensesStore(DEFAULT_LICENSES);
+      return [...DEFAULT_LICENSES];
     }
   } catch (e) {
-    console.warn('Advertencia leyendo licensesStore.json:', e.message);
+    console.error('Error crítico leyendo licensesStore.json:', e.message);
   }
-  // Inicializar archivo persistente si no existe
-  saveLicensesStore(DEFAULT_LICENSES);
   return [...DEFAULT_LICENSES];
 }
 
@@ -856,7 +915,10 @@ function saveLicensesStore(list) {
   try {
     const dir = path.dirname(LICENSES_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(LICENSES_FILE, JSON.stringify(list, null, 2), 'utf8');
+    // Escritura atómica para evitar corrupción de JSON por operaciones concurrentes
+    const tmpFile = `${LICENSES_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tmpFile, JSON.stringify(list, null, 2), 'utf8');
+    fs.renameSync(tmpFile, LICENSES_FILE);
   } catch (e) {
     console.warn('Advertencia guardando licensesStore.json:', e.message);
   }
@@ -920,7 +982,7 @@ function maskApiKey(cipherText) {
 
 function sanitizeLicenseForClient(lic) {
   if (!lic) return null;
-  const { customApiKeyEncrypted, ...safeLic } = lic;
+  const { customApiKeyEncrypted, password, tokenSeguridad, ...safeLic } = lic;
   return {
     ...safeLic,
     allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
@@ -992,7 +1054,16 @@ function resolveAiConfigForSimulation(inputData = {}) {
     };
   }
 
-  // Caso 3: Motor Centralizado General de la Matriz (Google Gemini Pro - Plug & Play)
+  // Caso 3: Motor Centralizado General de la Matriz (Groq Llama 3.3 70B o Google Gemini)
+  if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()) {
+    return {
+      provider: 'groq',
+      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      apiKey: process.env.GROQ_API_KEY.trim(),
+      centralized: true
+    };
+  }
+
   return {
     provider: 'gemini',
     model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',

@@ -123,8 +123,9 @@ class ChatGenerator {
   /**
    * Genera como mínimo el 50% de chats únicos respecto al tamaño del enjambre
    */
-  generateSwarmChats(tamanoEnjambre, votosPonderados, entities, municipio, estado, thematicAnalysis, textoOriginal = '') {
-    const targetCount = Math.max(Math.ceil(tamanoEnjambre * 0.5), 50);
+  generateSwarmChats(tamanoEnjambre, votosPonderados, entities, municipio, estado, thematicAnalysis, textoOriginal = '', neuralChats = null) {
+    // Optimización de rendimiento: límite máximo de 250 chats detallados para evitar congelar el Event Loop
+    const targetCount = Math.min(Math.max(Math.ceil(tamanoEnjambre * 0.5), 50), 250);
 
     const vector = getMunicipalityVector(municipio, estado);
     const colonias = vector.colonias || [`${municipio} Centro`];
@@ -144,10 +145,49 @@ class ChatGenerator {
     // Extraer citas literales de la propuesta (Fuente A)
     const literalQuotes = this.extractLiteralQuotes(textoOriginal, entities);
 
-    // Proporciones exactas derivadas de la fórmula municipal
-    const favorCount = Math.round((targetCount * votosPonderados.porcentajeFavor) / 100);
-    const contraCount = Math.round((targetCount * votosPonderados.porcentajeContra) / 100);
-    const neutroCount = targetCount - favorCount - contraCount;
+    // Integración de testimonios neuronales reales generados por IA (si el LLM está activo)
+    const uniqueChats = [];
+    const usedHashes = new Set();
+
+    if (Array.isArray(neuralChats) && neuralChats.length > 0) {
+      neuralChats.forEach((nc, nIdx) => {
+        if (!nc || !nc.mensaje) return;
+        const nseVal = nc.nse || 'C';
+        const rangoEdad = this.getAgeBracket(nc.edad || 35);
+        const estratoNSE = this.getNSEBracket(nseVal);
+        const chatObj = {
+          id: `ai-neural-chat-${nIdx + 1}`,
+          numero: nIdx + 1,
+          nombre: nc.nombre || `Ciudadano de ${municipio}`,
+          edad: Number(nc.edad || 35),
+          rangoEdad: rangoEdad,
+          grupoEtario: rangoEdad,
+          genero: nc.genero || (nIdx % 2 === 0 ? 'M' : 'F'),
+          ocupacion: nc.ocupacion || 'Vecino local',
+          sectorSocial: nc.sectorSocial || 'Población General',
+          colonia: nc.colonia || (colonias[nIdx % colonias.length]),
+          municipio,
+          nse: String(nseVal),
+          estratoNSE: estratoNSE,
+          voto: nc.voto || 'Neutro',
+          votoFinal: nc.voto || 'Neutro',
+          entusiasmo: Number(nc.entusiasmo || 50),
+          entusiasmoFinal: Number(nc.entusiasmo || 50),
+          estiloNarrativo: 'Inferencia Neuronal LLM (Real)',
+          mensaje: nc.mensaje,
+          argumento: nc.argumento || '',
+          avatarUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(nc.nombre || 'Mexiquense')}&backgroundColor=e6f4ea,f1f5f9`
+        };
+        uniqueChats.push(chatObj);
+        usedHashes.add(crypto.createHash('sha256').update(nc.mensaje).digest('hex'));
+      });
+    }
+
+    // Proporciones exactas derivadas de la fórmula municipal para el resto del enjambre
+    const remainingToGenerate = Math.max(0, targetCount - uniqueChats.length);
+    const favorCount = Math.round((remainingToGenerate * votosPonderados.porcentajeFavor) / 100);
+    const contraCount = Math.round((remainingToGenerate * votosPonderados.porcentajeContra) / 100);
+    const neutroCount = remainingToGenerate - favorCount - contraCount;
 
     const listaVotos = [];
     for (let i = 0; i < favorCount; i++) listaVotos.push('A favor');
@@ -155,12 +195,10 @@ class ChatGenerator {
     for (let i = 0; i < neutroCount; i++) listaVotos.push('Neutro');
 
     const shuffledVotos = this.shuffleArray(listaVotos);
-
-    const uniqueChats = [];
-    const usedHashes = new Set();
     const sectoresKeys = Object.keys(OCUPACIONES_POR_SECTOR);
 
-    for (let idx = 0; idx < targetCount; idx++) {
+    for (let idx = 0; idx < remainingToGenerate; idx++) {
+      const globalIdx = uniqueChats.length;
       const voto = shuffledVotos[idx] || 'Neutro';
       const isMale = (idx % 2 === 0);
       const nombreBase = isMale 
@@ -224,8 +262,8 @@ class ChatGenerator {
       const estratoNSE = this.getNSEBracket(nse);
 
       uniqueChats.push({
-        id: `agent-chat-${idx + 1}`,
-        numero: idx + 1,
+        id: `agent-chat-${globalIdx + 1}`,
+        numero: globalIdx + 1,
         nombre: nombreCompleto,
         edad: Number(edad),
         rangoEdad: rangoEdad,

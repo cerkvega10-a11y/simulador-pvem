@@ -35,15 +35,15 @@ class WatchdogAuditAgent {
     let llmEvaluation = null;
     let motorInferenciaUsado = 'Motor Híbrido INEGI-ABM + Watchdog Territorial';
 
-    const hasCentralKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY);
+    const hasCentralKey = Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY);
     const hasClientKey = Boolean(inputData.aiConfig && inputData.aiConfig.apiKey);
 
     if (hasCentralKey || hasClientKey) {
       try {
         const isCustom = Boolean(inputData.aiConfig?.custom);
-        const provider = inputData.aiConfig?.provider || 'gemini';
-        const model = inputData.aiConfig?.model || (provider === 'gemini' ? (process.env.GEMINI_MODEL || 'gemini-1.5-pro') : 'default');
-        const apiKey = inputData.aiConfig?.apiKey || (provider === 'gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '') : '');
+        const provider = inputData.aiConfig?.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
+        const model = inputData.aiConfig?.model || (provider === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro'));
+        const apiKey = inputData.aiConfig?.apiKey || (provider === 'groq' ? process.env.GROQ_API_KEY : (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || ''));
 
         const activeAiConfig = {
           provider,
@@ -78,15 +78,18 @@ class WatchdogAuditAgent {
       tamanoEnjambre
     );
 
-    // Si el LLM devolvió una estimación válida, se promedia suavemente respetando el vector municipal
+    // Si el LLM devolvió una estimación válida, la inferencia de IA lidera la votación (65% IA + 35% demografía municipal)
     let votosBase = calculoMunicipal.votos;
     if (llmEvaluation && typeof llmEvaluation.aprobacionEstimada === 'number') {
       votosBase = {
-        porcentajeFavor: Math.round((votosBase.porcentajeFavor * 0.7) + (llmEvaluation.aprobacionEstimada * 0.3)),
-        porcentajeContra: Math.round((votosBase.porcentajeContra * 0.7) + (llmEvaluation.rechazoEstimado * 0.3)),
+        porcentajeFavor: Math.round((votosBase.porcentajeFavor * 0.35) + (llmEvaluation.aprobacionEstimada * 0.65)),
+        porcentajeContra: Math.round((votosBase.porcentajeContra * 0.35) + (llmEvaluation.rechazoEstimado * 0.65)),
         porcentajeNeutro: 0
       };
-      votosBase.porcentajeNeutro = 100 - votosBase.porcentajeFavor - votosBase.porcentajeContra;
+      votosBase.porcentajeNeutro = Math.max(0, 100 - votosBase.porcentajeFavor - votosBase.porcentajeContra);
+      if (llmEvaluation.dictamen) {
+        semanticResult.dictamen = llmEvaluation.dictamen;
+      }
     }
 
     // 3.5. REGLA LEY DE LOS GRANDES NÚMEROS: Motor de Variación por Tamaño de Muestra (50 a 10,000 agentes)
@@ -97,12 +100,81 @@ class WatchdogAuditAgent {
     );
     const votosFinales = variacionMuestral.votosCalibrados;
 
+    // INFERENCIA NEURONAL MULTI-MÓDULO EN PARALELO (Groq Ultra-Speed LPU)
+    let aiUnionData = null;
+    let aiDefenseData = null;
+    let aiAttackData = null;
+    let aiDigitalTrends = null;
+    let aiColoniaCalibration = null;
+    let neuralChats = null;
+
+    if (hasCentralKey || hasClientKey) {
+      try {
+        const results = await Promise.allSettled([
+          freeLLMService.generateSwarmChatsWithLLM({
+            propuestaTexto: textoOriginal,
+            municipio: muni,
+            estado: estado,
+            topProblems: topProblems,
+            count: 14,
+            aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateUnionIntelligenceWithLLM({
+            propuestaTexto: textoOriginal,
+            municipio: muni,
+            estado: estado,
+            topProblems: topProblems,
+            aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateDefenseMatrixWithLLM({
+            propuestaTexto: textoOriginal,
+            municipio: muni,
+            estado: estado,
+            votosFinales,
+            municipalResearch,
+            aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateAttackDossierWithLLM({
+            propuestaRivalTexto: textoOriginal,
+            partidoRival: inputData.partidoRival || 'MORENA',
+            municipio: muni,
+            estado: estado,
+            municipalResearch,
+            aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateDigitalTrendsWithLLM({
+            propuestaTexto: textoOriginal,
+            municipio: muni,
+            estado: estado,
+            aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateColoniaCalibrationWithLLM({
+            propuestaTexto: textoOriginal,
+            municipio: muni,
+            estado: estado,
+            colonias: municipalResearch.coloniasRepresentativas || [],
+            aiConfig: inputData.aiConfig
+          })
+        ]);
+
+        if (results[0].status === 'fulfilled' && results[0].value) neuralChats = results[0].value;
+        if (results[1].status === 'fulfilled' && results[1].value) aiUnionData = results[1].value;
+        if (results[2].status === 'fulfilled' && results[2].value) aiDefenseData = results[2].value;
+        if (results[3].status === 'fulfilled' && results[3].value) aiAttackData = results[3].value;
+        if (results[4].status === 'fulfilled' && results[4].value) aiDigitalTrends = results[4].value;
+        if (results[5].status === 'fulfilled' && results[5].value) aiColoniaCalibration = results[5].value;
+      } catch (parErr) {
+        console.warn('[Watchdog] Continuación con módulos híbridos:', parErr.message);
+      }
+    }
+
     // 3.6. INTELIGENCIA SINDICAL: Evaluación de las 12 Fuerzas Sindicales y Semáforo de Riesgo de Paro (0-100)
     const inteligenciaSindical = unionsEngine.evaluateUnions(
       textoOriginal,
       muni,
       estado,
-      semanticResult
+      semanticResult,
+      aiUnionData
     );
 
     // 3.7. BLINDAJE Y DEFENSA ESTRATÉGICA: 20 Preguntas Críticas y Respuestas Maestras (4 Bloques x 5)
@@ -111,7 +183,8 @@ class WatchdogAuditAgent {
       muni,
       estado,
       votosFinales,
-      municipalResearch
+      municipalResearch,
+      aiDefenseData
     );
 
     // 3.8. MODO ATAQUE / INGENIERÍA INVERSA: Demolición de Contrincante
@@ -120,10 +193,11 @@ class WatchdogAuditAgent {
       inputData.partidoRival || 'MORENA',
       muni,
       estado,
-      municipalResearch
+      municipalResearch,
+      aiAttackData
     );
 
-    // 4. REGLA 2: Generación Dinámica de Chats Únicos para mínimo el 50% de los agentes
+    // 4. REGLA 2: Generación de Chats Ciudadanos (Inyectando testimonios neuronales reales de IA si están disponibles)
     const chatResult = chatGenerator.generateSwarmChats(
       tamanoEnjambre,
       votosFinales,
@@ -131,7 +205,8 @@ class WatchdogAuditAgent {
       muni,
       estado,
       semanticResult,
-      textoOriginal
+      textoOriginal,
+      neuralChats
     );
 
     // 5. Generación del Registro de Auditoría y Prueba de Razonamiento (Proof of Reasoning)
@@ -287,7 +362,9 @@ class WatchdogAuditAgent {
         aFavorStr: `${aFavorNum.toLocaleString()} ciudadanos sintéticos`,
         enContraStr: `${enContraNum.toLocaleString()} ciudadanos sintéticos`,
         neutroStr: `${neutroNum.toLocaleString()} ciudadanos sintéticos`,
-        promedioEntusiasmo: Math.round(chatResult.chats.reduce((acc, c) => acc + c.entusiasmo, 0) / chatResult.chats.length),
+        promedioEntusiasmo: chatResult.chats.length > 0 
+          ? Math.round(chatResult.chats.reduce((acc, c) => acc + (c.entusiasmo || 50), 0) / chatResult.chats.length)
+          : 50,
         indicePolarizacion: Math.round((Math.min(votosFinales.porcentajeFavor, votosFinales.porcentajeContra) / 50) * 100)
       },
       agentesAuditados: calibratedSwarm,
@@ -306,6 +383,8 @@ class WatchdogAuditAgent {
       inteligenciaSindical,
       blindajeDefensa,
       modoAtaque,
+      tendenciasDigitales: aiDigitalTrends,
+      calibracionColoniasAI: aiColoniaCalibration,
       variacionMuestral,
       qaWatchdogCertificacion
     };

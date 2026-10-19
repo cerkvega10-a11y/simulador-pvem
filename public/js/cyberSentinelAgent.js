@@ -29,7 +29,9 @@
     let result = '';
 
     const words = [];
-    const asciiBitLength = (ascii ? ascii.length : 0) * 8;
+    // Convertir a UTF-8 puro para soportar acentos y caracteres especiales sin fallar
+    const inputStr = unescape(encodeURIComponent(ascii || ''));
+    const asciiBitLength = inputStr.length * 8;
 
     const hash = [
       0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
@@ -47,10 +49,8 @@
       0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     ];
 
-    const inputStr = ascii || '';
     for (i = 0; i < inputStr.length; i++) {
       j = inputStr.charCodeAt(i);
-      if (j >> 8) return ''; // ASCII puro esperado
       words[i >> 2] |= j << ((3 - (i % 4)) * 8);
     }
     words[asciiBitLength >> 5] |= 0x80 << (24 - (asciiBitLength % 32));
