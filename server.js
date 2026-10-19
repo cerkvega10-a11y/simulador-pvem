@@ -557,6 +557,65 @@ const AUTHORSHIP_WATERMARK = {
 // 9. PANEL DE CONTROL MAESTRO, GESTIÓN DE LICENCIAS & KILL SWITCH
 // =========================================================================
 const LICENSES_FILE = path.join(__dirname, 'src', 'data', 'licensesStore.json');
+const ACCESS_LOGS_FILE = path.join(__dirname, 'src', 'data', 'accessLogs.json');
+
+// --- SISTEMA DE AUDITORÍA Y TELEMETRÍA DE ACCESOS (ZERO-DATA RETENTION) ---
+function loadAccessLogs() {
+  try {
+    if (fs.existsSync(ACCESS_LOGS_FILE)) {
+      const raw = fs.readFileSync(ACCESS_LOGS_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn('Advertencia leyendo accessLogs.json:', err.message);
+  }
+  return [];
+}
+
+function saveAccessLogs(logs) {
+  try {
+    const dir = path.dirname(ACCESS_LOGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    // Conservar hasta 500 registros para alta velocidad y evitar sobrecarga
+    const trimmed = Array.isArray(logs) ? logs.slice(0, 500) : [];
+    fs.writeFileSync(ACCESS_LOGS_FILE, JSON.stringify(trimmed, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Advertencia guardando accessLogs.json:', err.message);
+  }
+}
+
+function recordAccessLog({ userId, username, clientName, role, authMethod, req }) {
+  try {
+    const logs = loadAccessLogs();
+    const forwarded = req && req.headers ? req.headers['x-forwarded-for'] : null;
+    const remoteIp = req && req.socket ? req.socket.remoteAddress : '127.0.0.1';
+    const rawIp = forwarded || remoteIp || '127.0.0.1';
+    const clientIp = String(rawIp).split(',')[0].trim().replace(/^::ffff:/, '');
+    const userAgent = (req && req.headers && req.headers['user-agent']) ? String(req.headers['user-agent']).slice(0, 160) : 'Navegador Web Desconocido';
+
+    const now = new Date();
+    const entry = {
+      id: `acc-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      userId: userId || 'anonymous',
+      username: username || 'desconocido',
+      clientName: clientName || username || 'Usuario',
+      role: role || 'CLIENT',
+      authMethod: authMethod || 'CREDENTIALS',
+      timestamp: now.toISOString(),
+      timestampFormatted: now.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+      ip: clientIp,
+      userAgent
+    };
+
+    logs.unshift(entry);
+    saveAccessLogs(logs);
+    return entry;
+  } catch (e) {
+    console.warn('Error registrando bitácora de acceso:', e.message);
+    return null;
+  }
+}
 
 function generateSecurityToken(partido = 'PVEM') {
   const cleanParty = String(partido || 'SYS').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'SYS';
@@ -572,6 +631,10 @@ const DEFAULT_LICENSES = [
     username: 'ecatepec2027',
     password: 'Verde2027*',
     partido: 'PVEM',
+    allowed_parties: ['PVEM'],
+    can_select_any_party: false,
+    login_count: 0,
+    last_login_at: null,
     tokenSeguridad: 'TK-PVEM-8472-ECA1',
     nivelGeografico: 'Municipal / Alcaldía',
     etiquetaRegion: 'Alcaldía — Municipio de Ecatepec de Morelos',
@@ -594,6 +657,10 @@ const DEFAULT_LICENSES = [
     username: 'distrito04',
     password: 'Morena2027*',
     partido: 'MORENA',
+    allowed_parties: ['MORENA'],
+    can_select_any_party: false,
+    login_count: 0,
+    last_login_at: null,
     tokenSeguridad: 'TK-MORENA-3921-DF04',
     nivelGeografico: 'Federal',
     etiquetaRegion: 'Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla',
@@ -624,6 +691,10 @@ function loadLicensesStore() {
           permisoSimulador: true,
           propuestaFijaTitulo: '',
           propuestaFijaTexto: '',
+          allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
+          can_select_any_party: Boolean(lic.can_select_any_party),
+          login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
+          last_login_at: lic.last_login_at || null,
           ...lic
         }));
       }
@@ -707,6 +778,10 @@ function sanitizeLicenseForClient(lic) {
   const { customApiKeyEncrypted, ...safeLic } = lic;
   return {
     ...safeLic,
+    allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
+    can_select_any_party: Boolean(lic.can_select_any_party),
+    login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
+    last_login_at: lic.last_login_at || null,
     hasCustomKey: Boolean(customApiKeyEncrypted),
     customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
     aiModel: lic.aiModel || 'gemini-default'
@@ -817,6 +892,16 @@ app.post('/api/auth/login', (req, res) => {
     );
 
     if (masterAccount) {
+      const authMethod = (u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-')) ? 'TOKEN' : 'CREDENTIALS';
+      recordAccessLog({
+        userId: masterAccount.id,
+        username: masterAccount.username,
+        clientName: masterAccount.clienteNombre,
+        role: 'MASTER_ADMIN',
+        authMethod,
+        req
+      });
+
       return res.json({
         success: true,
         role: 'MASTER_ADMIN',
@@ -826,6 +911,19 @@ app.post('/api/auth/login', (req, res) => {
           clienteNombre: masterAccount.clienteNombre,
           username: masterAccount.username,
           partido: 'PVEM',
+          allowed_parties: [
+            "PVEM",
+            "MORENA",
+            "PAN",
+            "PRI",
+            "MC",
+            "PT",
+            "CANDIDATURA INDEPENDIENTE",
+            "COALICIÓN / ALIANZA"
+          ],
+          can_select_any_party: true,
+          login_count: 1,
+          last_login_at: new Date().toISOString(),
           nivelGeografico: 'Nacional / Estatal',
           etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
           estadosAutorizados: ['TODOS'],
@@ -860,14 +958,21 @@ app.post('/api/auth/login', (req, res) => {
       });
     }
 
-    // Buscar en licencias de clientes políticos
+    // Buscar en licencias de clientes políticos (Soporta credenciales o Token de Seguridad TK-*)
     licensesStore = loadLicensesStore();
-    const found = licensesStore.find(lic => lic.username.toLowerCase() === u.toLowerCase() && lic.password === p);
+    const isTokenLookup = u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-');
+    const inputToken = (u.toUpperCase().startsWith('TK-') ? u : (p.toUpperCase().startsWith('TK-') ? p : '')).toUpperCase();
+
+    const found = licensesStore.find(lic => {
+      const matchCredentials = lic.username.toLowerCase() === u.toLowerCase() && lic.password === p;
+      const matchToken = inputToken && lic.tokenSeguridad && lic.tokenSeguridad.toUpperCase() === inputToken;
+      return matchCredentials || matchToken;
+    });
 
     if (!found) {
       return res.status(401).json({
         success: false,
-        error: 'Credenciales inválidas. Verifique su Usuario y Contraseña.'
+        error: 'Credenciales inválidas. Verifique su Usuario y Contraseña o su Token de Seguridad.'
       });
     }
 
@@ -907,12 +1012,31 @@ app.post('/api/auth/login', (req, res) => {
       soloLectura: false
     };
 
+    // Incrementar métricas de acceso y registrar telemetría (Zero-Data Retention)
+    found.login_count = (found.login_count || 0) + 1;
+    found.last_login_at = new Date().toISOString();
+    saveLicensesStore(licensesStore);
+
+    const clientRole = isMasterRole ? 'MASTER_ADMIN' : (found.tipoUsuario === 'SOCIO_OPERADOR' ? 'SOCIO_OPERADOR' : 'CLIENT');
+    recordAccessLog({
+      userId: found.id,
+      username: found.username,
+      clientName: found.clienteNombre,
+      role: clientRole,
+      authMethod: isTokenLookup ? 'TOKEN' : 'CREDENTIALS',
+      req
+    });
+
     return res.json({
       success: true,
-      role: isMasterRole ? 'MASTER_ADMIN' : (found.tipoUsuario === 'SOCIO_OPERADOR' ? 'SOCIO_OPERADOR' : 'CLIENT'),
+      role: clientRole,
       watermark: AUTHORSHIP_WATERMARK,
       user: {
         ...found,
+        allowed_parties: Array.isArray(found.allowed_parties) && found.allowed_parties.length > 0 ? found.allowed_parties : [found.partido || 'PVEM'],
+        can_select_any_party: Boolean(found.can_select_any_party),
+        login_count: found.login_count,
+        last_login_at: found.last_login_at,
         esAdministradorTotal: isMasterRole,
         permisosGranulares
       }
@@ -930,6 +1054,50 @@ app.get('/api/licenses', (req, res) => {
   res.json({ success: true, licenses: safeList, watermark: AUTHORSHIP_WATERMARK });
 });
 
+// 9.2b. Bitácora de Auditoría y Telemetría de Accesos (Zero-Data Retention)
+app.get('/api/audit/access-logs', (req, res) => {
+  try {
+    const logs = loadAccessLogs();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(l => l.timestamp && l.timestamp.startsWith(todayStr));
+    
+    // Calcular estadísticas
+    const userCounts = {};
+    logs.forEach(l => {
+      userCounts[l.username] = (userCounts[l.username] || 0) + 1;
+    });
+    let mostActiveUser = 'Ninguno registrado';
+    let maxUserCount = 0;
+    Object.entries(userCounts).forEach(([usr, cnt]) => {
+      if (cnt > maxUserCount) {
+        maxUserCount = cnt;
+        mostActiveUser = `${usr} (${cnt} accesos)`;
+      }
+    });
+
+    const lastLog = logs.length > 0 ? logs[0] : null;
+
+    res.json({
+      success: true,
+      totalLogs: logs.length,
+      todayCount: todayLogs.length,
+      mostActiveUser,
+      lastAccess: lastLog ? {
+        username: lastLog.username,
+        clientName: lastLog.clientName,
+        role: lastLog.role,
+        authMethod: lastLog.authMethod,
+        timestamp: lastLog.timestamp,
+        timestampFormatted: lastLog.timestampFormatted,
+        ip: lastLog.ip
+      } : null,
+      logs: logs.slice(0, 150)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 9.3. Crear o Actualizar Licencia de Cliente Político
 app.post('/api/licenses', (req, res) => {
   try {
@@ -944,6 +1112,15 @@ app.post('/api/licenses', (req, res) => {
     const tokenSeguridad = body.tokenSeguridad
       ? String(body.tokenSeguridad).trim()
       : (existingLic && existingLic.tokenSeguridad ? existingLic.tokenSeguridad : generateSecurityToken(partido));
+
+    // Configuración Multi-Partido / Coalición
+    const can_select_any_party = Boolean(body.can_select_any_party);
+    let allowed_parties = Array.isArray(body.allowed_parties) && body.allowed_parties.length > 0
+      ? body.allowed_parties
+      : [partido];
+    if (!allowed_parties.includes(partido)) {
+      allowed_parties.unshift(partido);
+    }
 
     const estadosAutorizados = Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
       ? body.estadosAutorizados
@@ -995,6 +1172,10 @@ app.post('/api/licenses', (req, res) => {
       username: String(body.username || `usuario_${Date.now()}`).trim(),
       password: String(body.password || 'Clave2027*').trim(),
       partido,
+      allowed_parties,
+      can_select_any_party,
+      login_count: existingLic ? (existingLic.login_count || 0) : 0,
+      last_login_at: existingLic ? (existingLic.last_login_at || null) : null,
       tokenSeguridad,
       nivelGeografico: String(body.nivelGeografico || 'Municipal / Alcaldía'),
       etiquetaRegion,

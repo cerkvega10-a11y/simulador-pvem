@@ -7,6 +7,12 @@
     "permisoSimulador": true,
     "propuestaFijaTitulo": "",
     "propuestaFijaTexto": "",
+    "allowed_parties": [
+      "PVEM"
+    ],
+    "can_select_any_party": false,
+    "login_count": 2,
+    "last_login_at": "2026-10-19T16:28:49.217Z",
     "id": "lic-demo-pvem-01",
     "clienteNombre": "Candidatura Alcaldía Ecatepec (PVEM)",
     "username": "ecatepec2027",
@@ -49,6 +55,12 @@
     "permisoSimulador": true,
     "propuestaFijaTitulo": "",
     "propuestaFijaTexto": "",
+    "allowed_parties": [
+      "MORENA"
+    ],
+    "can_select_any_party": false,
+    "login_count": 0,
+    "last_login_at": null,
     "id": "lic-demo-morena-02",
     "clienteNombre": "Coordinación Distrital Naucalpan - Tlalnepantla",
     "username": "distrito04",

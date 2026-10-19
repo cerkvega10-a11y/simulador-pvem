@@ -1,0 +1,38 @@
+[
+  {
+    "id": "acc-1792427329219-9w7yq",
+    "userId": "lic-demo-pvem-01",
+    "username": "ecatepec2027",
+    "clientName": "Candidatura Alcaldía Ecatepec (PVEM)",
+    "role": "CLIENT",
+    "authMethod": "TOKEN",
+    "timestamp": "2026-10-19T16:28:49.219Z",
+    "timestampFormatted": "19/10/2026, 10:28:49 a.m.",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-MX) WindowsPowerShell/5.1.26100.9711"
+  },
+  {
+    "id": "acc-1792427308927-xmj6o",
+    "userId": "lic-demo-pvem-01",
+    "username": "ecatepec2027",
+    "clientName": "Candidatura Alcaldía Ecatepec (PVEM)",
+    "role": "CLIENT",
+    "authMethod": "CREDENTIALS",
+    "timestamp": "2026-10-19T16:28:28.927Z",
+    "timestampFormatted": "19/10/2026, 10:28:28 a.m.",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-MX) WindowsPowerShell/5.1.26100.9711"
+  },
+  {
+    "id": "acc-1792427296076-j0wn1",
+    "userId": "master-admin-erick-vega",
+    "username": "Cerkvega92",
+    "clientName": "Erick Vega — Administrador Maestro (Neural Media House)",
+    "role": "MASTER_ADMIN",
+    "authMethod": "CREDENTIALS",
+    "timestamp": "2026-10-19T16:28:16.076Z",
+    "timestampFormatted": "19/10/2026, 10:28:16 a.m.",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-MX) WindowsPowerShell/5.1.26100.9711"
+  }
+]

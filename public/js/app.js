@@ -439,10 +439,16 @@ window.onPartyThemeChange = function(partyCode) {
   appState.activeParty = pCode;
 
   // 1. Alternar clase CSS en body para disparar la paleta de colores oficial
-  const partyThemes = ['theme-pvem', 'theme-morena', 'theme-pan', 'theme-pri', 'theme-mc', 'theme-pt'];
+  const partyThemes = [
+    'theme-pvem', 'theme-morena', 'theme-pan', 'theme-pri', 'theme-mc', 'theme-pt',
+    'theme-independiente', 'theme-candidatura-independiente',
+    'theme-coalicion', 'theme-coalición', 'theme-alianza'
+  ];
   partyThemes.forEach(th => document.body.classList.remove(th));
   
-  const currentClass = `theme-${pCode.toLowerCase()}`;
+  let currentClass = `theme-${pCode.toLowerCase()}`;
+  if (pCode.includes('INDEPENDIENTE')) currentClass = 'theme-independiente';
+  if (pCode.includes('COALIC') || pCode.includes('ALIANZA')) currentClass = 'theme-coalicion';
   document.body.classList.add(currentClass);
 
   // 2. Metadatos Oficiales de Marca, Colorimetría e Identidad
@@ -518,6 +524,54 @@ window.onPartyThemeChange = function(partyCode) {
       logoSrc: '/assets/logo-pt.svg',
       logoAlt: 'Partido del Trabajo',
       docTitle: 'Simulador Predictivo de Impacto Social — Partido del Trabajo'
+    },
+    'CANDIDATURA INDEPENDIENTE': {
+      name: 'Candidatura Ciudadana Independiente',
+      shortName: 'INDEPENDIENTE',
+      badgeLetter: 'IND',
+      badgeText: '⚪ Movimiento Ciudadano Sin Partido e Inteligencia Social',
+      systemTitle: 'SISTEMA INTELIGENCIA CIUDADANA AI — CANDIDATURA INDEPENDIENTE',
+      headerTitle: 'Coordinación General Sin Partido',
+      heroTitle: 'Candidatura Ciudadana Independiente',
+      logoSrc: '/assets/logo-independiente.svg',
+      logoAlt: 'Candidatura Independiente',
+      docTitle: 'Simulador Predictivo de Impacto Social — Candidatura Independiente'
+    },
+    INDEPENDIENTE: {
+      name: 'Candidatura Ciudadana Independiente',
+      shortName: 'INDEPENDIENTE',
+      badgeLetter: 'IND',
+      badgeText: '⚪ Movimiento Ciudadano Sin Partido e Inteligencia Social',
+      systemTitle: 'SISTEMA INTELIGENCIA CIUDADANA AI — CANDIDATURA INDEPENDIENTE',
+      headerTitle: 'Coordinación General Sin Partido',
+      heroTitle: 'Candidatura Ciudadana Independiente',
+      logoSrc: '/assets/logo-independiente.svg',
+      logoAlt: 'Candidatura Independiente',
+      docTitle: 'Simulador Predictivo de Impacto Social — Candidatura Independiente'
+    },
+    'COALICIÓN / ALIANZA': {
+      name: 'Coalición y Alianza Electoral Multipartidista',
+      shortName: 'COALICIÓN',
+      badgeLetter: 'ALZ',
+      badgeText: '🤝 Alianza Estratégica Multipartidista y Simulación de Coalición',
+      systemTitle: 'SISTEMA CUARTO DE GUERRA AI — COALICIÓN Y ALIANZA ELECTORAL',
+      headerTitle: 'Mesa Estratégica de Coalición',
+      heroTitle: 'Coalición y Alianza Electoral',
+      logoSrc: '/assets/logo-alianza.svg',
+      logoAlt: 'Coalición y Alianza',
+      docTitle: 'Simulador Predictivo de Impacto Social — Coalición / Alianza Electoral'
+    },
+    COALICION: {
+      name: 'Coalición y Alianza Electoral Multipartidista',
+      shortName: 'COALICIÓN',
+      badgeLetter: 'ALZ',
+      badgeText: '🤝 Alianza Estratégica Multipartidista y Simulación de Coalición',
+      systemTitle: 'SISTEMA CUARTO DE GUERRA AI — COALICIÓN Y ALIANZA ELECTORAL',
+      headerTitle: 'Mesa Estratégica de Coalición',
+      heroTitle: 'Coalición y Alianza Electoral',
+      logoSrc: '/assets/logo-alianza.svg',
+      logoAlt: 'Coalición y Alianza',
+      docTitle: 'Simulador Predictivo de Impacto Social — Coalición / Alianza Electoral'
     }
   };
 
@@ -2742,19 +2796,74 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
   if (!licenseUser) return;
   await ensureNationalCatalogLoaded();
 
-  // 1. Mutar identidad cromática y logotipo al Partido asignado
-  if (licenseUser.partido) {
-    onPartyThemeChange(licenseUser.partido);
-    const partySelect = document.getElementById('select-party-theme');
+  // 1. Mutar identidad cromática, logotipo y control multi-partido
+  const ALL_PARTIES_LIST = [
+    { code: 'PVEM', label: '🌿 PVEM' },
+    { code: 'MORENA', label: '🦅 MORENA' },
+    { code: 'PAN', label: '🔵 PAN' },
+    { code: 'PRI', label: '🔴 PRI' },
+    { code: 'MC', label: '🟠 MC' },
+    { code: 'PT', label: '⭐ PT' },
+    { code: 'CANDIDATURA INDEPENDIENTE', label: '⚪ CANDIDATURA INDEPENDIENTE' },
+    { code: 'COALICIÓN / ALIANZA', label: '🤝 COALICIÓN / ALIANZA' }
+  ];
+
+  const isMaster = isMasterAdmin || licenseUser.esAdministradorTotal === true || licenseUser.tipoUsuario === 'MASTER' || licenseUser.tipoUsuario === 'MASTER_ADMIN';
+  const canSelectAny = isMasterAdmin || licenseUser.can_select_any_party === true || isMaster;
+  let allowedParties = Array.isArray(licenseUser.allowed_parties) && licenseUser.allowed_parties.length > 0
+    ? licenseUser.allowed_parties
+    : [licenseUser.partido || 'PVEM'];
+
+  const partySelect = document.getElementById('select-party-theme');
+  const partyLockedPill = document.getElementById('party-locked-pill');
+  const partyLockedName = document.getElementById('party-locked-name');
+  const partyWrapper = document.getElementById('party-selector-wrapper');
+
+  if (canSelectAny) {
+    // Modo Administrador Maestro o Licencia con Libre Elección (Todos los partidos)
     if (partySelect) {
-      partySelect.value = licenseUser.partido;
-      partySelect.disabled = !isMasterAdmin; // Bloquear cambio de partido para el cliente
+      partySelect.innerHTML = ALL_PARTIES_LIST.map(p => `<option value="${p.code}">${p.label}</option>`).join('');
+      partySelect.value = licenseUser.partido || appState.activeParty || 'PVEM';
+      partySelect.disabled = false;
+      partySelect.title = 'Libre alternancia entre todos los partidos del catálogo';
     }
+    if (partyWrapper) partyWrapper.classList.remove('hidden');
+    if (partyLockedPill) partyLockedPill.classList.add('hidden');
+    onPartyThemeChange(partySelect ? partySelect.value : (licenseUser.partido || 'PVEM'));
+  } else if (allowedParties.length === 1) {
+    // Opción A: Exactamente un partido asignado por licencia
+    const singleParty = allowedParties[0];
+    onPartyThemeChange(singleParty);
+    if (partySelect) {
+      partySelect.innerHTML = `<option value="${singleParty}">${singleParty}</option>`;
+      partySelect.value = singleParty;
+      partySelect.disabled = true;
+      partySelect.title = `Partido Asignado por Licencia: ${singleParty}`;
+    }
+    if (partyLockedPill && partyLockedName) {
+      partyLockedName.innerText = `Partido Asignado: ${singleParty}`;
+      partyLockedPill.classList.remove('hidden');
+      partyLockedPill.classList.add('flex');
+    }
+  } else {
+    // Opción B: Múltiples partidos autorizados / Coalición
+    if (partySelect) {
+      const filteredOptions = ALL_PARTIES_LIST.filter(p => allowedParties.includes(p.code));
+      partySelect.innerHTML = (filteredOptions.length > 0 ? filteredOptions : ALL_PARTIES_LIST)
+        .map(p => `<option value="${p.code}">${p.label}</option>`).join('');
+      
+      const currentValid = allowedParties.includes(licenseUser.partido) ? licenseUser.partido : allowedParties[0];
+      partySelect.value = currentValid;
+      partySelect.disabled = false;
+      partySelect.title = `Coalición Autorizada: ${allowedParties.join(' + ')}`;
+      onPartyThemeChange(currentValid);
+    }
+    if (partyWrapper) partyWrapper.classList.remove('hidden');
+    if (partyLockedPill) partyLockedPill.classList.add('hidden');
   }
 
   // 2. Permisos Independientes de Módulos y Permisos Granulares
   const perms = licenseUser.permisosGranulares || {};
-  const isMaster = isMasterAdmin || licenseUser.esAdministradorTotal === true || licenseUser.tipoUsuario === 'MASTER';
   const canRadar = isMaster || (licenseUser.permisoRadar !== false && perms.radar !== false);
   const canSimulador = isMaster || (licenseUser.permisoSimulador !== false && perms.simulador !== false);
   const canDescarga = isMaster || perms.descargaReportes !== false;
@@ -3286,6 +3395,7 @@ function renderMasterLicensesList() {
             <span class="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white">${lic.partido}</span>
             <h4 class="font-black text-slate-900 text-sm">${lic.clienteNombre}</h4>
             ${roleBadge}
+            ${lic.can_select_any_party ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">🌐 LIBRE ELECCIÓN</span>` : ((lic.allowed_parties && lic.allowed_parties.length > 1) ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-950 border border-indigo-300">🤝 COALICIÓN (${lic.allowed_parties.length})</span>` : '')}
             ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS</span>` : ''}
           </div>
           ${statusBadge}
@@ -3306,6 +3416,21 @@ function renderMasterLicensesList() {
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Capacidad Enjambre:</span>
             <span class="font-black text-slate-900">Hasta ${(lic.maxSwarmSize || 100000).toLocaleString()} Agentes</span>
+          </div>
+        </div>
+
+        <!-- TELEMETRÍA Y AUDITORÍA DE ACCESOS (ZERO-DATA RETENTION) -->
+        <div class="p-2.5 rounded-lg bg-indigo-50/40 border border-indigo-200/70 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase text-indigo-950 flex items-center gap-1">
+              <span>🛡️</span><span>Auditoría de Accesos:</span>
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">
+              👁️ Accesos registrados: ${lic.login_count || 0} ${(lic.login_count === 1) ? 'vez' : 'veces'}
+            </span>
+          </div>
+          <div class="text-[10px] text-slate-600">
+            🕒 Último acceso: <b class="text-slate-900">${lic.last_login_at ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : 'Sin accesos registrados aún'}</b>
           </div>
         </div>
 
@@ -3349,6 +3474,7 @@ function renderMasterLicensesList() {
         </div>
 
         <div class="text-[11px] text-slate-600 space-y-1">
+          <div><b>🎯 Partidos Autorizados:</b> ${lic.can_select_any_party ? '<span class="text-emerald-700 font-bold">Catálogo Completo (8 Partidos)</span>' : `<span class="font-bold text-slate-800">${(lic.allowed_parties || [lic.partido || 'PVEM']).join(' • ')}</span>`}</div>
           <div><b>🇲🇽 Estado(s):</b> ${estadosStr} | <b>📍 Región:</b> ${lic.etiquetaRegion} (${munisStr})</div>
           <div><b>🗳️ Cargos Autorizados:</b> ${(lic.cargosAutorizados || []).join(' • ')}</div>
         </div>
@@ -3510,6 +3636,53 @@ function getAIModelDisplay(aiModel) {
   return aiModel;
 }
 
+window.onCanSelectAnyPartyToggle = function(checked) {
+  const container = document.getElementById('lic-parties-checkboxes-container');
+  if (container) {
+    if (checked) {
+      container.classList.add('opacity-50', 'pointer-events-none');
+    } else {
+      container.classList.remove('opacity-50', 'pointer-events-none');
+    }
+  }
+  const countBadge = document.getElementById('lic-selected-parties-count');
+  if (countBadge) {
+    countBadge.innerText = checked ? 'Todos (Libre Elección)' : `${getSelectedPartiesCheckboxes().length} seleccionados`;
+  }
+};
+
+window.onPartyCheckboxChange = function() {
+  const selected = getSelectedPartiesCheckboxes();
+  const countBadge = document.getElementById('lic-selected-parties-count');
+  if (countBadge) {
+    countBadge.innerText = `${selected.length} seleccionado${selected.length === 1 ? '' : 's'}`;
+  }
+  const selParty = document.getElementById('lic-partido');
+  if (selParty && selected.length > 0) {
+    if (!selected.includes(selParty.value)) {
+      selParty.value = selected[0];
+    }
+  }
+};
+
+function getSelectedPartiesCheckboxes() {
+  const cbs = document.querySelectorAll('input[name="lic_party_checkbox"]:checked');
+  return Array.from(cbs).map(c => c.value);
+}
+
+function setSelectedPartiesCheckboxes(parties = ['PVEM'], canSelectAny = false) {
+  const toggleAny = document.getElementById('lic-can-select-any-party');
+  if (toggleAny) {
+    toggleAny.checked = Boolean(canSelectAny);
+    window.onCanSelectAnyPartyToggle(Boolean(canSelectAny));
+  }
+  const cbs = document.querySelectorAll('input[name="lic_party_checkbox"]');
+  cbs.forEach(cb => {
+    cb.checked = Array.isArray(parties) && parties.includes(cb.value);
+  });
+  window.onPartyCheckboxChange();
+}
+
 window.resetLicenseForm = function() {
   document.getElementById('lic-id').value = '';
   document.getElementById('lic-cliente-nombre').value = '';
@@ -3519,6 +3692,9 @@ window.resetLicenseForm = function() {
   document.getElementById('lic-max-swarm').value = '100000';
   document.getElementById('lic-etiqueta-region').value = '';
   document.getElementById('lic-form-title').innerText = '➕ Crear / Configurar Licencia de Cliente';
+
+  // Restablecer Selección Multi-Partido
+  setSelectedPartiesCheckboxes(['PVEM'], false);
 
   // Restablecer Modelo de IA y API Key
   const selAi = document.getElementById('lic-ai-model-select');
@@ -3636,12 +3812,30 @@ window.saveClientLicense = async function(event) {
     }
   }
 
+  // Permisos Multi-Partido / Coalición
+  const can_select_any_party = Boolean(document.getElementById('lic-can-select-any-party')?.checked);
+  let allowed_parties = getSelectedPartiesCheckboxes();
+  if (can_select_any_party) {
+    allowed_parties = [
+      "PVEM", "MORENA", "PAN", "PRI", "MC", "PT",
+      "CANDIDATURA INDEPENDIENTE", "COALICIÓN / ALIANZA"
+    ];
+  } else if (allowed_parties.length === 0) {
+    allowed_parties = [partido];
+    setSelectedPartiesCheckboxes([partido], false);
+  }
+  if (!allowed_parties.includes(partido)) {
+    allowed_parties.unshift(partido);
+  }
+
   const payload = {
     id: id || undefined,
     clienteNombre,
     username,
     password,
     partido,
+    allowed_parties,
+    can_select_any_party,
     maxSwarmSize,
     fechaInicio,
     fechaExpiracion,
@@ -3697,6 +3891,9 @@ window.editClientLicense = async function(id) {
   document.getElementById('lic-nivel-geo').value = lic.nivelGeografico || 'Municipal / Alcaldía';
   document.getElementById('lic-etiqueta-region').value = lic.etiquetaRegion || '';
   document.getElementById('lic-form-title').innerText = `✏️ Editando: ${lic.clienteNombre}`;
+
+  // Cargar selección Multi-Partido / Coalición
+  setSelectedPartiesCheckboxes(lic.allowed_parties || [lic.partido || 'PVEM'], Boolean(lic.can_select_any_party));
 
   // Cargar selección de Modelo de IA y estado de API Key
   const selAi = document.getElementById('lic-ai-model-select');
@@ -4025,6 +4222,137 @@ window.importLicensesBackup = async function(event) {
   } finally {
     event.target.value = '';
   }
+};
+
+// =========================================================================
+// AUDITORÍA Y TELEMETRÍA DE ACCESOS EN TIEMPO REAL (ZERO-DATA RETENTION)
+// =========================================================================
+let auditLogsCache = [];
+
+window.openAccessAuditModal = function() {
+  const modal = document.getElementById('modal-access-audit');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    window.loadAccessAuditLogs();
+  }
+};
+
+window.closeAccessAuditModal = function() {
+  const modal = document.getElementById('modal-access-audit');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.loadAccessAuditLogs = async function() {
+  const tbody = document.getElementById('audit-logs-table-body');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">Cargando telemetría de accesos...</td></tr>`;
+  }
+  try {
+    const res = await fetch('/api/audit/access-logs');
+    const data = await res.json();
+    if (data.success) {
+      auditLogsCache = data.logs || [];
+
+      // Actualizar tarjetas rápidas KPI
+      const kpiTotal = document.getElementById('audit-kpi-total');
+      const kpiToday = document.getElementById('audit-kpi-today');
+      const kpiActive = document.getElementById('audit-kpi-most-active');
+      const kpiUser = document.getElementById('audit-kpi-last-user');
+      const kpiTime = document.getElementById('audit-kpi-last-time');
+
+      if (kpiTotal) kpiTotal.innerText = data.totalLogs || 0;
+      if (kpiToday) kpiToday.innerText = data.todayCount || 0;
+      if (kpiActive) kpiActive.innerText = data.mostActiveUser || 'Ninguno';
+      if (kpiUser) kpiUser.innerText = data.lastAccess ? `${data.lastAccess.username} (${data.lastAccess.authMethod})` : 'Ninguno';
+      if (kpiTime) kpiTime.innerText = data.lastAccess ? (data.lastAccess.timestampFormatted || data.lastAccess.timestamp) : 'Sin registros';
+
+      renderAuditLogsTable(auditLogsCache);
+    }
+  } catch (err) {
+    console.error('Error cargando bitácora de accesos:', err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 text-xs">Error cargando bitácora: ${err.message}</td></tr>`;
+    }
+  }
+};
+
+function renderAuditLogsTable(logs) {
+  const tbody = document.getElementById('audit-logs-table-body');
+  const countBadge = document.getElementById('audit-logs-count-badge');
+  if (!tbody) return;
+
+  if (countBadge) {
+    countBadge.innerText = `${logs.length} eventos`;
+  }
+
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">Sin registros de auditoría de accesos aún.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = logs.map(entry => {
+    const isToken = entry.authMethod === 'TOKEN';
+    const methodBadge = isToken
+      ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-200">🛡️ TOKEN SEGURIDAD</span>`
+      : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">🔑 CREDENCIALES</span>`;
+
+    const isMaster = entry.role === 'MASTER_ADMIN';
+    const roleBadge = isMaster
+      ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">👑 MASTER</span>`
+      : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">CLIENT</span>`;
+
+    return `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap">${entry.timestampFormatted || entry.timestamp}</td>
+        <td class="py-2.5 px-3">
+          <span class="font-bold text-slate-900 block">${entry.username}</span>
+          <span class="text-[10px] text-slate-500 block">${entry.clientName || ''}</span>
+        </td>
+        <td class="py-2.5 px-3 whitespace-nowrap">${roleBadge}</td>
+        <td class="py-2.5 px-3 whitespace-nowrap">${methodBadge}</td>
+        <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap">${entry.ip || '127.0.0.1'}</td>
+        <td class="py-2.5 px-3 text-[10px] text-slate-500 max-w-xs truncate" title="${entry.userAgent}">${entry.userAgent}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.filterAuditLogsTable = function(query) {
+  const q = String(query || '').toLowerCase().trim();
+  if (!q) {
+    renderAuditLogsTable(auditLogsCache);
+    return;
+  }
+  const filtered = auditLogsCache.filter(log => {
+    return (log.username && log.username.toLowerCase().includes(q)) ||
+           (log.clientName && log.clientName.toLowerCase().includes(q)) ||
+           (log.role && log.role.toLowerCase().includes(q)) ||
+           (log.authMethod && log.authMethod.toLowerCase().includes(q)) ||
+           (log.ip && log.ip.includes(q)) ||
+           (log.userAgent && log.userAgent.toLowerCase().includes(q));
+  });
+  renderAuditLogsTable(filtered);
+};
+
+window.exportAccessAuditLogs = function() {
+  if (!auditLogsCache || auditLogsCache.length === 0) {
+    showToast('No hay registros de auditoría para exportar.');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(auditLogsCache, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bitacora_accesos_govtech_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📥 Bitácora de accesos exportada con éxito en JSON.');
 };
 
 

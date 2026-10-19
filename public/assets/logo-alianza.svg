@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+  <defs>
+    <linearGradient id="al-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="al-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="al-grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <!-- Tri-color Interlinked Rings -->
+  <g transform="translate(8, 10)">
+    <circle cx="24" cy="30" r="16" fill="none" stroke="url(#al-grad1)" stroke-width="5" opacity="0.95"/>
+    <circle cx="44" cy="30" r="16" fill="none" stroke="url(#al-grad2)" stroke-width="5" opacity="0.95"/>
+    <circle cx="34" cy="18" r="16" fill="none" stroke="url(#al-grad3)" stroke-width="5" opacity="0.95"/>
+  </g>
+  <!-- Text -->
+  <text x="76" y="32" font-family="'Inter', system-ui, sans-serif" font-size="17" font-weight="900" fill="#0F172A" letter-spacing="1">COALICIÓN</text>
+  <text x="76" y="52" font-family="'Inter', system-ui, sans-serif" font-size="15" font-weight="800" fill="#0284C7" letter-spacing="1.5">ELECTORAL</text>
+  <text x="76" y="66" font-family="'Inter', system-ui, sans-serif" font-size="9" font-weight="700" fill="#64748B" letter-spacing="0.5">ALIANZA POR MÉXICO</text>
+</svg>

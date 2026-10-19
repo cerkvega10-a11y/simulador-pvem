@@ -76,7 +76,7 @@
           <span id="header-assigned-region-text">Región Autorizada</span>
         </div>
 
-        <!-- Selector de Entorno Partidista / White-Label (Solo habilitado para Admin Maestro) -->
+        <!-- Selector de Entorno Partidista / White-Label -->
         <div id="party-selector-wrapper" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
           <span class="text-[10px] font-black text-slate-500 uppercase px-1 hidden md:inline">Partido:</span>
           <select id="select-party-theme" onchange="onPartyThemeChange(this.value)" class="text-xs font-black bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-500 cursor-pointer">
@@ -86,7 +86,15 @@
             <option value="PRI">🔴 PRI</option>
             <option value="MC">🟠 MC</option>
             <option value="PT">⭐ PT</option>
+            <option value="CANDIDATURA INDEPENDIENTE">⚪ CANDIDATURA INDEPENDIENTE</option>
+            <option value="COALICIÓN / ALIANZA">🤝 COALICIÓN / ALIANZA</option>
           </select>
+        </div>
+
+        <!-- Indicador de Partido Asignado Fijo (Cuando la Licencia solo tiene 1 partido) -->
+        <div id="party-locked-pill" class="hidden items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-xl border border-slate-300 text-xs font-black shadow-2xs" title="Partido Asignado Exclusivamente por Licencia">
+          <span>🔒</span>
+          <span id="party-locked-name" class="font-bold">PVEM</span>
         </div>
 
         <!-- Botón Exclusivo Administrador Maestro (Cerkvega92) -->
@@ -1305,6 +1313,9 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openAccessAuditModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-700 to-purple-800 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-indigo-400">
+            <span>🛡️</span><span>Auditoría de Accesos</span>
+          </button>
           <button type="button" onclick="openQuickDemoModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-200 text-slate-950 text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-amber-300">
             <span>⚡</span><span>Nueva Demo Exprés (7 Días)</span>
           </button>
@@ -1353,32 +1364,96 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-bold text-slate-700 uppercase mb-1">Partido White-Label</label>
-              <select id="lic-partido" class="w-full px-3 py-2 rounded-lg border border-slate-300 font-black text-slate-900 bg-white">
-                <option value="PVEM">🌿 PVEM (Verde)</option>
-                <option value="MORENA">🦅 MORENA (Guinda)</option>
-                <option value="PAN">🔵 PAN (Azul)</option>
-                <option value="PRI">🔴 PRI (Rojo)</option>
-                <option value="MC">🟠 MC (Naranja)</option>
-                <option value="PT">⭐ PT (Rojo/Oro)</option>
-              </select>
+          <!-- SECCIÓN: PERMISOS DE PARTIDO POLÍTICO / COALICIÓN (OPCIONES A, B Y C) -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="block font-black text-slate-900 uppercase text-[11px]">Permisos de Partido Político / Coalición:</span>
+              <span class="text-[10px] bg-slate-200 text-slate-800 font-extrabold px-2 py-0.5 rounded-full">White-Label</span>
             </div>
-            <div>
-              <label class="block font-bold text-slate-700 uppercase mb-1">Tope Máx. de Agentes (Escalonado)</label>
-              <select id="lic-max-swarm" class="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 bg-white">
-                <option value="100">Hasta 100 Agentes (50 a 100)</option>
-                <option value="250">Hasta 250 Agentes (50 a 250)</option>
-                <option value="500">Hasta 500 Agentes (50 a 500)</option>
-                <option value="1000">Hasta 1,000 Agentes (50 a 1,000)</option>
-                <option value="2500">Hasta 2,500 Agentes (50 a 2,500)</option>
-                <option value="5000">Hasta 5,000 Agentes (50 a 5,000)</option>
-                <option value="10000">Hasta 10,000 Agentes (50 a 10,000)</option>
-                <option value="25000">Hasta 25,000 Agentes (50 a 25,000)</option>
-                <option value="50000">Hasta 50,000 Agentes (50 a 50,000)</option>
-                <option value="100000" selected>Hasta 100,000 (Modo Censo Total)</option>
-              </select>
+
+            <!-- Opción C: Interruptor Maestro de Libre Elección (Todos los Partidos) -->
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50/80 border border-emerald-300 cursor-pointer transition-all hover:bg-emerald-100/70">
+              <div class="flex items-center gap-2">
+                <span class="text-sm">🌐</span>
+                <div>
+                  <span class="block text-xs font-black text-emerald-950">Opción C: Permitir Libre Elección / Todos los Partidos</span>
+                  <span class="block text-[10px] text-emerald-800 font-medium">Desbloquea el catálogo completo de todos los partidos para este usuario sin restricciones.</span>
+                </div>
+              </div>
+              <input type="checkbox" id="lic-can-select-any-party" onchange="onCanSelectAnyPartyToggle(this.checked)" class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
+            </label>
+
+            <!-- Opciones A y B: Selector Múltiple / Checkboxes de Partidos Autorizados -->
+            <div id="lic-parties-checkboxes-container" class="space-y-1.5 pt-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-700 uppercase">Partidos Autorizados (Marca 1 para Opción A o varios para Opción B / Coalición):</span>
+                <span id="lic-selected-parties-count" class="text-[10px] font-bold text-slate-500">1 seleccionado</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="PVEM" checked onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🌿 PVEM</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="MORENA" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🦅 MORENA</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="PAN" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🔵 PAN</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="PRI" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🔴 PRI</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="MC" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🟠 MC</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="PT" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>⭐ PT</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="CANDIDATURA INDEPENDIENTE" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>⚪ INDEPENDIENTE</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input type="checkbox" name="lic_party_checkbox" value="COALICIÓN / ALIANZA" onchange="onPartyCheckboxChange()" class="rounded text-emerald-600">
+                  <span>🤝 COALICIÓN / ALIANZA</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200">
+              <div>
+                <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Partido Inicial / Predeterminado</label>
+                <select id="lic-partido" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-black text-slate-900 bg-white text-xs">
+                  <option value="PVEM">🌿 PVEM</option>
+                  <option value="MORENA">🦅 MORENA</option>
+                  <option value="PAN">🔵 PAN</option>
+                  <option value="PRI">🔴 PRI</option>
+                  <option value="MC">🟠 MC</option>
+                  <option value="PT">⭐ PT</option>
+                  <option value="CANDIDATURA INDEPENDIENTE">⚪ CANDIDATURA INDEPENDIENTE</option>
+                  <option value="COALICIÓN / ALIANZA">🤝 COALICIÓN / ALIANZA</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Tope Máx. de Agentes (Escalonado)</label>
+                <select id="lic-max-swarm" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-900 bg-white text-xs">
+                  <option value="100">Hasta 100 Agentes (50 a 100)</option>
+                  <option value="250">Hasta 250 Agentes (50 a 250)</option>
+                  <option value="500">Hasta 500 Agentes (50 a 500)</option>
+                  <option value="1000">Hasta 1,000 Agentes (50 a 1,000)</option>
+                  <option value="2500">Hasta 2,500 Agentes (50 a 2,500)</option>
+                  <option value="5000">Hasta 5,000 Agentes (50 a 5,000)</option>
+                  <option value="10000">Hasta 10,000 Agentes (50 a 10,000)</option>
+                  <option value="25000">Hasta 25,000 Agentes (50 a 25,000)</option>
+                  <option value="50000">Hasta 50,000 Agentes (50 a 50,000)</option>
+                  <option value="100000" selected>Hasta 100,000 (Modo Censo Total)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1811,6 +1886,102 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  <!-- =====================================================================
+       MODAL DE AUDITORÍA Y TELEMETRÍA DE ACCESOS (ZERO-DATA RETENTION)
+       ===================================================================== -->
+  <div id="modal-access-audit" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this) closeAccessAuditModal()">
+    <div class="bg-white w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-2xl shadow-2xl border border-slate-200 flex flex-col transform transition-all animate-fadeIn">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white font-black flex items-center justify-center text-xl shadow-xs shrink-0">🛡️</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base sm:text-lg font-black text-white">Auditoría y Telemetría de Accesos</h3>
+              <span class="text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full">Zero-Data Retention</span>
+            </div>
+            <p class="text-xs text-slate-300">Bitácora criptográfica de ingresos en tiempo real. Cero retención de simulaciones o datos ciudadanos.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAccessAuditModal()" class="text-slate-400 hover:text-white p-1.5 text-lg rounded-lg transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="p-4 sm:p-6 bg-slate-50 border-b border-slate-200 shrink-0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Total de Accesos Históricos</span>
+            <span id="audit-kpi-total" class="text-2xl font-black text-slate-900">0</span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Ingresos registrados</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Accesos Globales Hoy</span>
+            <span id="audit-kpi-today" class="text-2xl font-black text-indigo-600">0</span>
+            <span class="text-[10px] text-indigo-500 block mt-0.5">Sesiones de hoy</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Usuario Más Activo</span>
+            <span id="audit-kpi-most-active" class="text-sm font-black text-slate-900 truncate block mt-1">Ninguno</span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Mayor frecuencia de acceso</span>
+          </div>
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Último Acceso</span>
+            <span id="audit-kpi-last-user" class="text-sm font-black text-emerald-700 truncate block mt-1">Ninguno</span>
+            <span id="audit-kpi-last-time" class="text-[10px] text-slate-400 block mt-0.5">Sin registros</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Table -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <input type="text" id="audit-search-filter" oninput="filterAuditLogsTable(this.value)" placeholder="🔍 Filtrar por usuario, método, rol o IP..."
+              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800 w-64 sm:w-80">
+            <span id="audit-logs-count-badge" class="text-xs font-bold text-slate-500">0 eventos</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="loadAccessAuditLogs()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors">
+              <span>🔄</span><span>Actualizar</span>
+            </button>
+            <button type="button" onclick="exportAccessAuditLogs()" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center gap-1 cursor-pointer shadow-xs transition-all">
+              <span>📥</span><span>Exportar JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-black text-[10px] uppercase border-b border-slate-200 tracking-wider">
+                  <th class="py-2.5 px-3">Fecha y Hora (CDMX)</th>
+                  <th class="py-2.5 px-3">Usuario / Campaña</th>
+                  <th class="py-2.5 px-3">Rol</th>
+                  <th class="py-2.5 px-3">Método de Acceso</th>
+                  <th class="py-2.5 px-3">Dirección IP</th>
+                  <th class="py-2.5 px-3">Dispositivo / Agente</th>
+                </tr>
+              </thead>
+              <tbody id="audit-logs-table-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Rellenado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between text-xs text-slate-500 shrink-0">
+        <span class="flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Telemetría de Conexiones Activa • Sello Cyber Sentinel SHA-256</span>
+        </span>
+        <button type="button" onclick="closeAccessAuditModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold transition-colors cursor-pointer">
+          Cerrar Bitácora
+        </button>
       </div>
     </div>
   </div>

@@ -413,6 +413,42 @@ body.theme-pt {
   --party-sub-color: #b91c1c;
 }
 
+body.theme-independiente, body.theme-candidatura-independiente {
+  --party-primary: #4F46E5;
+  --party-primary-dark: #3730A3;
+  --party-primary-light: #EEF2FF;
+  --party-accent: #F59E0B;
+  --party-hero-from: #EEF2FF;
+  --party-hero-to: #E0E7FF;
+  --party-hero-border: #C7D2FE;
+  --party-badge-bg: #EEF2FF;
+  --party-badge-text: #3730A3;
+  --party-badge-border: #A5B4FC;
+  --party-btn-gradient: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%);
+  --party-dash-gradient: linear-gradient(135deg, #312E81 0%, #0F172A 100%);
+  --party-glow: rgba(79, 70, 229, 0.25);
+  --party-header-border: #C7D2FE;
+  --party-sub-color: #4338CA;
+}
+
+body.theme-coalicion, body.theme-coalición, body.theme-coalición-/-alianza, body.theme-alianza {
+  --party-primary: #0284C7;
+  --party-primary-dark: #0369A1;
+  --party-primary-light: #F0F9FF;
+  --party-accent: #10B981;
+  --party-hero-from: #F0F9FF;
+  --party-hero-to: #E0F2FE;
+  --party-hero-border: #BAE6FD;
+  --party-badge-bg: #F0F9FF;
+  --party-badge-text: #075985;
+  --party-badge-border: #7DD3FC;
+  --party-btn-gradient: linear-gradient(135deg, #0284C7 0%, #0F172A 100%);
+  --party-dash-gradient: linear-gradient(135deg, #0C4A6E 0%, #0F172A 100%);
+  --party-glow: rgba(2, 132, 199, 0.25);
+  --party-header-border: #BAE6FD;
+  --party-sub-color: #0369A1;
+}
+
 /* Reglas de Aplicación Dinámica Universal */
 #hero-badge {
   background-color: var(--party-badge-bg) !important;
