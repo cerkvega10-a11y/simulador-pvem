@@ -208,6 +208,7 @@ class FreeLLMService {
       headers['X-Title'] = 'Simulador Social Partido Verde Edomex';
     }
 
+    if (provider === 'groq' && (!selectedModel || selectedModel.includes('llama'))) { selectedModel = 'openai/gpt-oss-120b'; }
     const payload = {
       model: selectedModel,
       messages,

@@ -3861,7 +3861,7 @@ function getAIModelDisplay(aiModel) {
   if (aiModel === 'gpt-4o') return 'OpenAI GPT-4o';
   if (aiModel === 'gpt-4o-mini') return 'OpenAI GPT-4o Mini';
   if (aiModel === 'claude-3-5-sonnet') return 'Claude 3.5 Sonnet';
-  if (aiModel === 'llama-3.3-70b') return 'Groq Llama 3.3 70B';
+  if (aiModel === 'openai/gpt-oss-120b') return 'Groq Llama 3.3 70B';
   return aiModel;
 }
 

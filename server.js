@@ -568,7 +568,7 @@ app.get('/api/ai-engine/status', (req, res) => {
   const hasGroq = Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_'));
   const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy'));
   const activeEngine = hasGroq ? 'Groq Cloud (Llama 3.3 70B Versatile - Ultra Rápido)' : (hasGemini ? 'Google Gemini Pro' : 'INEGI-ABM Demográfico');
-  const activeModel = hasGroq ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro');
+  const activeModel = hasGroq ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro');
   const isOnline = hasGroq || hasGemini;
 
   res.json({
@@ -1026,7 +1026,7 @@ function resolveAiConfigForSimulation(inputData = {}) {
         mappedModel = 'anthropic/claude-3.5-sonnet';
       } else if (model.includes('llama')) {
         provider = 'groq';
-        mappedModel = 'llama-3.3-70b-versatile';
+        mappedModel = 'openai/gpt-oss-120b';
       } else if (model.startsWith('gpt')) {
         provider = 'openai';
         mappedModel = model;
@@ -1058,7 +1058,7 @@ function resolveAiConfigForSimulation(inputData = {}) {
   if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()) {
     return {
       provider: 'groq',
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       apiKey: process.env.GROQ_API_KEY.trim(),
       centralized: true
     };
