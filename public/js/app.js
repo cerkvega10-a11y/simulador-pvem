@@ -1892,6 +1892,14 @@ async function syncCentralAIEngineStatus() {
 }
 
 function loadStoredAIConfig() {
+  const savedKey = localStorage.getItem('pvem_groq_key');
+  if (savedKey && savedKey.startsWith('gsk_')) {
+    fetch('/api/ai-engine/setup-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: savedKey, model: 'openai/gpt-oss-120b' })
+    }).then(r => r.json()).then(() => syncCentralAIEngineStatus()).catch(() => {});
+  }
   // Purga de llaves cliente para garantizar seguridad total y cero fricción
   try {
     localStorage.removeItem('pvem_ai_config');
@@ -1907,6 +1915,33 @@ function updateNavModelBadge(engineInfo) {
   const label = engineInfo?.engine || (appState.aiConfig?.provider === 'groq' ? 'Groq GPT-OSS 120B' : 'Gemini Pro Central');
   badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> ${label}`;
   badge.className = 'text-[10px] bg-emerald-100 text-emerald-950 font-black px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1 shadow-2xs';
+}
+
+async function saveGroqKeyInCloud() {
+  const input = document.getElementById('input-groq-key');
+  const msg = document.getElementById('msg-groq-key');
+  if (!input || !input.value.trim()) return;
+  const key = input.value.trim();
+  try {
+    if (msg) msg.innerHTML = '<span class="text-blue-600 font-bold">Conectando con el servidor...</span>';
+    const res = await fetch('/api/ai-engine/setup-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key, model: 'openai/gpt-oss-120b' })
+    });
+    const d = await res.json();
+    if (d.success) {
+      localStorage.setItem('pvem_groq_key', key);
+      appState.aiConfig = { provider: 'groq', apiKey: key, model: 'openai/gpt-oss-120b' };
+      if (msg) msg.innerHTML = '<span class="text-emerald-700 font-bold">¡IA Groq conectada exitosamente en el servidor!</span>';
+      await syncCentralAIEngineStatus();
+      setTimeout(() => { if (typeof closeConfigModal === 'function') closeConfigModal(); }, 1200);
+    } else {
+      if (msg) msg.innerHTML = `<span class="text-rose-600 font-bold">${d.error}</span>`;
+    }
+  } catch (err) {
+    if (msg) msg.innerHTML = `<span class="text-rose-600 font-bold">${err.message}</span>`;
+  }
 }
 
 function getProviderLabel() {

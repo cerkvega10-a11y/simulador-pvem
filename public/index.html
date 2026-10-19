@@ -897,7 +897,17 @@
         </div>
       </div>
 
-      <!-- Botón de Cierre -->
+      <!-- Activador en Caliente de Clave de IA -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label class="block text-[11px] font-bold text-slate-700">Clave de API Groq (Para activar IA Real en vivo):</label>
+          <div class="flex gap-2">
+            <input type="password" id="input-groq-key" placeholder="gsk_..." class="flex-1 text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-500 font-mono bg-white" />
+            <button type="button" onclick="saveGroqKeyInCloud()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors shadow-xs">Conectar</button>
+          </div>
+          <p id="msg-groq-key" class="text-[10px] text-slate-500">Ingresa tu clave de Groq para activar el motor de inferencia neuronal en caliente.</p>
+        </div>
+
+        <!-- Botón de Cierre -->
       <div class="flex items-center justify-end pt-2 border-t border-slate-100">
         <button type="button" onclick="closeConfigModal()"
           class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition-all cursor-pointer">
