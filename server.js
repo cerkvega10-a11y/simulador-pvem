@@ -1001,10 +1001,16 @@ function sanitizeLicenseForClient(lic) {
 function resolveAiConfigForSimulation(inputData = {}) {
   // Prioridad 0: Si la petición trae configuración explícita de IA (ej. ping test o selector)
   if (inputData.aiConfig && (inputData.aiConfig.provider || inputData.aiConfig.apiKey)) {
+    let p = inputData.aiConfig.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
+    if (p === 'gemini' && !process.env.GEMINI_API_KEY && process.env.GROQ_API_KEY) {
+      p = 'groq';
+    }
+    const m = p === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (inputData.aiConfig.model || process.env.GEMINI_MODEL || 'gemini-1.5-pro');
+    const k = inputData.aiConfig.apiKey || (p === 'groq' ? process.env.GROQ_API_KEY : (process.env.GEMINI_API_KEY || ''));
     return {
-      provider: inputData.aiConfig.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini'),
-      model: inputData.aiConfig.model || (process.env.GROQ_MODEL || 'openai/gpt-oss-120b'),
-      apiKey: inputData.aiConfig.apiKey || (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || ''),
+      provider: p,
+      model: m,
+      apiKey: k,
       centralized: !inputData.aiConfig.apiKey
     };
   }

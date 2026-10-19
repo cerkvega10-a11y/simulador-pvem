@@ -1875,14 +1875,16 @@ async function syncCentralAIEngineStatus() {
   try {
     const res = await fetch('/api/ai-engine/status');
     const data = await res.json();
-    if (data.success && data.engine) {
+    if (data.success) {
+      const p = data.provider || (data.engine && data.engine.includes('Groq') ? 'groq' : 'gemini');
+      const m = data.model || (p === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-1.5-pro');
       appState.aiConfig = {
-        provider: data.engine.provider || 'gemini',
-        model: data.engine.model || 'gemini-1.5-pro',
+        provider: p,
+        model: m,
         centralized: true,
-        mode: data.engine.mode || 'centralized_master'
+        mode: data.mode || 'centralized_master'
       };
-      updateNavModelBadge(data.engine);
+      updateNavModelBadge(data);
     }
   } catch (e) {
     console.warn('Sincronización de motor centralizado en servidor activo:', e);
@@ -1902,8 +1904,8 @@ function loadStoredAIConfig() {
 function updateNavModelBadge(engineInfo) {
   const badge = document.getElementById('nav-model-badge');
   if (!badge) return;
-  const modelName = engineInfo?.model || appState.aiConfig?.model || 'Gemini Pro';
-  badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> Gemini Pro Central`;
+  const label = engineInfo?.engine || (appState.aiConfig?.provider === 'groq' ? 'Groq GPT-OSS 120B' : 'Gemini Pro Central');
+  badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> ${label}`;
   badge.className = 'text-[10px] bg-emerald-100 text-emerald-950 font-black px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1 shadow-2xs';
 }
 
