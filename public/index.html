@@ -97,6 +97,12 @@
           <span id="party-locked-name" class="font-bold">PVEM</span>
         </div>
 
+        <!-- Indicador de Cuota Demo (3 Propuestas / 7 Días) -->
+        <div id="demo-counter-badge" class="hidden items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1.5 rounded-xl border border-amber-400 text-xs font-black shadow-xs tracking-tight" title="Límite estricto de Licencia Demo">
+          <span class="animate-pulse">⏳</span>
+          <span id="demo-counter-text">Licencia Demo (Vigencia 7 días): Te quedan 3 de 3 propuestas disponibles</span>
+        </div>
+
         <!-- Botón Exclusivo Administrador Maestro (Cerkvega92) -->
         <button type="button" id="btn-master-admin-header" onclick="openMasterAdminModal()"
           class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer border border-amber-300"
@@ -1722,6 +1728,41 @@
           </div>
         </div>
 
+        <!-- MONITOR DE ACCESOS Y USO DE LICENCIAS (MÓDULO 3) -->
+        <div class="bg-slate-900 text-white rounded-xl p-4 shadow-md border border-slate-800 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">📊</span>
+              <div>
+                <h4 class="text-xs sm:text-sm font-black text-white uppercase tracking-wide">Monitor de Accesos y Uso de Licencias</h4>
+                <p class="text-[10px] text-slate-400">Telemetría de cuotas en tiempo real • Zero-Data Retention (Cero retención de propuestas)</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="monitor-active-count-badge" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black px-2 py-0.5 rounded-full">0 Licencias</span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-slate-800">
+            <table class="w-full text-left text-[11px] border-collapse bg-slate-950/60">
+              <thead>
+                <tr class="bg-slate-850 text-slate-300 text-[10px] font-black uppercase tracking-wider border-b border-slate-800">
+                  <th class="py-2.5 px-3">Usuario / Candidato</th>
+                  <th class="py-2.5 px-2">Tipo Licencia</th>
+                  <th class="py-2.5 px-2">Partidos Autorizados</th>
+                  <th class="py-2.5 px-2 text-center">Accesos</th>
+                  <th class="py-2.5 px-2">Última Conexión</th>
+                  <th class="py-2.5 px-2 text-center">Propuestas / Límite</th>
+                  <th class="py-2.5 px-3 text-right">Acciones Rápidas</th>
+                </tr>
+              </thead>
+              <tbody id="telemetry-usage-table-body" class="divide-y divide-slate-800 text-slate-200">
+                <!-- Rellenado dinámicamente con renderMasterLicensesList -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div id="master-licenses-list" class="space-y-3.5">
           <!-- Renderizado dinámicamente -->
         </div>
@@ -1888,6 +1929,59 @@
 
       </div>
     </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL EJECUTIVO DE BLOQUEO / UPSELL: LÍMITE DEMO (3 PROPUESTAS / 7 DÍAS)
+       ===================================================================== -->
+  <div id="modal-demo-limit-blocked" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[80] hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeDemoLimitBlockedModal()">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border-2 border-amber-400 overflow-hidden transform transition-all animate-fadeIn">
+      <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl font-black">
+            🔒
+          </div>
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider bg-black/30 px-2 py-0.5 rounded-full text-amber-200">Licencia de Prueba Demo</span>
+            <h3 class="text-base sm:text-lg font-black text-white">Límite de Propuestas Alcanzado</h3>
+          </div>
+        </div>
+        <button type="button" onclick="closeDemoLimitBlockedModal()" class="text-white/80 hover:text-white p-1 text-xl font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="p-6 space-y-4 text-slate-800">
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-slate-900 space-y-2">
+          <p class="text-sm font-semibold leading-relaxed">
+            Has alcanzado el límite de <b>3 propuestas de validación</b> de tu Licencia Demo Gratuita. Para desbloquear simulaciones ilimitadas y asegurar la <b>Exclusividad Territorial</b> de tu demarcación, contacta a la Dirección de <b>Neural Media House</b> para activar tu licencia oficial.
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Propuestas Evaluadas:</span>
+            <span class="text-lg font-black text-amber-700">3 de 3 (100%)</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Vigencia Demo:</span>
+            <span class="text-lg font-black text-slate-900">7 Días Naturales</span>
+          </div>
+        </div>
+        <div class="space-y-2 pt-2">
+          <a href="https://wa.me/525531980838?text=Hola,%20deseo%20activar%20mi%20Licencia%20Oficial%20ilimitada%20de%20GovTech%20War%20Room%20y%20asegurar%20la%20exclusividad%20territorial." target="_blank" rel="noopener noreferrer"
+            class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer">
+            <span>💬</span><span>Contactar por WhatsApp a Dirección Comercial</span>
+          </a>
+          <a href="mailto:erick.vega@neuralmediahouse.com?subject=Activación%20de%20Licencia%20Oficial%20GovTech%20War%20Room&body=Deseo%20solicitar%20la%20activación%20de%20la%20licencia%20oficial%20ilimitada%20con%20exclusividad%20territorial." target="_blank" rel="noopener noreferrer"
+            class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer">
+            <span>✉️</span><span>Solicitar Licencia Oficial por Correo</span>
+          </a>
+        </div>
+        <div class="text-center pt-1">
+          <button type="button" onclick="closeDemoLimitBlockedModal()" class="text-xs font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer">
+            Entendido, volver a la plataforma
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- =====================================================================
        MODAL DE AUDITORÍA Y TELEMETRÍA DE ACCESOS (ZERO-DATA RETENTION)
        ===================================================================== -->

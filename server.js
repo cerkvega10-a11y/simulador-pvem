@@ -318,6 +318,110 @@ app.post('/api/upload/multimodal', upload.single('file'), async (req, res) => {
   }
 });
 
+// Función para verificar y descontar cuota de propuestas (Kill Switch Demo 3 corridas / 7 días)
+function checkAndIncrementSimulationLimit(inputData = {}) {
+  const allLicenses = loadLicensesStore();
+  const licId = inputData.licenseId || inputData.activeSession?.user?.id;
+  const username = inputData.username || inputData.activeSession?.user?.username;
+
+  // Si es Administrador Maestro (Cerkvega92, Aland, o rol MASTER_ADMIN), simulaciones ilimitadas
+  const isMasterSession = Boolean(
+    inputData.activeSession?.user?.esAdministradorTotal ||
+    inputData.activeSession?.role === 'MASTER_ADMIN' ||
+    (username && MASTER_ADMIN_ACCOUNTS.some(m => m.username.toLowerCase() === String(username).toLowerCase()))
+  );
+  if (isMasterSession) {
+    return {
+      allowed: true,
+      isDemo: false,
+      simulations_count: 0,
+      max_simulations: 999999,
+      remaining: 999999,
+      message: 'Acceso Maestro Ilimitado'
+    };
+  }
+
+  let matchedLic = null;
+  if (licId) {
+    matchedLic = allLicenses.find(l => l.id === licId);
+  } else if (username) {
+    matchedLic = allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase());
+  }
+
+  if (!matchedLic) {
+    return {
+      allowed: true,
+      isDemo: false,
+      simulations_count: 0,
+      max_simulations: 999999,
+      remaining: 999999
+    };
+  }
+
+  if (typeof matchedLic.simulations_count !== 'number') {
+    matchedLic.simulations_count = 0;
+  }
+
+  const isDemo = Boolean(matchedLic.isDemo);
+  const maxSimulations = isDemo ? 3 : (matchedLic.max_simulations || 999999);
+
+  // Comprobar Kill Switch activo
+  if (matchedLic.activo === false) {
+    return {
+      allowed: false,
+      isDemo,
+      simulations_count: matchedLic.simulations_count,
+      max_simulations: maxSimulations,
+      remaining: 0,
+      message: 'Su licencia se encuentra suspendida por el Administrador Maestro (Kill Switch Activo).'
+    };
+  }
+
+  // Comprobar vigencia de fechas
+  const now = new Date();
+  const expDate = matchedLic.fechaExpiracion ? new Date(`${matchedLic.fechaExpiracion}T23:59:59`) : new Date('2099-12-31');
+  if (now > expDate) {
+    return {
+      allowed: false,
+      isDemo,
+      simulations_count: matchedLic.simulations_count,
+      max_simulations: maxSimulations,
+      remaining: 0,
+      message: isDemo
+        ? 'Su periodo de prueba de 7 días naturales ha concluido. Para continuar simulando, active su licencia oficial de GovTech War Room.'
+        : `Su licencia ha expirado (Vigencia: ${matchedLic.fechaExpiracion}). Contacte al Administrador Maestro.`
+    };
+  }
+
+  // Comprobar límite de simulaciones
+  if (matchedLic.simulations_count >= maxSimulations) {
+    return {
+      allowed: false,
+      isDemo,
+      simulations_count: matchedLic.simulations_count,
+      max_simulations: maxSimulations,
+      remaining: 0,
+      message: isDemo
+        ? 'Has alcanzado el límite de 3 propuestas de validación de tu Licencia Demo Gratuita. Para desbloquear simulaciones ilimitadas y asegurar la Exclusividad Territorial de tu demarcación, contacta a la Dirección de Neural Media House para activar tu licencia oficial.'
+        : `Ha alcanzado el límite máximo de ${maxSimulations} simulaciones autorizadas para su cuenta.`
+    };
+  }
+
+  // Incrementar contador y guardar
+  matchedLic.simulations_count += 1;
+  saveLicensesStore(allLicenses);
+
+  const remaining = Math.max(0, maxSimulations - matchedLic.simulations_count);
+  return {
+    allowed: true,
+    isDemo,
+    simulations_count: matchedLic.simulations_count,
+    max_simulations: maxSimulations,
+    remaining,
+    licenseId: matchedLic.id
+  };
+}
+
 // 5. Iniciar Simulación Predictiva (Endpoint SSE en Tiempo Real - Soporta GET y POST)
 const handleSimulationStream = async (req, res, inputData) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -334,13 +438,29 @@ const handleSimulationStream = async (req, res, inputData) => {
     }
   };
 
+  // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días) y Kill Switch
+  const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
+  if (!simLimitCheck.allowed) {
+    sendEvent({
+      status: 'error',
+      mensaje: simLimitCheck.message,
+      blockedByLimit: true,
+      simulations_count: simLimitCheck.simulations_count,
+      max_simulations: simLimitCheck.max_simulations,
+      isDemo: simLimitCheck.isDemo
+    });
+    res.end();
+    return;
+  }
+
   // Enviar evento de inicio inmediato para confirmar conexión en la UI
   sendEvent({
     paso: 1,
     porcentaje: 5,
     agente: 'Agente Orquestador Central',
     mensaje: 'Canal de comunicación en tiempo real establecido. Iniciando Meta-Agentes...',
-    status: 'active'
+    status: 'active',
+    demoStatus: simLimitCheck
   });
 
   // Enrutamiento Dinámico de Motor de IA (Centralizado de la Matriz o Avanzado Dedicado Cifrado por Licencia)
@@ -348,7 +468,7 @@ const handleSimulationStream = async (req, res, inputData) => {
 
   try {
     await orchestratorAgent.runSimulationPipeline(inputData, (progress) => {
-      sendEvent(progress);
+      sendEvent({ ...progress, demoStatus: simLimitCheck });
     });
     res.end();
   } catch (error) {
@@ -381,10 +501,23 @@ app.get('/api/simulate/stream', async (req, res) => {
 app.post('/api/simulate', async (req, res) => {
   try {
     const inputData = req.body || {};
+    // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días)
+    const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
+    if (!simLimitCheck.allowed) {
+      return res.status(403).json({
+        success: false,
+        error: simLimitCheck.message,
+        blockedByLimit: true,
+        simulations_count: simLimitCheck.simulations_count,
+        max_simulations: simLimitCheck.max_simulations,
+        isDemo: simLimitCheck.isDemo
+      });
+    }
+
     // Enrutamiento Dinámico de Motor de IA (Centralizado de la Matriz o Avanzado Dedicado Cifrado por Licencia)
     inputData.aiConfig = resolveAiConfigForSimulation(inputData);
     const report = await orchestratorAgent.runSimulationPipeline(inputData);
-    res.json({ success: true, report });
+    res.json({ success: true, report, demoStatus: simLimitCheck });
   } catch (error) {
     console.error('Error en POST /api/simulate:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -585,7 +718,7 @@ function saveAccessLogs(logs) {
   }
 }
 
-function recordAccessLog({ userId, username, clientName, role, authMethod, req }) {
+function recordAccessLog({ userId, username, clientName, role, authMethod, licenseType, assignedParties, simulationsUsed, req }) {
   try {
     const logs = loadAccessLogs();
     const forwarded = req && req.headers ? req.headers['x-forwarded-for'] : null;
@@ -601,6 +734,9 @@ function recordAccessLog({ userId, username, clientName, role, authMethod, req }
       username: username || 'desconocido',
       clientName: clientName || username || 'Usuario',
       role: role || 'CLIENT',
+      license_type: licenseType || (role === 'MASTER_ADMIN' ? 'MASTER_ADMIN' : 'OFICIAL / PAGADA'),
+      assigned_parties: Array.isArray(assignedParties) ? assignedParties : [],
+      simulations_used: simulationsUsed || '0',
       authMethod: authMethod || 'CREDENTIALS',
       timestamp: now.toISOString(),
       timestampFormatted: now.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
@@ -635,6 +771,9 @@ const DEFAULT_LICENSES = [
     can_select_any_party: false,
     login_count: 0,
     last_login_at: null,
+    simulations_count: 0,
+    max_simulations: 100000,
+    isDemo: false,
     tokenSeguridad: 'TK-PVEM-8472-ECA1',
     nivelGeografico: 'Municipal / Alcaldía',
     etiquetaRegion: 'Alcaldía — Municipio de Ecatepec de Morelos',
@@ -661,6 +800,9 @@ const DEFAULT_LICENSES = [
     can_select_any_party: false,
     login_count: 0,
     last_login_at: null,
+    simulations_count: 0,
+    max_simulations: 50000,
+    isDemo: false,
     tokenSeguridad: 'TK-MORENA-3921-DF04',
     nivelGeografico: 'Federal',
     etiquetaRegion: 'Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla',
@@ -695,6 +837,9 @@ function loadLicensesStore() {
           can_select_any_party: Boolean(lic.can_select_any_party),
           login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
           last_login_at: lic.last_login_at || null,
+          simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
+          max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
+          isDemo: Boolean(lic.isDemo),
           ...lic
         }));
       }
@@ -782,6 +927,9 @@ function sanitizeLicenseForClient(lic) {
     can_select_any_party: Boolean(lic.can_select_any_party),
     login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
     last_login_at: lic.last_login_at || null,
+    simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
+    max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
+    isDemo: Boolean(lic.isDemo),
     hasCustomKey: Boolean(customApiKeyEncrypted),
     customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
     aiModel: lic.aiModel || 'gemini-default'
@@ -898,6 +1046,9 @@ app.post('/api/auth/login', (req, res) => {
         username: masterAccount.username,
         clientName: masterAccount.clienteNombre,
         role: 'MASTER_ADMIN',
+        licenseType: 'MASTER_ADMIN',
+        assignedParties: ['TODOS'],
+        simulationsUsed: 'Ilimitado (Maestro)',
         authMethod,
         req
       });
@@ -924,6 +1075,9 @@ app.post('/api/auth/login', (req, res) => {
           can_select_any_party: true,
           login_count: 1,
           last_login_at: new Date().toISOString(),
+          simulations_count: 0,
+          max_simulations: 999999,
+          isDemo: false,
           nivelGeografico: 'Nacional / Estatal',
           etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
           estadosAutorizados: ['TODOS'],
@@ -1015,14 +1169,26 @@ app.post('/api/auth/login', (req, res) => {
     // Incrementar métricas de acceso y registrar telemetría (Zero-Data Retention)
     found.login_count = (found.login_count || 0) + 1;
     found.last_login_at = new Date().toISOString();
+    if (typeof found.simulations_count !== 'number') {
+      found.simulations_count = 0;
+    }
     saveLicensesStore(licensesStore);
 
     const clientRole = isMasterRole ? 'MASTER_ADMIN' : (found.tipoUsuario === 'SOCIO_OPERADOR' ? 'SOCIO_OPERADOR' : 'CLIENT');
+    const isDemoLic = Boolean(found.isDemo);
+    const simCount = typeof found.simulations_count === 'number' ? found.simulations_count : 0;
+    const maxSim = isDemoLic ? 3 : (found.max_simulations || 999999);
+    const simUsedStr = isDemoLic ? `${simCount}/3` : `${simCount} corridas`;
+    const licTypeStr = isDemoLic ? 'DEMO' : (isMasterRole ? 'MASTER_ADMIN' : 'OFICIAL / PAGADA');
+
     recordAccessLog({
       userId: found.id,
       username: found.username,
       clientName: found.clienteNombre,
       role: clientRole,
+      licenseType: licTypeStr,
+      assignedParties: found.allowed_parties || [found.partido || 'PVEM'],
+      simulationsUsed: simUsedStr,
       authMethod: isTokenLookup ? 'TOKEN' : 'CREDENTIALS',
       req
     });
@@ -1037,6 +1203,9 @@ app.post('/api/auth/login', (req, res) => {
         can_select_any_party: Boolean(found.can_select_any_party),
         login_count: found.login_count,
         last_login_at: found.last_login_at,
+        simulations_count: simCount,
+        max_simulations: maxSim,
+        isDemo: isDemoLic,
         esAdministradorTotal: isMasterRole,
         permisosGranulares
       }
@@ -1207,6 +1376,8 @@ app.post('/api/licenses', (req, res) => {
       fechaExpiracion,
       activo: body.activo !== undefined ? Boolean(body.activo) : true,
       isDemo: Boolean(body.isDemo),
+      simulations_count: existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0,
+      max_simulations: body.isDemo ? 3 : (parseInt(body.max_simulations, 10) || 999999),
       creadoEn: body.creadoEn || new Date().toISOString().split('T')[0]
     };
 
@@ -1285,6 +1456,28 @@ app.patch('/api/licenses/:id/permissions', (req, res) => {
     if (permisoSimulador !== undefined) lic.permisoSimulador = Boolean(permisoSimulador);
     saveLicensesStore(licensesStore);
     res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9.4d. Reiniciar Contador de Simulaciones (Reset a 0/3)
+app.post('/api/licenses/:id/reset-simulations', (req, res) => {
+  try {
+    const { id } = req.params;
+    licensesStore = loadLicensesStore();
+    const lic = licensesStore.find(l => l.id === id);
+    if (!lic) {
+      return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
+    }
+    lic.simulations_count = 0;
+    saveLicensesStore(licensesStore);
+    res.json({
+      success: true,
+      message: `Contador de propuestas reiniciado a 0 para ${lic.username}`,
+      license: sanitizeLicenseForClient(lic),
+      licenses: licensesStore.map(l => sanitizeLicenseForClient(l))
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

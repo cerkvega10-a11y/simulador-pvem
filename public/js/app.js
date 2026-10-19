@@ -1281,6 +1281,17 @@ async function startSimulation() {
   const filtroOcupacion = document.getElementById('filtro-ocupacion')?.value || 'todos';
   appState.filtrosDemograficos = { rangoEdad: filtroEdad, nse: filtroNse, ocupacion: filtroOcupacion };
 
+  // Validación preventiva estricta de límite Demo (3 propuestas / 7 días)
+  const currentDemoUser = appState.activeSession?.user;
+  const isMasterSession = appState.activeSession?.role === 'MASTER_ADMIN' || currentDemoUser?.esAdministradorTotal === true;
+  if (!isMasterSession && currentDemoUser?.isDemo) {
+    const currentSims = typeof currentDemoUser.simulations_count === 'number' ? currentDemoUser.simulations_count : 0;
+    if (currentSims >= 3) {
+      openDemoLimitBlockedModal();
+      return;
+    }
+  }
+
   // Bloquear controles de inmediato según directriz de State Locking
   lockSimulationControls(true);
 
@@ -1371,6 +1382,18 @@ async function startSimulation() {
             if (jsonStr) {
               try {
                 const step = JSON.parse(jsonStr);
+                if (step.blockedByLimit) {
+                  simulationCompleted = true;
+                  lockSimulationControls(false);
+                  restoreSimulateButton();
+                  const cSec = document.getElementById('progress-console-section');
+                  if (cSec) cSec.classList.add('hidden');
+                  openDemoLimitBlockedModal();
+                  return;
+                }
+                if (step.demoStatus) {
+                  updateActiveDemoCounter(step.demoStatus);
+                }
                 handleProgressUpdate(step);
                 if (step.status === 'completed' && step.data) {
                   simulationCompleted = true;
@@ -1418,6 +1441,20 @@ async function startSimulation() {
       });
       const postData = await postRes.json();
       clearInterval(progressTimer);
+
+      if (postData.blockedByLimit) {
+        simulationCompleted = true;
+        lockSimulationControls(false);
+        restoreSimulateButton();
+        const cSec = document.getElementById('progress-console-section');
+        if (cSec) cSec.classList.add('hidden');
+        openDemoLimitBlockedModal();
+        return;
+      }
+
+      if (postData.demoStatus) {
+        updateActiveDemoCounter(postData.demoStatus);
+      }
 
       if (postData.success && postData.report) {
         simulationCompleted = true;
@@ -2885,18 +2922,66 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
     }
   });
 
-  // Modo Solo Lectura / Bloqueo de Simulación
+  // Modo Solo Lectura / Bloqueo de Simulación y Cuota Demo (3 Propuestas / 7 Días)
   const btnIniciarSim = document.getElementById('btn-iniciar-simulacion');
-  if (btnIniciarSim) {
-    if (!canSimulador || isReadOnly) {
-      btnIniciarSim.disabled = true;
-      btnIniciarSim.classList.add('opacity-60', 'cursor-not-allowed');
-      btnIniciarSim.innerHTML = isReadOnly 
-        ? `<span class="flex items-center gap-1.5 justify-center"><span>👁️</span> <span>Modo Solo Lectura (Ejecución Bloqueada)</span></span>`
-        : `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>War Room No Autorizado para esta Licencia</span></span>`;
-    } else if (!appState.isLocked) {
+  const isDemoUser = Boolean(licenseUser.isDemo);
+  const demoCounterBadge = document.getElementById('demo-counter-badge');
+  const demoCounterText = document.getElementById('demo-counter-text');
+
+  if (isDemoUser && !isMaster) {
+    const simCount = typeof licenseUser.simulations_count === 'number' ? licenseUser.simulations_count : 0;
+    const maxSim = 3;
+    const remaining = Math.max(0, maxSim - simCount);
+
+    if (demoCounterBadge) {
+      demoCounterBadge.classList.remove('hidden');
+      demoCounterBadge.classList.add('flex');
+    }
+    if (demoCounterText) {
+      demoCounterText.innerText = `Licencia Demo (Vigencia 7 días): Te quedan ${remaining} de 3 propuestas disponibles`;
+    }
+
+    if (simCount >= maxSim) {
+      if (btnIniciarSim) {
+        btnIniciarSim.disabled = false;
+        btnIniciarSim.classList.add('opacity-85');
+        btnIniciarSim.innerHTML = `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>Límite de 3 Propuestas Agotado (Licencia Demo)</span></span>`;
+        btnIniciarSim.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openDemoLimitBlockedModal();
+        };
+      }
+    } else if (btnIniciarSim && !appState.isLocked) {
+      btnIniciarSim.onclick = null;
       btnIniciarSim.disabled = false;
-      btnIniciarSim.classList.remove('opacity-60', 'cursor-not-allowed');
+      btnIniciarSim.classList.remove('opacity-60', 'cursor-not-allowed', 'opacity-85');
+      btnIniciarSim.innerHTML = `
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span>Simular en War Room Vista 2</span>
+      `;
+    }
+  } else {
+    if (demoCounterBadge) {
+      demoCounterBadge.classList.add('hidden');
+      demoCounterBadge.classList.remove('flex');
+    }
+    if (btnIniciarSim) {
+      if (!canSimulador || isReadOnly) {
+        btnIniciarSim.disabled = true;
+        btnIniciarSim.classList.add('opacity-60', 'cursor-not-allowed');
+        btnIniciarSim.innerHTML = isReadOnly 
+          ? `<span class="flex items-center gap-1.5 justify-center"><span>👁️</span> <span>Modo Solo Lectura (Ejecución Bloqueada)</span></span>`
+          : `<span class="flex items-center gap-1.5 justify-center"><span>🔒</span> <span>War Room No Autorizado para esta Licencia</span></span>`;
+      } else if (!appState.isLocked) {
+        btnIniciarSim.onclick = null;
+        btnIniciarSim.disabled = false;
+        btnIniciarSim.classList.remove('opacity-60', 'cursor-not-allowed', 'opacity-85');
+        btnIniciarSim.innerHTML = `
+          <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Simular en War Room Vista 2</span>
+        `;
+      }
     }
   }
 
@@ -3340,11 +3425,11 @@ async function loadMasterLicenses() {
 
 function renderMasterLicensesList() {
   const container = document.getElementById('master-licenses-list');
-  if (!container) return;
+  const telemetryTbody = document.getElementById('telemetry-usage-table-body');
+  const countBadge = document.getElementById('monitor-active-count-badge');
 
-  if (!masterLicensesCache.length) {
-    container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No hay licencias registradas.</div>`;
-    return;
+  if (countBadge) {
+    countBadge.innerText = `${masterLicensesCache.length} Licencias`;
   }
 
   const activeUser = appState.activeSession?.user;
@@ -3353,6 +3438,87 @@ function renderMasterLicensesList() {
   const canUseKillSwitch = activeIsMaster || activePerms.killSwitch !== false;
   const canManageTokens = activeIsMaster || activePerms.tokens !== false;
   const canEditLicenses = activeIsMaster || activePerms.crearLicencias !== false;
+
+  // 1. RENDERIZADO DE TABLA: MONITOR DE ACCESOS Y USO DE LICENCIAS (MÓDULO 3)
+  if (telemetryTbody) {
+    if (!masterLicensesCache.length) {
+      telemetryTbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 text-xs">No hay licencias registradas aún.</td></tr>`;
+    } else {
+      telemetryTbody.innerHTML = masterLicensesCache.map(lic => {
+        const isMasterUser = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN';
+        const licTypeBadge = lic.isDemo
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/40">⚡ DEMO (7 DÍAS)</span>`
+          : (isMasterUser
+              ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40">👑 MASTER</span>`
+              : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">💼 OFICIAL</span>`);
+
+        const partiesBadges = lic.can_select_any_party
+          ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">🌐 LIBRE (8)</span>`
+          : (lic.allowed_parties || [lic.partido || 'PVEM']).map(p => `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-200 border border-slate-700">${p}</span>`).join(' ');
+
+        const now = new Date();
+        const exp = new Date(`${lic.fechaExpiracion}T23:59:59`);
+        const isExpired = now > exp;
+        const isActive = lic.activo && !isExpired;
+
+        let quotaBadge = '';
+        if (lic.isDemo) {
+          const cnt = lic.simulations_count || 0;
+          if (cnt >= 3) {
+            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white animate-pulse">3/3 - BLOQUEADO</span>`;
+          } else {
+            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">${cnt}/3 corridas</span>`;
+          }
+        } else {
+          quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">${lic.simulations_count || 0} corridas</span>`;
+        }
+
+        const lastLoginStr = lic.last_login_at
+          ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' })
+          : '<span class="text-slate-500">Nunca</span>';
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-2.5 px-3">
+              <div class="font-black text-white text-xs">${lic.clienteNombre}</div>
+              <div class="text-[10px] font-mono text-slate-400">@${lic.username}</div>
+            </td>
+            <td class="py-2.5 px-2">${licTypeBadge}</td>
+            <td class="py-2.5 px-2"><div class="flex flex-wrap gap-1">${partiesBadges}</div></td>
+            <td class="py-2.5 px-2 text-center">
+              <span class="font-black text-slate-100">${lic.login_count || 0}</span>
+            </td>
+            <td class="py-2.5 px-2 text-xs">${lastLoginStr}</td>
+            <td class="py-2.5 px-2 text-center">${quotaBadge}</td>
+            <td class="py-2.5 px-3 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota a 0/3 propuestas" class="px-2 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
+                  🔄 (0/3)
+                </button>
+                <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')" title="${lic.activo ? 'Suspender acceso (Kill Switch)' : 'Reactivar acceso'}" class="px-2 py-1 rounded ${lic.activo ? 'bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-slate-950 border border-amber-500/40' : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-200 hover:text-white border border-emerald-500/40'} font-bold text-[10px] transition-colors cursor-pointer">
+                  🔌
+                </button>
+                <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 7)" title="Extender vigencia +7 días" class="px-2 py-1 rounded bg-teal-500/20 hover:bg-teal-500 border border-teal-500/40 text-teal-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
+                  📅 +7d
+                </button>
+                <button type="button" onclick="editClientLicense('${lic.id}')" title="Editar Licencia Completa" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[10px] transition-colors cursor-pointer">
+                  ✏️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // 2. RENDERIZADO DE TARJETAS DETALLADAS EN MASTER-LICENSES-LIST
+  if (!container) return;
+
+  if (!masterLicensesCache.length) {
+    container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No hay licencias registradas.</div>`;
+    return;
+  }
 
   container.innerHTML = masterLicensesCache.map(lic => {
     const now = new Date();
@@ -3421,12 +3587,15 @@ function renderMasterLicensesList() {
 
         <!-- TELEMETRÍA Y AUDITORÍA DE ACCESOS (ZERO-DATA RETENTION) -->
         <div class="p-2.5 rounded-lg bg-indigo-50/40 border border-indigo-200/70 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[10px] font-black uppercase text-indigo-950 flex items-center gap-1">
               <span>🛡️</span><span>Auditoría de Accesos:</span>
             </span>
             <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">
-              👁️ Accesos registrados: ${lic.login_count || 0} ${(lic.login_count === 1) ? 'vez' : 'veces'}
+              👁️ ${lic.login_count || 0} ${(lic.login_count === 1) ? 'ingreso' : 'ingresos'}
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-black ${lic.isDemo && (lic.simulations_count || 0) >= 3 ? 'bg-rose-100 text-rose-900 border border-rose-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'}">
+              📊 Propuestas: ${lic.isDemo ? `${lic.simulations_count || 0}/3 (Demo)` : `${lic.simulations_count || 0} corridas`}
             </span>
           </div>
           <div class="text-[10px] text-slate-600">
@@ -3446,6 +3615,10 @@ function renderMasterLicensesList() {
             <button type="button" onclick="updateLicenseExpirationQuick('${lic.id}')" ${!canUseKillSwitch ? 'disabled' : ''}
               class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
               Guardar Fecha
+            </button>
+            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 7)" ${!canUseKillSwitch ? 'disabled' : ''} title="Alargar +7 días"
+              class="px-2 py-1 rounded bg-teal-100 hover:bg-teal-200 text-teal-900 font-bold text-[10px] cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
+              +7d
             </button>
             <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 30)" ${!canUseKillSwitch ? 'disabled' : ''} title="Alargar +30 días"
               class="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
@@ -3484,6 +3657,10 @@ function renderMasterLicensesList() {
             class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all cursor-pointer">
             👁️ Simular como este Cliente
           </button>
+          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota a 0/3 propuestas"
+            class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold text-[11px] transition-all cursor-pointer">
+            🔄 Reiniciar (0/3)
+          </button>
           <button type="button" onclick="editClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
             class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
             ✏️ Editar
@@ -3500,6 +3677,57 @@ function renderMasterLicensesList() {
       </div>
     `;
   }).join('');
+}
+
+window.openDemoLimitBlockedModal = function() {
+  const modal = document.getElementById('modal-demo-limit-blocked');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+};
+
+window.closeDemoLimitBlockedModal = function() {
+  const modal = document.getElementById('modal-demo-limit-blocked');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.resetLicenseSimulations = async function(id) {
+  try {
+    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/reset-simulations`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (data.success) {
+      masterLicensesCache = data.licenses;
+      renderMasterLicensesList();
+      showToast(data.message || 'Contador de propuestas reiniciado a 0/3 con éxito.');
+    } else {
+      alert(`Error al reiniciar: ${data.error}`);
+    }
+  } catch (err) {
+    console.error('Error al reiniciar simulaciones:', err);
+    alert('Error al conectar con el servidor.');
+  }
+};
+
+function updateActiveDemoCounter(demoStatus) {
+  if (!demoStatus || !appState.activeSession?.user) return;
+  if (typeof demoStatus.simulations_count === 'number') {
+    appState.activeSession.user.simulations_count = demoStatus.simulations_count;
+  }
+  const isDemo = Boolean(demoStatus.isDemo ?? appState.activeSession.user.isDemo);
+  const demoCounterBadge = document.getElementById('demo-counter-badge');
+  const demoCounterText = document.getElementById('demo-counter-text');
+  if (isDemo && demoCounterBadge && demoCounterText) {
+    const remaining = Math.max(0, 3 - (appState.activeSession.user.simulations_count || 0));
+    demoCounterBadge.classList.remove('hidden');
+    demoCounterBadge.classList.add('flex');
+    demoCounterText.innerText = `Licencia Demo (Vigencia 7 días): Te quedan ${remaining} de 3 propuestas disponibles`;
+  }
 }
 
 window.updateLicenseExpirationQuick = async function(id) {
