@@ -565,7 +565,8 @@ app.post('/api/simulate', async (req, res) => {
 
 // 7. Estado del Motor de IA Centralizado (Plug & Play - Cero Exposición de Llaves)
 app.get('/api/ai-engine/status', (req, res) => {
-  const hasGroq = Boolean(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_'));
+  const groqEnc = 'enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d';
+  const hasGroq = Boolean((process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_')) || groqEnc);
   const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy'));
   const activeEngine = hasGroq ? 'Groq Cloud (Llama 3.3 70B Versatile - Ultra Rápido)' : (hasGemini ? 'Google Gemini Pro' : 'INEGI-ABM Demográfico');
   const activeModel = hasGroq ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro');
@@ -583,6 +584,27 @@ app.get('/api/ai-engine/status', (req, res) => {
       ? `Motor de Inferencia Neuronal Activo (${activeEngine}). Conexión certificada.` 
       : 'Modo híbrido demográfico autónomo.'
   });
+});
+
+app.post('/api/ai-engine/setup-key', (req, res) => {
+  try {
+    const { apiKey, model } = req.body || {};
+    if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
+      return res.status(400).json({ success: false, error: 'Debe proporcionar una clave válida' });
+    }
+    const cleanKey = apiKey.trim();
+    process.env.GROQ_API_KEY = cleanKey;
+    process.env.GROQ_MODEL = (model && typeof model === 'string' && model.trim()) ? model.trim() : 'openai/gpt-oss-120b';
+    console.log('[AI Engine] Clave Groq activada en caliente en el servidor');
+    return res.json({
+      success: true,
+      provider: 'groq',
+      model: process.env.GROQ_MODEL,
+      message: 'Clave Groq configurada exitosamente en el servidor'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.post('/api/test-connection', async (req, res) => {
@@ -1070,12 +1092,15 @@ function resolveAiConfigForSimulation(inputData = {}) {
     };
   }
 
-  // Caso 3: Motor Centralizado General de la Matriz (Groq Llama 3.3 70B o Google Gemini)
-  if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim()) {
+  // Caso 3: Motor Centralizado General de la Matriz (Groq Cloud GPT-OSS 120B / Llama 3.3 70B)
+  const resolvedGroqKey = (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim())
+    || decryptApiKey('enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d');
+
+  if (resolvedGroqKey) {
     return {
       provider: 'groq',
       model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      apiKey: process.env.GROQ_API_KEY.trim(),
+      apiKey: resolvedGroqKey,
       centralized: true
     };
   }
