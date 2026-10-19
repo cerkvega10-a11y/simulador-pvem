@@ -259,7 +259,8 @@ class OrchestratorAgent {
       semanticResult: auditResult.semanticResult,
       municipalResearch,
       votosFinales: deliberationData.votosFinales,
-      chatsDelEnjambre: auditResult.chatsDelEnjambre
+      chatsDelEnjambre: auditResult.chatsDelEnjambre,
+      aiConfig: inputData.aiConfig
     });
     finalReport.verificacionIAReal = verificacionIAReal;
 
