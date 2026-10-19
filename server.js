@@ -999,6 +999,16 @@ function sanitizeLicenseForClient(lic) {
 }
 
 function resolveAiConfigForSimulation(inputData = {}) {
+  // Prioridad 0: Si la petición trae configuración explícita de IA (ej. ping test o selector)
+  if (inputData.aiConfig && (inputData.aiConfig.provider || inputData.aiConfig.apiKey)) {
+    return {
+      provider: inputData.aiConfig.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini'),
+      model: inputData.aiConfig.model || (process.env.GROQ_MODEL || 'openai/gpt-oss-120b'),
+      apiKey: inputData.aiConfig.apiKey || (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || ''),
+      centralized: !inputData.aiConfig.apiKey
+    };
+  }
+
   licensesStore = loadLicensesStore();
   const licId = inputData.licenseId || inputData.activeSession?.user?.id;
   const username = inputData.username || inputData.activeSession?.user?.username;

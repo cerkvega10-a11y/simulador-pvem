@@ -122,7 +122,7 @@ class FreeLLMService {
       throw new Error(`Proveedor de IA desconocido: ${provider}`);
     }
 
-    const selectedModel = model || providerConfig.defaultModel;
+    let selectedModel = model || providerConfig.defaultModel;
 
     // Caso 1: Google Gemini API (Con Capa de Respaldo Automática)
     if (provider === 'gemini') {
