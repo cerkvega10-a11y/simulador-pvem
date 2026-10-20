@@ -1473,6 +1473,32 @@
             </div>
           </div>
 
+          <!-- MODALIDAD DE LICENCIA Y CUOTA DE PROPUESTAS (OFICIAL ILIMITADA VS DEMO EXPRÉS 3 PROPUESTAS / 7 DÍAS) -->
+          <div class="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2.5" id="lic-modalidad-cuota-box">
+            <div class="flex items-center justify-between flex-wrap gap-1">
+              <span class="block font-black text-emerald-950 uppercase text-[11px]">🎯 Modalidad de Vigencia y Cuota de Propuestas:</span>
+              <span id="lic-cuota-status-pill" class="text-[10px] bg-emerald-600 text-white font-black px-2.5 py-0.5 rounded-full shadow-2xs">♾️ PROPUESTAS ILIMITADAS</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-1.5 rounded-xl border border-emerald-200">
+              <label class="flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-emerald-400 bg-emerald-50 text-emerald-950 font-bold text-xs shadow-2xs" id="lbl-modo-oficial">
+                <input type="radio" name="lic_modo_demo" id="lic-modo-oficial" value="OFICIAL" checked onchange="onLicenseDemoModeChange(false)" class="mt-0.5 text-emerald-600">
+                <div>
+                  <span class="block font-black text-xs text-emerald-950">💼 Licencia Normal / Socio Operador</span>
+                  <span class="block text-[10px] font-semibold text-emerald-700">♾️ Propuestas ILIMITADAS • Vigencia libre en calendario</span>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-transparent text-slate-600 hover:bg-amber-50/50 font-bold text-xs" id="lbl-modo-demo">
+                <input type="radio" name="lic_modo_demo" id="lic-modo-demo" value="DEMO" onchange="onLicenseDemoModeChange(true)" class="mt-0.5 text-amber-500">
+                <div>
+                  <span class="block font-black text-xs text-amber-950">⚡ Muestra Demo Exprés (7 Días)</span>
+                  <span class="block text-[10px] font-semibold text-amber-700">🔒 Límite estricto: 3 propuestas en 7 días naturales</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-bold text-slate-700 uppercase mb-1">Fecha de Inicio</label>
@@ -1893,7 +1919,7 @@
             </div>
 
             <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer border border-amber-300 flex items-center justify-center gap-2">
-              <span>⚡</span><span>Activar y Generar Demo de 7 Días</span>
+              <span>⚡</span><span>Activar y Generar Demo Exprés (3 Propuestas / 7 Días)</span>
             </button>
           </form>
         </div>
@@ -1918,7 +1944,7 @@
               <div>👤 <b>Cliente:</b> <span id="qd-res-nombre" class="text-white"></span></div>
               <div>🏷️ <b>Partido:</b> <span id="qd-res-partido" class="text-amber-300 font-bold"></span></div>
               <div>📍 <b>Demarcación:</b> <span id="qd-res-region" class="text-white"></span></div>
-              <div>🌐 <b>Enlace de Acceso:</b> <span class="text-indigo-300 underline select-all">https://simulador-predictivo-pvem.onrender.com/</span></div>
+              <div>🌐 <b>Enlace de Acceso:</b> <span class="text-indigo-300 underline select-all">https://simulador-pvem.vercel.app/</span></div>
               <div class="pt-1 border-t border-slate-800"></div>
               <div>🔑 <b>Usuario:</b> <span id="qd-res-user" class="text-emerald-400 font-bold select-all"></span></div>
               <div>🔒 <b>Contraseña:</b> <span id="qd-res-pass" class="text-emerald-400 font-bold select-all"></span></div>

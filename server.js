@@ -401,7 +401,7 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
   }
 
   const isDemo = Boolean(matchedLic.isDemo);
-  const maxSimulations = isDemo ? 3 : (matchedLic.max_simulations || 999999);
+  const maxSimulations = isDemo ? 3 : 999999999;
 
   // Comprobar Kill Switch activo
   if (matchedLic.activo === false) {
@@ -431,17 +431,16 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
     };
   }
 
-  // Comprobar límite de simulaciones
-  if (matchedLic.simulations_count >= maxSimulations) {
+  // Comprobar límite de simulaciones: EXCLUSIVO para modo Demostración Exprés (7 días / máximo 3 propuestas).
+  // Las licencias normales / Socio Operador / Oficiales tienen propuestas ILIMITADAS.
+  if (isDemo && matchedLic.simulations_count >= 3) {
     return {
       allowed: false,
-      isDemo,
+      isDemo: true,
       simulations_count: matchedLic.simulations_count,
-      max_simulations: maxSimulations,
+      max_simulations: 3,
       remaining: 0,
-      message: isDemo
-        ? 'Has alcanzado el límite de 3 propuestas de validación de tu Licencia Demo Gratuita. Para desbloquear simulaciones ilimitadas y asegurar la Exclusividad Territorial de tu demarcación, contacta a la Dirección de Neural Media House para activar tu licencia oficial.'
-        : `Ha alcanzado el límite máximo de ${maxSimulations} simulaciones autorizadas para su cuenta.`
+      message: 'Has alcanzado el límite estricto de 3 propuestas de validación en tu periodo de prueba de 7 días (Licencia Demo). Para desbloquear propuestas ilimitadas y asegurar la Exclusividad Territorial de tu demarcación, contacta a la Dirección de Neural Media House para activar tu licencia oficial.'
     };
   }
 
@@ -1502,16 +1501,17 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       }
     }
 
+    const isDemo = Boolean(body.isDemo);
     let fechaInicio = String(body.fechaInicio || '').trim();
     let fechaExpiracion = String(body.fechaExpiracion || '').trim();
-    if (body.isDemo || body.diasVigencia) {
+    if (isDemo && (body.diasVigencia || !fechaExpiracion || (existingLic && !existingLic.isDemo))) {
       const days = parseInt(body.diasVigencia, 10) || 7;
       const now = new Date();
       fechaInicio = now.toISOString().split('T')[0];
       const expDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       fechaExpiracion = expDate.toISOString().split('T')[0];
     }
-    if (!fechaInicio) fechaInicio = '2026-01-01';
+    if (!fechaInicio) fechaInicio = new Date().toISOString().split('T')[0];
     if (!fechaExpiracion) fechaExpiracion = '2027-12-31';
 
     // Inyección de API Key Personalizada y Selector de Modelo Avanzado (Cifrado AES-256)
@@ -1567,9 +1567,9 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       fechaInicio,
       fechaExpiracion,
       activo: body.activo !== undefined ? Boolean(body.activo) : true,
-      isDemo: Boolean(body.isDemo),
+      isDemo,
       simulations_count: existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0,
-      max_simulations: body.isDemo ? 3 : (parseInt(body.max_simulations, 10) || 999999),
+      max_simulations: isDemo ? 3 : 999999,
       creadoEn: body.creadoEn || new Date().toISOString().split('T')[0]
     };
 

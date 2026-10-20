@@ -3523,10 +3523,10 @@ function renderMasterLicensesList() {
           if (cnt >= 3) {
             quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white animate-pulse">3/3 - BLOQUEADO</span>`;
           } else {
-            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">${cnt}/3 corridas</span>`;
+            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">${cnt}/3 (Demo 7D)</span>`;
           }
         } else {
-          quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">${lic.simulations_count || 0} corridas</span>`;
+          quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">♾️ ILIMITADAS (${lic.simulations_count || 0})</span>`;
         }
 
         const lastLoginStr = lic.last_login_at
@@ -3548,9 +3548,15 @@ function renderMasterLicensesList() {
             <td class="py-2.5 px-2 text-center">${quotaBadge}</td>
             <td class="py-2.5 px-3 text-right">
               <div class="flex items-center justify-end gap-1">
-                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota a 0/3 propuestas" class="px-2 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
+                ${lic.isDemo ? `
+                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota Demo a 0/3 propuestas" class="px-2 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
                   🔄 (0/3)
                 </button>
+                ` : `
+                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Licencia Ilimitada — Reiniciar contador de auditoría a 0" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
+                  🔄 (0)
+                </button>
+                `}
                 <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')" title="${lic.activo ? 'Suspender acceso (Kill Switch)' : 'Reactivar acceso'}" class="px-2 py-1 rounded ${lic.activo ? 'bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-slate-950 border border-amber-500/40' : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-200 hover:text-white border border-emerald-500/40'} font-bold text-[10px] transition-colors cursor-pointer">
                   🔌
                 </button>
@@ -3618,7 +3624,7 @@ function renderMasterLicensesList() {
             <h4 class="font-black text-slate-900 text-sm">${lic.clienteNombre}</h4>
             ${roleBadge}
             ${lic.can_select_any_party ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">🌐 LIBRE ELECCIÓN</span>` : ((lic.allowed_parties && lic.allowed_parties.length > 1) ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-950 border border-indigo-300">🤝 COALICIÓN (${lic.allowed_parties.length})</span>` : '')}
-            ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS</span>` : ''}
+            ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS (MÁX. 3 PROPUESTAS)</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">♾️ PROPUESTAS ILIMITADAS</span>`}
           </div>
           ${statusBadge}
         </div>
@@ -3650,8 +3656,8 @@ function renderMasterLicensesList() {
             <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">
               👁️ ${lic.login_count || 0} ${(lic.login_count === 1) ? 'ingreso' : 'ingresos'}
             </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black ${lic.isDemo && (lic.simulations_count || 0) >= 3 ? 'bg-rose-100 text-rose-900 border border-rose-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'}">
-              📊 Propuestas: ${lic.isDemo ? `${lic.simulations_count || 0}/3 (Demo)` : `${lic.simulations_count || 0} corridas`}
+            <span class="px-2 py-0.5 rounded text-[10px] font-black ${lic.isDemo && (lic.simulations_count || 0) >= 3 ? 'bg-rose-100 text-rose-900 border border-rose-300' : (lic.isDemo ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300')}">
+              📊 Propuestas: ${lic.isDemo ? `${lic.simulations_count || 0}/3 (Demo 7 Días)` : `♾️ ILIMITADAS (${lic.simulations_count || 0} ejecutadas)`}
             </span>
           </div>
           <div class="text-[10px] text-slate-600">
@@ -3713,10 +3719,17 @@ function renderMasterLicensesList() {
             class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all cursor-pointer">
             👁️ Simular como este Cliente
           </button>
-          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota a 0/3 propuestas"
+          ${lic.isDemo ? `
+          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota Demo a 0/3 propuestas"
             class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold text-[11px] transition-all cursor-pointer">
-            🔄 Reiniciar (0/3)
+            🔄 Reiniciar Demo (0/3)
           </button>
+          ` : `
+          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Licencia con Propuestas Ilimitadas — Reiniciar contador de auditoría a 0"
+            class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-all cursor-pointer">
+            🔄 Reiniciar Contador
+          </button>
+          `}
           <button type="button" onclick="editClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
             class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
             ✏️ Editar
@@ -3968,6 +3981,54 @@ function setSelectedPartiesCheckboxes(parties = ['PVEM'], canSelectAny = false) 
   window.onPartyCheckboxChange();
 }
 
+window.onLicenseDemoModeChange = function(isDemo, preserveDates = false) {
+  const rOficial = document.getElementById('lic-modo-oficial');
+  const rDemo = document.getElementById('lic-modo-demo');
+  const lblOficial = document.getElementById('lbl-modo-oficial');
+  const lblDemo = document.getElementById('lbl-modo-demo');
+  const pill = document.getElementById('lic-cuota-status-pill');
+  const box = document.getElementById('lic-modalidad-cuota-box');
+  const fInicio = document.getElementById('lic-fecha-inicio');
+  const fExp = document.getElementById('lic-fecha-expiracion');
+  const swarmSel = document.getElementById('lic-max-swarm');
+
+  if (rOficial) rOficial.checked = !isDemo;
+  if (rDemo) rDemo.checked = Boolean(isDemo);
+
+  if (isDemo) {
+    if (lblDemo) lblDemo.className = 'flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-amber-400 bg-amber-50 text-amber-950 font-bold text-xs shadow-2xs';
+    if (lblOficial) lblOficial.className = 'flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-transparent text-slate-600 hover:bg-emerald-50/50 font-bold text-xs';
+    if (pill) {
+      pill.className = 'text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-0.5 rounded-full shadow-2xs';
+      pill.innerText = '⚡ DEMO: MÁX. 3 PROPUESTAS / 7 DÍAS';
+    }
+    if (box) box.className = 'p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 space-y-2.5';
+
+    if (!preserveDates) {
+      const now = new Date();
+      const exp = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (fInicio) fInicio.value = now.toISOString().split('T')[0];
+      if (fExp) fExp.value = exp.toISOString().split('T')[0];
+      if (swarmSel) swarmSel.value = '1000';
+    }
+  } else {
+    if (lblOficial) lblOficial.className = 'flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-emerald-400 bg-emerald-50 text-emerald-950 font-bold text-xs shadow-2xs';
+    if (lblDemo) lblDemo.className = 'flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-all border border-transparent text-slate-600 hover:bg-amber-50/50 font-bold text-xs';
+    if (pill) {
+      pill.className = 'text-[10px] bg-emerald-600 text-white font-black px-2.5 py-0.5 rounded-full shadow-2xs';
+      pill.innerText = '♾️ PROPUESTAS ILIMITADAS';
+    }
+    if (box) box.className = 'p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2.5';
+
+    if (!preserveDates) {
+      const now = new Date();
+      if (fInicio) fInicio.value = now.toISOString().split('T')[0];
+      if (fExp) fExp.value = '2027-07-31';
+      if (swarmSel) swarmSel.value = '100000';
+    }
+  }
+};
+
 window.resetLicenseForm = function() {
   document.getElementById('lic-id').value = '';
   document.getElementById('lic-cliente-nombre').value = '';
@@ -3977,6 +4038,9 @@ window.resetLicenseForm = function() {
   document.getElementById('lic-max-swarm').value = '100000';
   document.getElementById('lic-etiqueta-region').value = '';
   document.getElementById('lic-form-title').innerText = '➕ Crear / Configurar Licencia de Cliente';
+
+  // Por defecto: Licencia Normal / Socio Operador con Propuestas ILIMITADAS
+  window.onLicenseDemoModeChange(false, false);
 
   // Restablecer Selección Multi-Partido
   setSelectedPartiesCheckboxes(['PVEM'], false);
@@ -4033,12 +4097,16 @@ window.saveClientLicense = async function(event) {
   const nivelGeografico = document.getElementById('lic-nivel-geo')?.value || 'Municipal / Alcaldía';
   let etiquetaRegion = document.getElementById('lic-etiqueta-region')?.value?.trim() || '';
 
+  // Modalidad de Vigencia y Cuota de Propuestas (Oficial Ilimitada vs Demo 7 Días / 3 Propuestas)
+  const modoDemoSelected = document.querySelector('input[name="lic_modo_demo"]:checked')?.value === 'DEMO';
+  const isDemo = Boolean(modoDemoSelected);
+
   // Modelo de IA y API Key Personalizada Cifrada
   const aiModel = document.getElementById('lic-ai-model-select')?.value || 'gemini-default';
   const customApiKey = document.getElementById('lic-custom-api-key')?.value?.trim() || '';
 
   // Rol y Permisos Granulares
-  const tipoUsuario = document.querySelector('input[name="lic-tipo-usuario"]:checked')?.value || 'SOCIO';
+  const tipoUsuario = document.querySelector('input[name="lic_tipo_rol"]:checked')?.value || 'SOCIO';
   const esAdministradorTotal = tipoUsuario === 'MASTER';
 
   const permisosGranulares = {
@@ -4138,6 +4206,9 @@ window.saveClientLicense = async function(event) {
     propuestaFijaTexto,
     aiModel,
     customApiKey,
+    isDemo: esAdministradorTotal ? false : isDemo,
+    max_simulations: (esAdministradorTotal || !isDemo) ? 999999 : 3,
+    diasVigencia: (!esAdministradorTotal && isDemo) ? 7 : undefined,
     activo: true
   };
 
@@ -4153,7 +4224,9 @@ window.saveClientLicense = async function(event) {
       localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
       renderMasterLicensesList();
       resetLicenseForm();
-      showToast(`Licencia White-Label guardada exitosamente para ${clienteNombre}.`);
+      showToast(isDemo
+        ? `⚡ Licencia Demo Exprés (3 Propuestas / 7 Días) guardada para ${clienteNombre}.`
+        : `♾️ Licencia Oficial / Socio Operador (Propuestas Ilimitadas) guardada para ${clienteNombre}.`);
     }
   } catch (err) {
     alert('Error guardando licencia: ' + err.message);
@@ -4171,6 +4244,9 @@ window.editClientLicense = async function(id) {
   document.getElementById('lic-password').value = lic.password;
   document.getElementById('lic-partido').value = lic.partido;
   document.getElementById('lic-max-swarm').value = String(lic.maxSwarmSize || 100000);
+  if (typeof window.onLicenseDemoModeChange === 'function') {
+    window.onLicenseDemoModeChange(Boolean(lic.isDemo), true);
+  }
   document.getElementById('lic-fecha-inicio').value = lic.fechaInicio;
   document.getElementById('lic-fecha-expiracion').value = lic.fechaExpiracion;
   document.getElementById('lic-nivel-geo').value = lic.nivelGeografico || 'Municipal / Alcaldía';
@@ -4405,7 +4481,7 @@ window.saveQuickDemoLicense = async function(event) {
   try {
     const res = await fetch('/api/licenses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -4428,7 +4504,7 @@ window.saveQuickDemoLicense = async function(event) {
       document.getElementById('qd-res-token').innerText = data.license.tokenSeguridad;
       document.getElementById('qd-res-exp').innerText = data.license.fechaExpiracion;
 
-      showToast(`¡Demo 7 Días activada exitosamente para ${nombre}!`);
+      showToast(`¡Demo 7 Días (3 Propuestas) activada exitosamente para ${nombre}!`);
     } else {
       alert('Error activando demo: ' + (data.error || 'Error desconocido'));
     }
@@ -4441,11 +4517,12 @@ window.saveQuickDemoLicense = async function(event) {
 window.copyQuickDemoSummary = function() {
   if (!currentQuickDemoResult) return;
   const lic = currentQuickDemoResult;
-  const text = `*FICHA DE ACCESO DEMO (7 DÍAS) — GOVTECH WAR ROOM*\n\n` +
+  const text = `*FICHA DE ACCESO DEMO (7 DÍAS / 3 PROPUESTAS) — GOVTECH WAR ROOM*\n\n` +
     `👤 *Cliente:* ${lic.clienteNombre}\n` +
     `🏷️ *Partido:* ${lic.partido}\n` +
     `📍 *Demarcación:* ${lic.etiquetaRegion}\n` +
-    `🌐 *Plataforma:* https://simulador-predictivo-pvem.onrender.com/\n\n` +
+    `🎯 *Cuota de Prueba:* 3 Propuestas en 7 Días Naturales\n` +
+    `🌐 *Plataforma Oficial:* https://simulador-pvem.vercel.app/\n\n` +
     `🔑 *Usuario:* ${lic.username}\n` +
     `🔒 *Contraseña:* ${lic.password}\n` +
     `🛡️ *Token de Seguridad:* ${lic.tokenSeguridad}\n` +
