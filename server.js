@@ -769,8 +769,10 @@ const AUTHORSHIP_WATERMARK = {
 // =========================================================================
 // 9. PANEL DE CONTROL MAESTRO, GESTIÓN DE LICENCIAS & KILL SWITCH
 // =========================================================================
-const LICENSES_FILE = path.join(__dirname, 'src', 'data', 'licensesStore.json');
-const ACCESS_LOGS_FILE = path.join(__dirname, 'src', 'data', 'accessLogs.json');
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = IS_SERVERLESS ? '/tmp' : path.join(__dirname, 'src', 'data');
+const LICENSES_FILE = path.join(DATA_DIR, 'licensesStore.json');
+const ACCESS_LOGS_FILE = path.join(DATA_DIR, 'accessLogs.json');
 
 // --- SISTEMA DE AUDITORÍA Y TELEMETRÍA DE ACCESOS (ZERO-DATA RETENTION) ---
 function loadAccessLogs() {
@@ -1021,8 +1023,37 @@ function sanitizeLicenseForClient(lic) {
   };
 }
 
-// Almacén en memoria para tokens de sesión autenticados (Expiración: 24 horas)
+// Almacén en memoria + Token Stateless HMAC para compatibilidad con entornos Serverless (Vercel)
 const activeAdminSessions = new Map();
+
+function createAdminSessionToken(payload = {}) {
+  const data = {
+    userId: payload.userId || 'master',
+    username: payload.username || 'master',
+    role: payload.role || 'MASTER_ADMIN',
+    isMasterRole: Boolean(payload.isMasterRole),
+    createdAt: Date.now()
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(data), 'utf8').toString('base64url');
+  const sig = crypto.createHmac('sha256', getEncryptionKey()).update(payloadB64).digest('base64url');
+  const token = `${payloadB64}.${sig}`;
+  activeAdminSessions.set(token, data);
+  return token;
+}
+
+function verifyStatelessAdminToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+  try {
+    const [payloadB64, sig] = token.split('.');
+    const expectedSig = crypto.createHmac('sha256', getEncryptionKey()).update(payloadB64).digest('base64url');
+    if (sig !== expectedSig) return null;
+    const data = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (Date.now() - (data.createdAt || 0) > 24 * 60 * 60 * 1000) return null;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
 
 setInterval(() => {
   const now = Date.now();
@@ -1035,12 +1066,14 @@ setInterval(() => {
 
 function requireMasterAdmin(req, res, next) {
   const token = req.headers['x-session-token'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
-  if (token && activeAdminSessions.has(token)) {
-    const session = activeAdminSessions.get(token);
-    if (session && (session.isMasterRole || session.role === 'MASTER_ADMIN')) {
-      return next();
+  if (token) {
+    const session = activeAdminSessions.get(token) || verifyStatelessAdminToken(token);
+    if (session) {
+      if (session.isMasterRole || session.role === 'MASTER_ADMIN') {
+        return next();
+      }
+      return res.status(403).json({ success: false, error: 'Acceso denegado: Se requieren privilegios de Administrador Maestro.' });
     }
-    return res.status(403).json({ success: false, error: 'Acceso denegado: Se requieren privilegios de Administrador Maestro.' });
   }
   const adminKey = req.headers['x-master-admin-key'];
   if (adminKey && adminKey === getEncryptionKey().toString('hex')) {
@@ -1194,13 +1227,11 @@ app.post('/api/auth/login', (req, res) => {
         req
       });
 
-      const sessionToken = crypto.randomBytes(32).toString('hex');
-      activeAdminSessions.set(sessionToken, {
+      const sessionToken = createAdminSessionToken({
         userId: masterAccount.id,
         username: masterAccount.username,
         role: 'MASTER_ADMIN',
-        isMasterRole: true,
-        createdAt: Date.now()
+        isMasterRole: true
       });
 
       return res.json({
@@ -1344,13 +1375,11 @@ app.post('/api/auth/login', (req, res) => {
       req
     });
 
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    activeAdminSessions.set(sessionToken, {
+    const sessionToken = createAdminSessionToken({
       userId: found.id,
       username: found.username,
       role: clientRole,
-      isMasterRole,
-      createdAt: Date.now()
+      isMasterRole
     });
 
     return res.json({
@@ -1696,11 +1725,15 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`================================================================`);
-  console.log(`🟢 GOVTECH WAR ROOM v5.0 ENTERPRISE — NEURAL MEDIA HOUSE / ERICK VEGA`);
-  console.log(`📡 Servidor activo y escuchando en http://localhost:${PORT}`);
-  console.log(`🤖 Cobertura Nacional 32 Estados + Turnstile Anti-Bots + Cyber Sentinel 24/7`);
-  console.log(`================================================================`);
-});
+// Iniciar servidor en entornos locales / dedicados (Render, Railway) y exportar para Vercel Serverless
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`================================================================`);
+    console.log(`🟢 GOVTECH WAR ROOM v5.0 ENTERPRISE — NEURAL MEDIA HOUSE / ERICK VEGA`);
+    console.log(`📡 Servidor activo y escuchando en http://localhost:${PORT}`);
+    console.log(`🤖 Cobertura Nacional 32 Estados + Turnstile Anti-Bots + Cyber Sentinel 24/7`);
+    console.log(`================================================================`);
+  });
+}
+
+module.exports = app;
