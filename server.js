@@ -269,13 +269,31 @@ app.get('/api/municipalities', (req, res) => {
     });
   }
 
-  const targetState = estado || 'Estado de México';
+  const targetState = String(estado || 'Estado de México').trim();
+  const isAllNational = targetState === 'TODOS LOS ESTADOS (Nacional)' || targetState === 'TODOS' || targetState === 'ALL_STATES' || targetState.toUpperCase().includes('TODOS LOS ESTADOS');
+
+  if (isAllNational) {
+    return res.json({
+      success: true,
+      municipios: [
+        {
+          estado: 'TODOS LOS ESTADOS (Nacional)',
+          nombre: 'Todos los Municipios (Cobertura Nacional)',
+          tieneDetalleProfundo: true,
+          esMacroEstatal: true,
+          esCoberturaNacional: true
+        }
+      ]
+    });
+  }
+
   const lista = CATALOGO_NACIONAL_32_ESTADOS[targetState] || getMunicipalitiesByStates(targetState).map(x => x.nombre);
+  const allMunisForStateLabel = `Todos los Municipios de ${targetState}`;
 
   const listado = [
     {
       estado: targetState,
-      nombre: 'Todos los municipios del estado',
+      nombre: allMunisForStateLabel,
       tieneDetalleProfundo: true,
       esMacroEstatal: true
     },
@@ -948,13 +966,17 @@ function resolveValidPassword(candidatePassword, fallbackPassword = '', username
 function normalizeLicenseRecord(lic) {
   const validPassword = resolveValidPassword(lic.password, '', lic.username);
   const partido = String(lic.partido || 'PVEM').toUpperCase();
+  const isMaster = Boolean(lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN');
+  const rawEstados = Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'];
+  const canSelectAllStates = Boolean(isMaster || lic.can_select_all_states || rawEstados.includes('TODOS') || rawEstados.includes('ALL_STATES') || rawEstados.includes('TODOS LOS ESTADOS (Nacional)') || rawEstados.length >= 32);
   return {
     ...lic,
     password: validPassword,
     tokenSeguridad: (lic.tokenSeguridad && lic.tokenSeguridad !== 'undefined')
       ? lic.tokenSeguridad
       : generateSecurityToken(partido),
-    estadosAutorizados: Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'],
+    estadosAutorizados: canSelectAllStates ? ['TODOS'] : rawEstados,
+    can_select_all_states: canSelectAllStates,
     permisoRadar: lic.permisoRadar !== undefined ? lic.permisoRadar : true,
     permisoSimulador: lic.permisoSimulador !== undefined ? lic.permisoSimulador : true,
     propuestaFijaTitulo: lic.propuestaFijaTitulo || '',
@@ -1597,13 +1619,24 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       allowed_parties.unshift(partido);
     }
 
-    const estadosAutorizados = Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
-      ? body.estadosAutorizados
-      : ['Estado de México'];
+    const isMasterAccount = Boolean(body.esAdministradorTotal || body.tipoUsuario === 'MASTER' || body.tipoUsuario === 'MASTER_ADMIN');
+    const can_select_all_states = Boolean(
+      isMasterAccount ||
+      body.can_select_all_states ||
+      (Array.isArray(body.estadosAutorizados) && (body.estadosAutorizados.includes('TODOS') || body.estadosAutorizados.includes('ALL_STATES') || body.estadosAutorizados.length >= 32))
+    );
 
-    const municipiosAutorizados = Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
-      ? body.municipiosAutorizados
-      : ['Ecatepec de Morelos'];
+    const estadosAutorizados = can_select_all_states
+      ? ['TODOS']
+      : (Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
+          ? body.estadosAutorizados
+          : ['Estado de México']);
+
+    const municipiosAutorizados = (isMasterAccount || can_select_all_states)
+      ? (Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0 ? body.municipiosAutorizados : ['TODOS'])
+      : (Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
+          ? body.municipiosAutorizados
+          : ['Ecatepec de Morelos']);
 
     let etiquetaRegion = String(body.etiquetaRegion || '').trim();
     if (!etiquetaRegion) {
@@ -1659,9 +1692,10 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       login_count: existingLic ? (existingLic.login_count || 0) : 0,
       last_login_at: existingLic ? (existingLic.last_login_at || null) : null,
       tokenSeguridad,
-      nivelGeografico: String(body.nivelGeografico || 'Municipal / Alcaldía'),
+      nivelGeografico: String(body.nivelGeografico || (can_select_all_states ? 'Federal / Nacional' : 'Municipal / Alcaldía')),
       etiquetaRegion,
       estadosAutorizados,
+      can_select_all_states,
       cargosAutorizados: Array.isArray(body.cargosAutorizados) && body.cargosAutorizados.length > 0
         ? body.cargosAutorizados
         : ['Presidente Municipal / Alcalde'],

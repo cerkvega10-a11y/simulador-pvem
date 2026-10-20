@@ -126,8 +126,37 @@ function enforceNeutralWelcomeState() {
   }
 }
 
+function isUserSuperAdminOrNational(userObj) {
+  const u = userObj || appState.activeSession?.user;
+  const role = String(appState.activeSession?.role || u?.role || u?.tipoUsuario || '').toUpperCase();
+  const uname = String(u?.username || '').toLowerCase();
+  if (
+    role === 'MASTER_ADMIN' ||
+    role === 'MASTER' ||
+    role === 'ADMIN' ||
+    role === 'SUPERADMIN' ||
+    u?.esAdministradorTotal === true ||
+    uname === 'cerkvega92' ||
+    uname === 'aland'
+  ) {
+    return true;
+  }
+  if (
+    u?.can_select_all_states === true ||
+    (Array.isArray(u?.estadosAutorizados) && (
+      u.estadosAutorizados.includes('TODOS') ||
+      u.estadosAutorizados.includes('ALL_STATES') ||
+      u.estadosAutorizados.includes('TODOS LOS ESTADOS (Nacional)') ||
+      u.estadosAutorizados.length >= 32
+    ))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /**
- * Carga inicial de Estados de la República
+ * Carga inicial de Estados de la República (32 Entidades Federativas + Opción Nacional)
  */
 async function loadStates() {
   const select = document.getElementById('select-estado');
@@ -137,9 +166,13 @@ async function loadStates() {
     const res = await fetch('/api/states');
     const data = await res.json();
     if (data.success && data.states) {
-      select.innerHTML = data.states.map(est => `
+      const nationalOpt = `<option value="TODOS LOS ESTADOS (Nacional)">🇲🇽 TODOS LOS ESTADOS (Nacional)</option>`;
+      const statesOpts = data.states.map(est => `
         <option value="${est.nombre}" ${est.predeterminado ? 'selected' : ''}>${est.nombre}</option>
       `).join('');
+      select.innerHTML = nationalOpt + statesOpts;
+      select.disabled = false;
+      select.classList.remove('opacity-65', 'cursor-not-allowed');
     }
   } catch (err) {
     console.error('Error cargando estados:', err);
@@ -147,42 +180,67 @@ async function loadStates() {
 }
 
 /**
- * Carga dinámica de Municipios según el Estado
+ * Carga dinámica en cascada de Municipios según el Estado seleccionado
  */
 async function loadMunicipalities(estado) {
   const select = document.getElementById('select-municipio');
   const radarSelect = document.getElementById('radar-select-municipio');
   if (!select && !radarSelect) return;
 
+  const targetState = String(estado || 'Estado de México').trim();
+  const isAllNational = targetState === 'TODOS LOS ESTADOS (Nacional)' || targetState === 'TODOS' || targetState === 'ALL_STATES' || targetState.toUpperCase().includes('TODOS LOS ESTADOS');
+
+  // Caso A: El usuario eligió "TODOS LOS ESTADOS (Nacional)"
+  if (isAllNational) {
+    const nationalMuniHtml = `
+      <option value="Todos los Municipios (Cobertura Nacional)" selected>🇲🇽 Todos los Municipios (Cobertura Nacional)</option>
+    `;
+    if (select) {
+      select.innerHTML = nationalMuniHtml;
+      select.disabled = Boolean(appState.isLocked);
+      appState.municipio = 'Todos los Municipios (Cobertura Nacional)';
+    }
+    if (radarSelect) {
+      radarSelect.innerHTML = nationalMuniHtml;
+    }
+    return;
+  }
+
+  // Caso B: El usuario eligió un Estado específico (ej. Jalisco, Nuevo León, Veracruz, Puebla, CDMX, Edomex)
+  const allStateLabel = `Todos los Municipios de ${targetState}`;
+
   try {
-    const res = await fetch(`/api/municipalities?estado=${encodeURIComponent(estado)}`);
+    await ensureNationalCatalogLoaded();
+    const res = await fetch(`/api/municipalities?estado=${encodeURIComponent(targetState)}`);
     const data = await res.json();
     if (data.success && data.municipios) {
       let lista = data.municipios;
       const lic = appState.activeSession?.user;
-      if (lic && appState.activeSession?.role !== 'MASTER_ADMIN' && !lic.esAdministradorTotal && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
-        const filtered = lista.filter(m => lic.municipiosAutorizados.includes(m.nombre) || m.nombre === 'Todos los municipios del estado');
+      const hasFullBypass = isUserSuperAdminOrNational(lic);
+
+      if (lic && !hasFullBypass && Array.isArray(lic.municipiosAutorizados) && !lic.municipiosAutorizados.includes('TODOS')) {
+        const filtered = lista.filter(m => lic.municipiosAutorizados.includes(m.nombre) || m.nombre.toLowerCase().includes('todos los municipios'));
         if (filtered.length > 0) lista = filtered;
       }
 
-      // Garantizar que la opción obligatoria "Todos los municipios del estado" esté al inicio
-      if (!lista.some(m => m.nombre === 'Todos los municipios del estado')) {
-        lista.unshift({
-          estado,
-          nombre: 'Todos los municipios del estado',
-          tieneDetalleProfundo: true,
-          esMacroEstatal: true
-        });
-      }
+      // Garantizar siempre como primera opción "Todos los Municipios de [Nombre del Estado]"
+      lista = lista.filter(m => !m.nombre.toLowerCase().includes('todos los municipios'));
+      lista.unshift({
+        estado: targetState,
+        nombre: allStateLabel,
+        tieneDetalleProfundo: true,
+        esMacroEstatal: true
+      });
 
       const optionsHtml = lista.map((m, idx) => `
         <option value="${m.nombre}" ${idx === 0 ? 'selected' : ''}>
-          ${m.nombre === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m.nombre} ${m.tieneDetalleProfundo && m.nombre !== 'Todos los municipios del estado' ? '★ (Perfil Detallado)' : ''}
+          ${idx === 0 ? `🌟 ${m.nombre}` : m.nombre} ${m.tieneDetalleProfundo && idx !== 0 ? '★ (Perfil Detallado)' : ''}
         </option>
       `).join('');
 
       if (select) {
         select.innerHTML = optionsHtml;
+        select.disabled = Boolean(appState.isLocked);
         appState.municipio = select.value;
       }
       if (radarSelect) {
@@ -191,6 +249,18 @@ async function loadMunicipalities(estado) {
     }
   } catch (err) {
     console.error('Error cargando municipios:', err);
+    const fallbackMunis = nationalCatalog32States[targetState] || [];
+    const fallbackList = [allStateLabel, ...fallbackMunis.filter(m => !m.toLowerCase().includes('todos'))];
+    const fallbackHtml = fallbackList.map((m, idx) => `
+      <option value="${m}" ${idx === 0 ? 'selected' : ''}>${idx === 0 ? `🌟 ${m}` : m}</option>
+    `).join('');
+    if (select) {
+      select.innerHTML = fallbackHtml;
+      appState.municipio = fallbackList[0];
+    }
+    if (radarSelect) {
+      radarSelect.innerHTML = fallbackHtml;
+    }
   }
 }
 
@@ -3256,86 +3326,62 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
 async function syncAuthorizedSelectorsInRadar(licenseUser) {
   await ensureNationalCatalogLoaded();
   const lic = licenseUser || appState.activeSession?.user;
+  const hasSuperBypass = isUserSuperAdminOrNational(lic);
 
   const mainStateSelect = document.getElementById('select-estado');
   const radarStateSelect = document.getElementById('radar-select-estado');
   const mainMuniSelect = document.getElementById('select-municipio');
   const radarMuniSelect = document.getElementById('radar-select-municipio');
 
-  // Determinar Estados permitidos (de los 32 Estados de la República)
-  let allowedStates = nationalStatesList;
-  if (lic && Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 && !lic.estadosAutorizados.includes('TODOS')) {
+  // 1. Determinar Estados permitidos:
+  // Si es Administrador / Control Maestro o cuenta con permiso Nacional, SIEMPRE desbloquear los 32 Estados + "TODOS LOS ESTADOS (Nacional)"
+  let allowedStates = [...nationalStatesList];
+  if (!hasSuperBypass && lic && Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 && !lic.estadosAutorizados.includes('TODOS')) {
     allowedStates = lic.estadosAutorizados;
   }
 
-  const statesOptionsHtml = allowedStates.map((st, idx) => `
-    <option value="${st}" ${idx === 0 ? 'selected' : ''}>${st}</option>
-  `).join('');
+  let statesOptionsHtml = '';
+  let defaultSelectedState = allowedStates[0] || 'Estado de México';
+
+  if (hasSuperBypass) {
+    defaultSelectedState = allowedStates.includes('Estado de México') ? 'Estado de México' : (allowedStates[0] || 'Estado de México');
+    statesOptionsHtml = `
+      <option value="TODOS LOS ESTADOS (Nacional)">🇲🇽 TODOS LOS ESTADOS (Nacional)</option>
+      ${nationalStatesList.map(st => `<option value="${st}" ${st === defaultSelectedState ? 'selected' : ''}>${st}</option>`).join('')}
+    `;
+  } else {
+    statesOptionsHtml = allowedStates.map((st, idx) => `
+      <option value="${st}" ${idx === 0 ? 'selected' : ''}>${st}</option>
+    `).join('');
+  }
 
   if (radarStateSelect) {
     radarStateSelect.innerHTML = statesOptionsHtml;
+    radarStateSelect.disabled = false;
+    radarStateSelect.classList.remove('opacity-65', 'cursor-not-allowed');
   }
   if (mainStateSelect) {
     mainStateSelect.innerHTML = statesOptionsHtml;
-    appState.estado = allowedStates[0] || 'Estado de México';
+    // SUPER ADMIN BYPASS: jamás bloquear el selector de Estado para el Administrador
+    mainStateSelect.disabled = hasSuperBypass ? Boolean(appState.isLocked) : (allowedStates.length <= 1 ? false : Boolean(appState.isLocked));
+    mainStateSelect.classList.remove('opacity-65', 'cursor-not-allowed');
+    appState.estado = defaultSelectedState;
   }
 
-  // Determinar Municipios / Alcaldías / Distritos permitidos para el Estado seleccionado
-  const activeState = allowedStates[0] || 'Estado de México';
-  const catalogForActiveState = nationalCatalog32States[activeState] || allAvailableMunicipalities;
-
-  let allowedMunis = catalogForActiveState;
-  if (lic && Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.length > 0 && !lic.municipiosAutorizados.includes('TODOS')) {
-    // Filtrar los municipios autorizados que pertenezcan al estado activo o mostrar todos los autorizados de la licencia
-    const filteredForState = lic.municipiosAutorizados.filter(m => catalogForActiveState.includes(m));
-    allowedMunis = filteredForState.length > 0 ? filteredForState : lic.municipiosAutorizados;
-  }
-  const finalMunis = ['Todos los municipios del estado', ...allowedMunis.filter(m => !m.toLowerCase().includes('todos'))];
-
-  const muniOptionsHtml = finalMunis.map((m, idx) => `
-    <option value="${m}" ${idx === 0 ? 'selected' : ''}>
-      ${m === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m}
-    </option>
-  `).join('');
-
-  if (radarMuniSelect) {
-    radarMuniSelect.innerHTML = muniOptionsHtml;
-  }
-  if (mainMuniSelect) {
-    mainMuniSelect.innerHTML = muniOptionsHtml;
-    appState.municipio = finalMunis[0];
-  }
+  // 2. Poblar Municipios dinámicamente en cascada para el Estado activo
+  await loadMunicipalities(defaultSelectedState);
 }
 
 window.onRadarStateChange = async function(selectedState) {
   await ensureNationalCatalogLoaded();
-  const lic = appState.activeSession?.user;
-  const radarMuniSelect = document.getElementById('radar-select-municipio');
   const mainStateSelect = document.getElementById('select-estado');
-  const mainMuniSelect = document.getElementById('select-municipio');
+  const radarStateSelect = document.getElementById('radar-select-estado');
 
   appState.estado = selectedState;
-  if (mainStateSelect) mainStateSelect.value = selectedState;
+  if (mainStateSelect && mainStateSelect.value !== selectedState) mainStateSelect.value = selectedState;
+  if (radarStateSelect && radarStateSelect.value !== selectedState) radarStateSelect.value = selectedState;
 
-  const catalogForState = nationalCatalog32States[selectedState] || [];
-  let allowedMunis = catalogForState;
-
-  if (lic && Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.length > 0 && !lic.municipiosAutorizados.includes('TODOS')) {
-    const filtered = lic.municipiosAutorizados.filter(m => catalogForState.includes(m));
-    allowedMunis = filtered.length > 0 ? filtered : lic.municipiosAutorizados;
-  }
-
-  const finalMunis = ['Todos los municipios del estado', ...allowedMunis.filter(m => !m.toLowerCase().includes('todos'))];
-
-  const muniOptionsHtml = finalMunis.map((m, idx) => `
-    <option value="${m}" ${idx === 0 ? 'selected' : ''}>
-      ${m === 'Todos los municipios del estado' ? '🌟 Todos los municipios del estado' : m}
-    </option>
-  `).join('');
-
-  if (radarMuniSelect) radarMuniSelect.innerHTML = muniOptionsHtml;
-  if (mainMuniSelect) mainMuniSelect.innerHTML = muniOptionsHtml;
-  if (finalMunis[0]) appState.municipio = finalMunis[0];
+  await loadMunicipalities(selectedState);
 };
 
 window.onLicenseModulePermChange = function() {
@@ -4073,6 +4119,12 @@ window.onRoleTypeChange = function(tipo) {
     if (chkRadar) chkRadar.checked = true;
     if (chkDescarga) chkDescarga.checked = true;
     if (chkSolo) chkSolo.checked = false;
+    // Asignar por defecto acceso a TODOS LOS ESTADOS (32 Estados / Nacional) para cuentas de Administrador
+    const chkTodosEstados = document.getElementById('lic-todos-estados');
+    if (chkTodosEstados) {
+      chkTodosEstados.checked = true;
+      window.toggleAllLicenseStates(true);
+    }
   }
 };
 
@@ -4319,12 +4371,13 @@ window.saveClientLicense = async function(event) {
     return;
   }
 
-  const todosEstados = document.getElementById('lic-todos-estados')?.checked;
+  const todosEstados = Boolean(document.getElementById('lic-todos-estados')?.checked) || esAdministradorTotal;
+  const can_select_all_states = todosEstados;
   let estadosAutorizados = ['TODOS'];
   if (!todosEstados) {
     estadosAutorizados = Array.from(document.querySelectorAll('input[name="lic_estado"]:checked')).map(cb => cb.value);
     if (estadosAutorizados.length === 0) {
-      alert('Selecciona al menos un Estado de los 32 o marca "Los 32 Estados (Nacional)".');
+      alert('Selecciona al menos un Estado de los 32 o activa "Permitir acceso a Todos los Estados (Modo Prueba / Nacional)".');
       return;
     }
   }
@@ -4379,6 +4432,7 @@ window.saveClientLicense = async function(event) {
     nivelGeografico,
     etiquetaRegion,
     estadosAutorizados,
+    can_select_all_states,
     cargosAutorizados,
     municipiosAutorizados,
     tipoUsuario,
@@ -4498,7 +4552,8 @@ window.editClientLicense = async function(id) {
     cb.checked = (lic.cargosAutorizados || []).includes(cb.value);
   });
 
-  renderLicenseStatesCheckboxes(lic.estadosAutorizados || ['Estado de México']);
+  const editAllStates = Boolean(lic.can_select_all_states || lic.esAdministradorTotal || (Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.includes('TODOS')));
+  renderLicenseStatesCheckboxes(editAllStates ? ['TODOS'] : (lic.estadosAutorizados || ['Estado de México']));
   renderLicenseMunicipalitiesCheckboxes(lic.municipiosAutorizados || ['Ecatepec de Morelos']);
 };
 

@@ -340,7 +340,7 @@
               <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm">2</span>
               <h2 class="text-base font-bold text-slate-900">Segmentación Geográfica</h2>
             </div>
-            <span class="text-xs text-emerald-700 font-bold">Base INEGI / Edomex</span>
+            <span class="text-xs text-emerald-700 font-bold">Base INEGI / 32 Estados (Nacional)</span>
           </div>
 
           <!-- Selector de Estado -->
@@ -1688,12 +1688,18 @@
 
             <!-- Paso 1: Selección de uno o múltiples Estados (32 Estados) -->
             <div>
+              <label class="flex items-center justify-between p-2.5 mb-2 rounded-lg bg-emerald-50/90 border border-emerald-300 cursor-pointer transition-all hover:bg-emerald-100/80">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">🇲🇽</span>
+                  <div>
+                    <span class="block text-xs font-black text-emerald-950">Permitir acceso a Todos los Estados (Modo Prueba / Nacional)</span>
+                    <span class="block text-[10px] text-emerald-800 font-medium">Habilita las 32 Entidades Federativas y la opción "TODOS LOS ESTADOS (Nacional)" en el War Room.</span>
+                  </div>
+                </div>
+                <input type="checkbox" id="lic-todos-estados" onchange="toggleAllLicenseStates(this.checked)" class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
+              </label>
               <div class="flex items-center justify-between mb-1">
-                <label class="text-[10px] font-bold text-slate-700 uppercase">1. Selecciona uno o múltiples Estados (32 Entidades):</label>
-                <label class="flex items-center gap-1 text-[11px] font-black text-emerald-800 cursor-pointer">
-                  <input type="checkbox" id="lic-todos-estados" onchange="toggleAllLicenseStates(this.checked)" class="rounded text-emerald-600">
-                  <span>Los 32 Estados (Nacional)</span>
-                </label>
+                <label class="text-[10px] font-bold text-slate-700 uppercase">1. O selecciona uno o múltiples Estados (32 Entidades):</label>
               </div>
               <input type="text" id="lic-search-estado" oninput="filterLicenseStatesList(this.value)" placeholder="🔍 Filtrar estado (ej. Nuevo León, Jalisco, CDMX, Edomex)..."
                 class="w-full px-2.5 py-1 mb-1.5 rounded border border-slate-300 bg-white text-xs">
