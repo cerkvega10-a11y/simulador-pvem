@@ -1557,7 +1557,7 @@ function getColoniasStats(municipio = 'Ecatepec de Morelos', estado = '') {
       poblacionElectoral: c.poblacionElectoral,
       listaNominal: c.listaNominal,
       porcentajeApoyoProyectado: c.porcentajeApoyoProyectado,
-      porcentajeOposicion: Number((100 - c.porcentajeApoyoProyectado - 8).toFixed(1)),
+      porcentajeOposicion: Math.max(0, Number((100 - c.porcentajeApoyoProyectado - Math.min(8, Math.max(0, 100 - c.porcentajeApoyoProyectado))).toFixed(1))),
       friccionSocial: (c.prioridadBrigada || '').includes('Crítica') ? 'Alta' : ((c.prioridadBrigada || '').includes('Indecisa') ? 'Media' : 'Baja'),
       prioridadBrigada: c.prioridadBrigada,
       carenciaPrincipal: c.carenciaPrincipal,

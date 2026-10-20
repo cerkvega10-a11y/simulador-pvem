@@ -120,8 +120,13 @@ class UnionsEngine {
     if (aiUnionData && Array.isArray(aiUnionData.fuerzas) && aiUnionData.fuerzas.length > 0) {
       const fuerzasEvaluadas = FUERZAS_BASE.map(f => {
         const aiF = aiUnionData.fuerzas.find(item => item.id === f.id || (item.gremio && item.gremio.toLowerCase().includes(f.id)));
-        let favor = aiF && typeof aiF.favor === 'number' ? aiF.favor : 50;
-        let contra = aiF && typeof aiF.contra === 'number' ? aiF.contra : 30;
+        let favor = aiF && typeof aiF.favor === 'number' ? Math.max(0, Math.min(100, aiF.favor)) : 50;
+        let contra = aiF && typeof aiF.contra === 'number' ? Math.max(0, Math.min(100, aiF.contra)) : 30;
+        if (favor + contra > 100) {
+          const sum = favor + contra;
+          favor = Math.round((favor / sum) * 100);
+          contra = 100 - favor;
+        }
         let neutro = Math.max(0, 100 - favor - contra);
         const match = f.sensibilidad.some(s => txt.includes(s)) || (aiF && Boolean(aiF.esAfectadoDirecto));
 

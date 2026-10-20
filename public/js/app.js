@@ -1959,7 +1959,12 @@ function getProviderLabel() {
  */
 window.openCitizenDetailModal = function(encodedData) {
   try {
-    const c = JSON.parse(decodeURIComponent(encodedData));
+    let c = encodedData;
+    try {
+      if (typeof encodedData === 'string') c = JSON.parse(decodeURIComponent(encodedData));
+    } catch (_) {
+      try { c = JSON.parse(encodedData); } catch (e) { return; }
+    }
     const modal = document.getElementById('modal-citizen-detail');
     if (!modal) return;
 
@@ -2748,8 +2753,12 @@ window.handleAuthLogin = async function(event) {
     // Guardar sesión activa
     appState.activeSession = {
       role: data.role,
-      user: data.user
+      user: data.user,
+      sessionToken: data.sessionToken || null
     };
+    if (data.sessionToken) {
+      sessionStorage.setItem('pvem_session_token', data.sessionToken);
+    }
 
     // Desbloquear contenedores principales de la plataforma (War Room Vista 2 como Ventana Principal)
     ['app-main-header', 'app-main-workspace', 'app-main-footer'].forEach(id => {
@@ -2821,6 +2830,7 @@ window.handleAuthLogin = async function(event) {
 window.logoutSession = function() {
   // 1. Destruir sesión activa y almacenamiento temporal
   appState.activeSession = null;
+  sessionStorage.removeItem('pvem_session_token');
   appState.radarAnalysis = null;
   appState.maxAllowedSwarm = 100000;
   try {
@@ -3413,9 +3423,17 @@ window.filterLicenseMunicipalitiesList = function(query) {
   });
 };
 
+function getAdminHeaders() {
+  const token = appState.activeSession?.sessionToken || sessionStorage.getItem('pvem_session_token') || '';
+  return {
+    'Content-Type': 'application/json',
+    'x-session-token': token
+  };
+}
+
 async function loadMasterLicenses() {
   try {
-    const res = await fetch('/api/licenses');
+    const res = await fetch('/api/licenses', { headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success && Array.isArray(data.licenses)) {
       masterLicensesCache = data.licenses;
@@ -3432,7 +3450,7 @@ async function loadMasterLicenses() {
             console.log(`[VAULT] Restaurando ${missingInServer.length} licencias desde la bóveda local al servidor...`);
             const syncRes = await fetch('/api/licenses/sync-vault', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: getAdminHeaders(),
               body: JSON.stringify({ vaultLicenses: localVault })
             });
             const syncData = await syncRes.json();
@@ -3736,7 +3754,8 @@ window.closeDemoLimitBlockedModal = function() {
 window.resetLicenseSimulations = async function(id) {
   try {
     const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/reset-simulations`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getAdminHeaders()
     });
     const data = await res.json();
     if (data.success) {
@@ -3775,7 +3794,7 @@ window.updateLicenseExpirationQuick = async function(id) {
   try {
     const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/expiration`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify({ fechaExpiracion: dateInput.value })
     });
     const data = await res.json();
@@ -3816,7 +3835,7 @@ window.toggleLicenseModulePermQuick = async function(id, modType, checked) {
   try {
     const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/permissions`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -4125,7 +4144,7 @@ window.saveClientLicense = async function(event) {
   try {
     const res = await fetch('/api/licenses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -4223,7 +4242,7 @@ window.editClientLicense = async function(id) {
 
 window.toggleClientLicenseKillSwitch = async function(id) {
   try {
-    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/toggle`, { method: 'PATCH' });
+    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/toggle`, { method: 'PATCH', headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success) {
       masterLicensesCache = data.licenses;
@@ -4237,7 +4256,7 @@ window.toggleClientLicenseKillSwitch = async function(id) {
 
 window.deleteClientLicense = async function(id) {
   try {
-    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success) {
       masterLicensesCache = data.licenses;
@@ -4473,7 +4492,7 @@ window.importLicensesBackup = async function(event) {
     }
     const res = await fetch('/api/licenses/sync-vault', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify({ vaultLicenses: imported })
     });
     const data = await res.json();
@@ -4518,7 +4537,7 @@ window.loadAccessAuditLogs = async function() {
     tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">Cargando telemetría de accesos...</td></tr>`;
   }
   try {
-    const res = await fetch('/api/audit/access-logs');
+    const res = await fetch('/api/audit/access-logs', { headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success) {
       auditLogsCache = data.logs || [];

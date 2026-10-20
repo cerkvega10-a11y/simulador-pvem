@@ -908,11 +908,12 @@ function loadLicensesStore() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(lic => ({
-          estadosAutorizados: ['Estado de México'],
-          permisoRadar: true,
-          permisoSimulador: true,
-          propuestaFijaTitulo: '',
-          propuestaFijaTexto: '',
+          ...lic,
+          estadosAutorizados: Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'],
+          permisoRadar: lic.permisoRadar !== undefined ? lic.permisoRadar : true,
+          permisoSimulador: lic.permisoSimulador !== undefined ? lic.permisoSimulador : true,
+          propuestaFijaTitulo: lic.propuestaFijaTitulo || '',
+          propuestaFijaTexto: lic.propuestaFijaTexto || '',
           allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
           can_select_any_party: Boolean(lic.can_select_any_party),
           login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
@@ -1018,6 +1019,34 @@ function sanitizeLicenseForClient(lic) {
     customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
     aiModel: lic.aiModel || 'gemini-default'
   };
+}
+
+// Almacén en memoria para tokens de sesión autenticados (Expiración: 24 horas)
+const activeAdminSessions = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of activeAdminSessions.entries()) {
+    if (now - data.createdAt > 24 * 60 * 60 * 1000) {
+      activeAdminSessions.delete(token);
+    }
+  }
+}, 60 * 60 * 1000);
+
+function requireMasterAdmin(req, res, next) {
+  const token = req.headers['x-session-token'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  if (token && activeAdminSessions.has(token)) {
+    const session = activeAdminSessions.get(token);
+    if (session && (session.isMasterRole || session.role === 'MASTER_ADMIN')) {
+      return next();
+    }
+    return res.status(403).json({ success: false, error: 'Acceso denegado: Se requieren privilegios de Administrador Maestro.' });
+  }
+  const adminKey = req.headers['x-master-admin-key'];
+  if (adminKey && adminKey === getEncryptionKey().toString('hex')) {
+    return next();
+  }
+  return res.status(401).json({ success: false, error: 'Autenticación requerida para acceder al panel administrativo de licencias.' });
 }
 
 function resolveAiConfigForSimulation(inputData = {}) {
@@ -1165,9 +1194,19 @@ app.post('/api/auth/login', (req, res) => {
         req
       });
 
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      activeAdminSessions.set(sessionToken, {
+        userId: masterAccount.id,
+        username: masterAccount.username,
+        role: 'MASTER_ADMIN',
+        isMasterRole: true,
+        createdAt: Date.now()
+      });
+
       return res.json({
         success: true,
         role: 'MASTER_ADMIN',
+        sessionToken,
         watermark: AUTHORSHIP_WATERMARK,
         user: {
           id: masterAccount.id,
@@ -1305,12 +1344,22 @@ app.post('/api/auth/login', (req, res) => {
       req
     });
 
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    activeAdminSessions.set(sessionToken, {
+      userId: found.id,
+      username: found.username,
+      role: clientRole,
+      isMasterRole,
+      createdAt: Date.now()
+    });
+
     return res.json({
       success: true,
       role: clientRole,
+      sessionToken,
       watermark: AUTHORSHIP_WATERMARK,
       user: {
-        ...found,
+        ...sanitizeLicenseForClient(found),
         allowed_parties: Array.isArray(found.allowed_parties) && found.allowed_parties.length > 0 ? found.allowed_parties : [found.partido || 'PVEM'],
         can_select_any_party: Boolean(found.can_select_any_party),
         login_count: found.login_count,
@@ -1329,14 +1378,14 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // 9.2. Listar Licencias (Para Panel de Control Maestro)
-app.get('/api/licenses', (req, res) => {
+app.get('/api/licenses', requireMasterAdmin, (req, res) => {
   licensesStore = loadLicensesStore();
   const safeList = licensesStore.map(lic => sanitizeLicenseForClient(lic));
   res.json({ success: true, licenses: safeList, watermark: AUTHORSHIP_WATERMARK });
 });
 
 // 9.2b. Bitácora de Auditoría y Telemetría de Accesos (Zero-Data Retention)
-app.get('/api/audit/access-logs', (req, res) => {
+app.get('/api/audit/access-logs', requireMasterAdmin, (req, res) => {
   try {
     const logs = loadAccessLogs();
     const todayStr = new Date().toISOString().split('T')[0];
@@ -1380,7 +1429,7 @@ app.get('/api/audit/access-logs', (req, res) => {
 });
 
 // 9.3. Crear o Actualizar Licencia de Cliente Político
-app.post('/api/licenses', (req, res) => {
+app.post('/api/licenses', requireMasterAdmin, (req, res) => {
   try {
     const body = req.body || {};
     licensesStore = loadLicensesStore();
@@ -1509,7 +1558,7 @@ app.post('/api/licenses', (req, res) => {
 });
 
 // 9.4. Alternar Estado Activo / Kill Switch Instantáneo
-app.patch('/api/licenses/:id/toggle', (req, res) => {
+app.patch('/api/licenses/:id/toggle', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
     licensesStore = loadLicensesStore();
@@ -1526,7 +1575,7 @@ app.patch('/api/licenses/:id/toggle', (req, res) => {
 });
 
 // 9.4b. Actualizar Fecha de Vigencia (Calendario / Datepicker Rápido en Licencias Activas)
-app.patch('/api/licenses/:id/expiration', (req, res) => {
+app.patch('/api/licenses/:id/expiration', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { fechaExpiracion, fechaInicio } = req.body || {};
@@ -1555,7 +1604,7 @@ app.patch('/api/licenses/:id/expiration', (req, res) => {
 });
 
 // 9.4c. Actualizar Permisos Independientes de Módulos (Radar vs Simulador)
-app.patch('/api/licenses/:id/permissions', (req, res) => {
+app.patch('/api/licenses/:id/permissions', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { permisoRadar, permisoSimulador } = req.body || {};
@@ -1574,7 +1623,7 @@ app.patch('/api/licenses/:id/permissions', (req, res) => {
 });
 
 // 9.4d. Reiniciar Contador de Simulaciones (Reset a 0/3)
-app.post('/api/licenses/:id/reset-simulations', (req, res) => {
+app.post('/api/licenses/:id/reset-simulations', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
     licensesStore = loadLicensesStore();
@@ -1596,7 +1645,7 @@ app.post('/api/licenses/:id/reset-simulations', (req, res) => {
 });
 
 // 9.5. Eliminar Licencia
-app.delete('/api/licenses/:id', (req, res) => {
+app.delete('/api/licenses/:id', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
     licensesStore = loadLicensesStore();
@@ -1609,7 +1658,7 @@ app.delete('/api/licenses/:id', (req, res) => {
 });
 
 // 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (Persistencia Bidireccional)
-app.post('/api/licenses/sync-vault', (req, res) => {
+app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
   try {
     const { vaultLicenses = [] } = req.body || {};
     if (!Array.isArray(vaultLicenses) || vaultLicenses.length === 0) {
