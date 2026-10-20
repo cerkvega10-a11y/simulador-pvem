@@ -3,7 +3,19 @@
 
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
+
+let pdfParse = null;
+function getPdfParser() {
+  if (!pdfParse) {
+    try {
+      pdfParse = require('pdf-parse');
+    } catch (e) {
+      console.warn('pdf-parse fallback en entorno serverless:', e.message);
+      pdfParse = async (buf) => ({ text: buf.toString('utf8') });
+    }
+  }
+  return pdfParse;
+}
 
 class MultimodalAgent {
   constructor() {
@@ -19,7 +31,8 @@ class MultimodalAgent {
 
     try {
       if (extension === '.pdf' || mimeType === 'application/pdf') {
-        const data = await pdfParse(fileBuffer);
+        const parser = getPdfParser();
+        const data = await parser(fileBuffer);
         extractedText = data.text || '';
       } else if (extension === '.txt' || mimeType.includes('text/plain')) {
         extractedText = fileBuffer.toString('utf-8');

@@ -84,7 +84,7 @@ setInterval(() => {
       rateLimitStore.delete(ip);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 const cyberSentinelRateLimiter = (req, res, next) => {
   // Ignorar archivos estáticos
@@ -153,15 +153,17 @@ const sanitizeStringValue = (str) => {
 
 const sanitizeObjectRecursive = (obj) => {
   if (!obj || typeof obj !== 'object') return obj;
-  for (const key of Object.keys(obj)) {
-    // Preservar llaves API sin alteración técnica de su contenido para autenticación legítima
-    if (key === 'apiKey' || key === 'tavilyApiKey') continue;
-    if (typeof obj[key] === 'string') {
-      obj[key] = sanitizeStringValue(obj[key]);
-    } else if (typeof obj[key] === 'object') {
-      sanitizeObjectRecursive(obj[key]);
+  try {
+    for (const key of Object.keys(obj)) {
+      // Preservar llaves API sin alteración técnica de su contenido para autenticación legítima
+      if (key === 'apiKey' || key === 'tavilyApiKey') continue;
+      if (typeof obj[key] === 'string') {
+        obj[key] = sanitizeStringValue(obj[key]);
+      } else if (typeof obj[key] === 'object') {
+        sanitizeObjectRecursive(obj[key]);
+      }
     }
-  }
+  } catch (_) {}
   return obj;
 };
 
@@ -1062,7 +1064,7 @@ setInterval(() => {
       activeAdminSessions.delete(token);
     }
   }
-}, 60 * 60 * 1000);
+}, 60 * 60 * 1000).unref();
 
 function requireMasterAdmin(req, res, next) {
   const token = req.headers['x-session-token'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
