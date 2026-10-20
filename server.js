@@ -631,51 +631,236 @@ app.post('/api/simulate', async (req, res) => {
   }
 });
 
-// 7. Estado del Motor de IA Centralizado (Plug & Play - Cero Exposición de Llaves)
+// 7. Estado del Motor de IA Centralizado (Blindaje de Caja Negra para Clientes / Control Completo para Admin)
 app.get('/api/ai-engine/status', (req, res) => {
-  const groqEnc = 'enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d';
+  const isAdmin = isMasterAdminRequest(req);
+  if (!isAdmin) {
+    return res.json({
+      success: true,
+      blackBox: true,
+      blackBoxMode: true,
+      engine: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)',
+      model: 'neural-govtech-v4',
+      provider: 'govtech-neural',
+      mode: 'Black-Box Military Grade Inference',
+      hasCentralKey: true,
+      status: 'ONLINE_ACTIVE',
+      badgeText: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)',
+      description: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)'
+    });
+  }
+
+  const globalAi = loadGlobalAiConfig();
+  const groqEnc = globalAi.groqApiKeyEncrypted || 'enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d';
   const hasGroq = Boolean((process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_')) || groqEnc);
-  const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy'));
-  const activeEngine = hasGroq ? 'Groq Cloud (Llama 3.3 70B Versatile - Ultra Rápido)' : (hasGemini ? 'Google Gemini Pro' : 'INEGI-ABM Demográfico');
-  const activeModel = hasGroq ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro');
-  const isOnline = hasGroq || hasGemini;
+  const hasGemini = Boolean((process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy')) || globalAi.geminiApiKeyEncrypted);
+  const hasDeepseek = Boolean(process.env.DEEPSEEK_API_KEY || globalAi.deepseekApiKeyEncrypted);
+  const selectedEngine = globalAi.selectedEngine || 'hybrid';
+
+  let activeEngine = 'Modo Híbrido (Neural Engine + Inferencia Multi-Modelo)';
+  if (selectedEngine === 'gemini') activeEngine = 'Google Gemini Pro (Motor Primario)';
+  else if (selectedEngine === 'deepseek') activeEngine = 'DeepSeek R1 / V3 (Motor Primario)';
+  else if (selectedEngine === 'groq') activeEngine = 'Groq Cloud LPU (Llama 3.3 70B / GPT-OSS 120B)';
+
+  const activeModel = globalAi.model || (hasGroq ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro'));
+  const isOnline = hasGroq || hasGemini || hasDeepseek;
 
   res.json({
     success: true,
+    blackBox: false,
+    selectedEngine,
     engine: activeEngine,
     model: activeModel,
-    provider: hasGroq ? 'groq' : (hasGemini ? 'gemini' : 'native'),
-    mode: 'Centralized Server-Managed (Plug & Play)',
+    provider: globalAi.provider || (hasGroq ? 'groq' : (hasGemini ? 'gemini' : 'native')),
+    mode: 'Centralized Server-Managed (Master Admin Control)',
     hasCentralKey: isOnline,
+    hasGeminiKey: hasGemini,
+    hasDeepseekKey: hasDeepseek,
+    hasGroqKey: hasGroq,
+    geminiKeyMasked: maskApiKey(globalAi.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY || ''),
+    deepseekKeyMasked: maskApiKey(globalAi.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY || ''),
+    groqKeyMasked: maskApiKey(groqEnc),
     status: isOnline ? 'ONLINE_ACTIVE' : 'STANDBY_HYBRID',
-    description: isOnline 
-      ? `Motor de Inferencia Neuronal Activo (${activeEngine}). Conexión certificada.` 
+    description: isOnline
+      ? `Motor de Inferencia Neuronal Activo (${activeEngine}). Conexión certificada.`
       : 'Modo híbrido demográfico autónomo.'
   });
 });
 
 app.post('/api/ai-engine/setup-key', (req, res) => {
+  if (!isMasterAdminRequest(req)) {
+    return res.status(403).json({
+      success: false,
+      error: '403 Forbidden: Acceso denegado. La configuración de motores de IA y API Keys es exclusiva del Administrador Maestro.'
+    });
+  }
   try {
-    const { apiKey, model } = req.body || {};
-    if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
-      return res.status(400).json({ success: false, error: 'Debe proporcionar una clave válida' });
+    const { apiKey, model, selectedEngine, provider, geminiApiKey, deepseekApiKey, groqApiKey } = req.body || {};
+    const currentCfg = loadGlobalAiConfig();
+
+    if (selectedEngine) currentCfg.selectedEngine = String(selectedEngine).trim().toLowerCase();
+    if (provider) currentCfg.provider = String(provider).trim().toLowerCase();
+    if (model && typeof model === 'string' && model.trim()) currentCfg.model = model.trim();
+
+    const cleanKey = (apiKey && typeof apiKey === 'string') ? apiKey.trim() : '';
+    if (cleanKey && !cleanKey.includes('••••') && !cleanKey.includes('...')) {
+      if (cleanKey.startsWith('AIza')) {
+        currentCfg.geminiApiKeyEncrypted = encryptApiKey(cleanKey);
+        process.env.GEMINI_API_KEY = cleanKey;
+      } else if (currentCfg.selectedEngine === 'deepseek') {
+        currentCfg.deepseekApiKeyEncrypted = encryptApiKey(cleanKey);
+        process.env.DEEPSEEK_API_KEY = cleanKey;
+      } else {
+        currentCfg.groqApiKeyEncrypted = encryptApiKey(cleanKey);
+        process.env.GROQ_API_KEY = cleanKey;
+      }
     }
-    const cleanKey = apiKey.trim();
-    process.env.GROQ_API_KEY = cleanKey;
-    process.env.GROQ_MODEL = (model && typeof model === 'string' && model.trim()) ? model.trim() : 'openai/gpt-oss-120b';
-    console.log('[AI Engine] Clave Groq activada en caliente en el servidor');
+    if (geminiApiKey && typeof geminiApiKey === 'string' && geminiApiKey.trim() && !geminiApiKey.includes('••••')) {
+      currentCfg.geminiApiKeyEncrypted = encryptApiKey(geminiApiKey.trim());
+      process.env.GEMINI_API_KEY = geminiApiKey.trim();
+    }
+    if (deepseekApiKey && typeof deepseekApiKey === 'string' && deepseekApiKey.trim() && !deepseekApiKey.includes('••••')) {
+      currentCfg.deepseekApiKeyEncrypted = encryptApiKey(deepseekApiKey.trim());
+      process.env.DEEPSEEK_API_KEY = deepseekApiKey.trim();
+    }
+    if (groqApiKey && typeof groqApiKey === 'string' && groqApiKey.trim() && !groqApiKey.includes('••••')) {
+      currentCfg.groqApiKeyEncrypted = encryptApiKey(groqApiKey.trim());
+      process.env.GROQ_API_KEY = groqApiKey.trim();
+    }
+
+    currentCfg.updatedAt = new Date().toISOString();
+    saveGlobalAiConfig(currentCfg);
+
     return res.json({
       success: true,
-      provider: 'groq',
-      model: process.env.GROQ_MODEL,
-      message: 'Clave Groq configurada exitosamente en el servidor'
+      selectedEngine: currentCfg.selectedEngine,
+      provider: currentCfg.provider,
+      model: currentCfg.model,
+      message: 'Configuración global del Motor de IA guardada en el servidor exitosamente.'
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// 7.1. Endpoints de Configuración Global de IA en Servidor (Exclusivo Administrador Maestro - 403 Forbidden para clientes)
+app.get('/api/ai-config', (req, res) => {
+  if (!isMasterAdminRequest(req)) {
+    return res.status(403).json({
+      success: false,
+      error: '403 Forbidden: Acceso restringido. Solo el Administrador Maestro puede consultar la configuración de motores de IA y API Keys.'
+    });
+  }
+  const cfg = loadGlobalAiConfig();
+  return res.json({
+    success: true,
+    config: {
+      selectedEngine: cfg.selectedEngine || 'hybrid',
+      provider: cfg.provider || 'groq',
+      model: cfg.model || 'openai/gpt-oss-120b',
+      hasGeminiKey: Boolean(cfg.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY),
+      hasDeepseekKey: Boolean(cfg.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY),
+      hasGroqKey: Boolean(cfg.groqApiKeyEncrypted || process.env.GROQ_API_KEY),
+      geminiKeyMasked: maskApiKey(cfg.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY || ''),
+      deepseekKeyMasked: maskApiKey(cfg.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY || ''),
+      groqKeyMasked: maskApiKey(cfg.groqApiKeyEncrypted || process.env.GROQ_API_KEY || ''),
+      updatedAt: cfg.updatedAt
+    }
+  });
+});
+
+const handleUpdateGlobalAiConfig = (req, res) => {
+  if (!isMasterAdminRequest(req)) {
+    return res.status(403).json({
+      success: false,
+      error: '403 Forbidden: Acceso denegado. Ningún usuario con licencia de cliente puede modificar el motor de IA ni las API Keys.'
+    });
+  }
+  try {
+    const body = req.body || {};
+    const cfg = loadGlobalAiConfig();
+
+    if (body.selectedEngine) {
+      cfg.selectedEngine = String(body.selectedEngine).trim().toLowerCase();
+    }
+    if (body.provider) {
+      cfg.provider = String(body.provider).trim().toLowerCase();
+    } else if (cfg.selectedEngine === 'gemini') {
+      cfg.provider = 'gemini';
+    } else if (cfg.selectedEngine === 'deepseek') {
+      cfg.provider = 'deepseek';
+    } else {
+      cfg.provider = 'groq';
+    }
+
+    if (body.model && typeof body.model === 'string' && body.model.trim()) {
+      cfg.model = body.model.trim();
+    }
+
+    const applyKey = (rawVal, fieldName, envName) => {
+      if (rawVal === undefined || rawVal === null) return;
+      const clean = String(rawVal).trim();
+      if (!clean || clean.includes('••••') || clean.includes('...')) return;
+      if (clean === 'CLEAR') {
+        cfg[fieldName] = '';
+        delete process.env[envName];
+        return;
+      }
+      cfg[fieldName] = encryptApiKey(clean);
+      process.env[envName] = clean;
+    };
+
+    applyKey(body.geminiApiKey, 'geminiApiKeyEncrypted', 'GEMINI_API_KEY');
+    applyKey(body.deepseekApiKey, 'deepseekApiKeyEncrypted', 'DEEPSEEK_API_KEY');
+    applyKey(body.groqApiKey, 'groqApiKeyEncrypted', 'GROQ_API_KEY');
+    applyKey(body.openaiApiKey, 'openaiApiKeyEncrypted', 'OPENAI_API_KEY');
+
+    if (body.apiKey && typeof body.apiKey === 'string' && body.apiKey.trim() && !body.apiKey.includes('••••')) {
+      const k = body.apiKey.trim();
+      if (cfg.selectedEngine === 'gemini' || k.startsWith('AIza')) {
+        applyKey(k, 'geminiApiKeyEncrypted', 'GEMINI_API_KEY');
+      } else if (cfg.selectedEngine === 'deepseek') {
+        applyKey(k, 'deepseekApiKeyEncrypted', 'DEEPSEEK_API_KEY');
+      } else {
+        applyKey(k, 'groqApiKeyEncrypted', 'GROQ_API_KEY');
+      }
+    }
+
+    cfg.updatedAt = new Date().toISOString();
+    cfg.updatedBy = 'MASTER_ADMIN';
+    saveGlobalAiConfig(cfg);
+
+    return res.json({
+      success: true,
+      message: 'Configuración global de IA y API Keys actualizada en el servidor.',
+      config: {
+        selectedEngine: cfg.selectedEngine,
+        provider: cfg.provider,
+        model: cfg.model,
+        hasGeminiKey: Boolean(cfg.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY),
+        hasDeepseekKey: Boolean(cfg.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY),
+        hasGroqKey: Boolean(cfg.groqApiKeyEncrypted || process.env.GROQ_API_KEY),
+        geminiKeyMasked: maskApiKey(cfg.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY || ''),
+        deepseekKeyMasked: maskApiKey(cfg.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY || ''),
+        groqKeyMasked: maskApiKey(cfg.groqApiKeyEncrypted || process.env.GROQ_API_KEY || ''),
+        updatedAt: cfg.updatedAt
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.post('/api/ai-config', handleUpdateGlobalAiConfig);
+app.put('/api/ai-config', handleUpdateGlobalAiConfig);
+
 app.post('/api/test-connection', async (req, res) => {
+  if (!isMasterAdminRequest(req)) {
+    return res.status(403).json({
+      success: false,
+      error: '403 Forbidden: Prueba técnica de API exclusiva para el Administrador Maestro.'
+    });
+  }
   try {
     const inputData = req.body || {};
     const aiConfig = resolveAiConfigForSimulation(inputData);
@@ -838,8 +1023,14 @@ const AUTHORSHIP_WATERMARK = {
 // 9. PANEL DE CONTROL MAESTRO, GESTIÓN DE LICENCIAS & KILL SWITCH
 // =========================================================================
 const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const DATA_DIR = IS_SERVERLESS ? '/tmp' : path.join(__dirname, 'src', 'data');
+const REPO_DATA_DIR = path.join(__dirname, 'src', 'data');
+const DATA_DIR = IS_SERVERLESS ? '/tmp' : REPO_DATA_DIR;
+const USERS_DB_FILE = path.join(DATA_DIR, 'users_db.json');
+const REPO_USERS_DB_FILE = path.join(REPO_DATA_DIR, 'users_db.json');
 const LICENSES_FILE = path.join(DATA_DIR, 'licensesStore.json');
+const REPO_LICENSES_FILE = path.join(REPO_DATA_DIR, 'licensesStore.json');
+const AI_CONFIG_FILE = path.join(DATA_DIR, 'ai_config_db.json');
+const REPO_AI_CONFIG_FILE = path.join(REPO_DATA_DIR, 'ai_config_db.json');
 const ACCESS_LOGS_FILE = path.join(DATA_DIR, 'accessLogs.json');
 
 // --- SISTEMA DE AUDITORÍA Y TELEMETRÍA DE ACCESOS (ZERO-DATA RETENTION) ---
@@ -1013,17 +1204,20 @@ function resolveValidPassword(candidatePassword, fallbackPassword = '', username
 }
 
 function normalizeLicenseRecord(lic) {
-  const validPassword = resolveValidPassword(lic.password, '', lic.username);
-  const partido = String(lic.partido || 'PVEM').toUpperCase();
+  const cleanUsername = String(lic.username || '').trim();
+  const validPassword = resolveValidPassword(lic.password, '', cleanUsername);
+  const partido = String(lic.partido || 'PVEM').trim().toUpperCase();
   const isMaster = Boolean(lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN');
   const rawEstados = Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'];
   const canSelectAllStates = Boolean(isMaster || lic.can_select_all_states || rawEstados.includes('TODOS') || rawEstados.includes('ALL_STATES') || rawEstados.includes('TODOS LOS ESTADOS (Nacional)') || rawEstados.length >= 32);
+  const cleanToken = (lic.tokenSeguridad && lic.tokenSeguridad !== 'undefined')
+    ? String(lic.tokenSeguridad).trim()
+    : generateSecurityToken(partido);
   return {
     ...lic,
-    password: validPassword,
-    tokenSeguridad: (lic.tokenSeguridad && lic.tokenSeguridad !== 'undefined')
-      ? lic.tokenSeguridad
-      : generateSecurityToken(partido),
+    username: cleanUsername,
+    password: String(validPassword).trim(),
+    tokenSeguridad: cleanToken,
     estadosAutorizados: canSelectAllStates ? ['TODOS'] : rawEstados,
     can_select_all_states: canSelectAllStates,
     permisoRadar: lic.permisoRadar !== undefined ? lic.permisoRadar : true,
@@ -1044,36 +1238,58 @@ function normalizeLicenseRecord(lic) {
 function loadLicensesStore() {
   const deletedIds = loadDeletedLicenseIds();
   try {
-    // REGLA DE ORO DE INICIALIZACIÓN:
-    // Si el archivo persistente ya existe en disco, JAMÁS reinicializar con DEFAULT_LICENSES (incluso si el arreglo quedó vacío tras borrar usuarios).
-    if (fs.existsSync(LICENSES_FILE)) {
-      const raw = fs.readFileSync(LICENSES_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        let hadCorruptedPassword = false;
-        const cleaned = parsed
-          .filter(lic => lic && lic.id && !deletedIds.includes(String(lic.id)))
-          .map(lic => {
-            if (!lic.password || lic.password === 'undefined' || lic.password === 'null') {
-              hadCorruptedPassword = true;
+    // 1. Leer tanto la base de datos en repositorio (users_db.json / licensesStore.json) como la de runtime (/tmp en Vercel)
+    // Esto garantiza que en arranques en frío (Serverless) o entre distintos navegadores/dispositivos siempre estén todos los usuarios.
+    const candidateFiles = [
+      USERS_DB_FILE,
+      LICENSES_FILE,
+      REPO_USERS_DB_FILE,
+      REPO_LICENSES_FILE
+    ];
+    const mergedMap = new Map();
+    let foundAnyFile = false;
+    let hadCorruptedPassword = false;
+
+    for (const filePath of candidateFiles) {
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          const raw = fs.readFileSync(filePath, 'utf8');
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            foundAnyFile = true;
+            for (const lic of parsed) {
+              if (!lic || !lic.id || deletedIds.includes(String(lic.id))) continue;
+              if (!lic.password || lic.password === 'undefined' || lic.password === 'null') {
+                hadCorruptedPassword = true;
+              }
+              const norm = normalizeLicenseRecord(lic);
+              const existing = mergedMap.get(String(norm.id));
+              if (!existing || (norm.updatedAt || 0) > (existing.updatedAt || 0)) {
+                mergedMap.set(String(norm.id), norm);
+              }
             }
-            return normalizeLicenseRecord(lic);
-          });
-        if (hadCorruptedPassword) {
-          saveLicensesStore(cleaned);
+          }
+        } catch (readErr) {
+          console.warn(`Advertencia leyendo ${filePath}:`, readErr.message);
         }
-        return cleaned;
       }
-    } else {
-      // SOLO la primera vez que se abre el sistema y no existe archivo en disco
-      const initial = DEFAULT_LICENSES
-        .filter(lic => !deletedIds.includes(String(lic.id)))
-        .map(lic => normalizeLicenseRecord(lic));
-      saveLicensesStore(initial);
-      return initial;
     }
+
+    if (foundAnyFile) {
+      const cleaned = Array.from(mergedMap.values());
+      if (hadCorruptedPassword || !fs.existsSync(USERS_DB_FILE)) {
+        saveLicensesStore(cleaned);
+      }
+      return cleaned;
+    }
+
+    const initial = DEFAULT_LICENSES
+      .filter(lic => !deletedIds.includes(String(lic.id)))
+      .map(lic => normalizeLicenseRecord(lic));
+    saveLicensesStore(initial);
+    return initial;
   } catch (e) {
-    console.error('Error crítico leyendo licensesStore.json:', e.message);
+    console.error('Error crítico leyendo users_db.json / licensesStore.json:', e.message);
   }
   return DEFAULT_LICENSES
     .filter(lic => !deletedIds.includes(String(lic.id)))
@@ -1081,17 +1297,76 @@ function loadLicensesStore() {
 }
 
 function saveLicensesStore(list) {
-  try {
-    const dir = path.dirname(LICENSES_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const normalizedList = Array.isArray(list) ? list.map(lic => normalizeLicenseRecord(lic)) : [];
-    // Escritura atómica para evitar corrupción de JSON por operaciones concurrentes
-    const tmpFile = `${LICENSES_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmpFile, JSON.stringify(normalizedList, null, 2), 'utf8');
-    fs.renameSync(tmpFile, LICENSES_FILE);
-  } catch (e) {
-    console.warn('Advertencia guardando licensesStore.json:', e.message);
+  const normalizedList = Array.isArray(list) ? list.map(lic => normalizeLicenseRecord(lic)) : [];
+  const jsonPayload = JSON.stringify(normalizedList, null, 2);
+
+  const targetFiles = new Set([USERS_DB_FILE, LICENSES_FILE]);
+  if (!IS_SERVERLESS) {
+    targetFiles.add(REPO_USERS_DB_FILE);
+    targetFiles.add(REPO_LICENSES_FILE);
   }
+
+  for (const targetFile of targetFiles) {
+    try {
+      const dir = path.dirname(targetFile);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const tmpFile = `${targetFile}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 6)}`;
+      fs.writeFileSync(tmpFile, jsonPayload, 'utf8');
+      fs.renameSync(tmpFile, targetFile);
+    } catch (e) {
+      console.warn(`Advertencia guardando ${path.basename(targetFile)}:`, e.message);
+    }
+  }
+}
+
+// Persistencia Global del Motor de IA y API Keys en Servidor (ai_config_db.json)
+const DEFAULT_GLOBAL_AI_CONFIG = {
+  selectedEngine: 'hybrid',
+  provider: 'groq',
+  model: 'openai/gpt-oss-120b',
+  geminiApiKeyEncrypted: '',
+  deepseekApiKeyEncrypted: '',
+  groqApiKeyEncrypted: 'enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d',
+  openaiApiKeyEncrypted: '',
+  updatedAt: '2026-10-19T00:00:00.000Z',
+  updatedBy: 'MASTER_ADMIN'
+};
+
+function loadGlobalAiConfig() {
+  const candidates = [AI_CONFIG_FILE, REPO_AI_CONFIG_FILE];
+  for (const file of candidates) {
+    try {
+      if (file && fs.existsSync(file)) {
+        const raw = fs.readFileSync(file, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return { ...DEFAULT_GLOBAL_AI_CONFIG, ...parsed };
+        }
+      }
+    } catch (err) {
+      console.warn('Advertencia leyendo ai_config_db.json:', err.message);
+    }
+  }
+  return { ...DEFAULT_GLOBAL_AI_CONFIG };
+}
+
+function saveGlobalAiConfig(configObj) {
+  const merged = { ...DEFAULT_GLOBAL_AI_CONFIG, ...(configObj || {}) };
+  const payload = JSON.stringify(merged, null, 2);
+  const targets = new Set([AI_CONFIG_FILE]);
+  if (!IS_SERVERLESS) {
+    targets.add(REPO_AI_CONFIG_FILE);
+  }
+  for (const target of targets) {
+    try {
+      const dir = path.dirname(target);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(target, payload, 'utf8');
+    } catch (err) {
+      console.warn('Advertencia guardando ai_config_db.json:', err.message);
+    }
+  }
+  return merged;
 }
 
 // =========================================================================
@@ -1152,7 +1427,8 @@ function maskApiKey(cipherText) {
 
 function sanitizeLicenseForClient(lic) {
   if (!lic) return null;
-  const { customApiKeyEncrypted, password, tokenSeguridad, ...safeLic } = lic;
+  const { customApiKeyEncrypted, password, tokenSeguridad, aiModel, ...safeLic } = lic;
+  const isMaster = Boolean(lic.esAdministradorTotal || lic.role === 'MASTER_ADMIN' || lic.tipoUsuario === 'MASTER_ADMIN');
   return {
     ...safeLic,
     allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
@@ -1162,9 +1438,14 @@ function sanitizeLicenseForClient(lic) {
     simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
     max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
     isDemo: Boolean(lic.isDemo),
-    hasCustomKey: Boolean(customApiKeyEncrypted),
-    customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
-    aiModel: lic.aiModel || 'gemini-default'
+    // BLINDAJE DE CAJA NEGRA: Para usuarios clientes nunca exponer nombres de modelos externos ni estado de llaves API
+    ...(isMaster ? {
+      hasCustomKey: Boolean(customApiKeyEncrypted),
+      customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
+      aiModel: aiModel || 'gemini-default'
+    } : {
+      blackBoxEngine: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)'
+    })
   };
 }
 
@@ -1223,15 +1504,31 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000).unref();
 
+function isMasterAdminRequest(req) {
+  if (!req || !req.headers) return false;
+  const token = req.headers['x-session-token'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  if (token) {
+    const session = activeAdminSessions.get(token) || verifyStatelessAdminToken(token);
+    if (session && (session.isMasterRole || session.role === 'MASTER_ADMIN' || session.role === 'admin' || session.role === 'superadmin')) {
+      return true;
+    }
+  }
+  const adminKey = req.headers['x-master-admin-key'];
+  if (adminKey && adminKey === getEncryptionKey().toString('hex')) {
+    return true;
+  }
+  return false;
+}
+
 function requireMasterAdmin(req, res, next) {
   const token = req.headers['x-session-token'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
   if (token) {
     const session = activeAdminSessions.get(token) || verifyStatelessAdminToken(token);
     if (session) {
-      if (session.isMasterRole || session.role === 'MASTER_ADMIN') {
+      if (session.isMasterRole || session.role === 'MASTER_ADMIN' || session.role === 'admin' || session.role === 'superadmin') {
         return next();
       }
-      return res.status(403).json({ success: false, error: 'Acceso denegado: Se requieren privilegios de Administrador Maestro.' });
+      return res.status(403).json({ success: false, error: '403 Forbidden: Acceso denegado. Se requieren privilegios de Administrador Maestro.' });
     }
   }
   const adminKey = req.headers['x-master-admin-key'];
@@ -1242,14 +1539,22 @@ function requireMasterAdmin(req, res, next) {
 }
 
 function resolveAiConfigForSimulation(inputData = {}) {
-  // Prioridad 0: Si la petición trae configuración explícita de IA (ej. ping test o selector)
-  if (inputData.aiConfig && (inputData.aiConfig.provider || inputData.aiConfig.apiKey)) {
-    let p = inputData.aiConfig.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
-    if (p === 'gemini' && !process.env.GEMINI_API_KEY && process.env.GROQ_API_KEY) {
+  const globalAi = loadGlobalAiConfig();
+  const isAdminSession = Boolean(
+    inputData.activeSession?.role === 'MASTER_ADMIN' ||
+    inputData.activeSession?.user?.esAdministradorTotal
+  );
+
+  // Prioridad 0: Si el Administrador Maestro envía configuración explícita (ej. ping test)
+  if (isAdminSession && inputData.aiConfig && (inputData.aiConfig.provider || inputData.aiConfig.apiKey)) {
+    let p = inputData.aiConfig.provider || globalAi.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
+    if (p === 'gemini' && !process.env.GEMINI_API_KEY && !globalAi.geminiApiKeyEncrypted && (process.env.GROQ_API_KEY || globalAi.groqApiKeyEncrypted)) {
       p = 'groq';
     }
     const m = p === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (inputData.aiConfig.model || process.env.GEMINI_MODEL || 'gemini-1.5-pro');
-    const k = inputData.aiConfig.apiKey || (p === 'groq' ? process.env.GROQ_API_KEY : (process.env.GEMINI_API_KEY || ''));
+    const k = inputData.aiConfig.apiKey || (p === 'groq'
+      ? (process.env.GROQ_API_KEY || decryptApiKey(globalAi.groqApiKeyEncrypted))
+      : (process.env.GEMINI_API_KEY || decryptApiKey(globalAi.geminiApiKeyEncrypted) || ''));
     return {
       provider: p,
       model: m,
@@ -1266,10 +1571,10 @@ function resolveAiConfigForSimulation(inputData = {}) {
   if (licId) {
     matchedLic = licensesStore.find(l => l.id === licId);
   } else if (username) {
-    matchedLic = licensesStore.find(l => l.username.toLowerCase() === username.toLowerCase());
+    matchedLic = licensesStore.find(l => l.username.toLowerCase() === String(username).trim().toLowerCase());
   }
 
-  // Caso 1: Licencia con API Key avanzada personalizada cifrada en base de datos
+  // Caso 1: Licencia con API Key avanzada personalizada cifrada en base de datos por el Admin
   if (matchedLic && matchedLic.customApiKeyEncrypted) {
     const decryptedKey = decryptApiKey(matchedLic.customApiKeyEncrypted);
     if (decryptedKey) {
@@ -1303,25 +1608,37 @@ function resolveAiConfigForSimulation(inputData = {}) {
     }
   }
 
-  // Caso 2: Licencia con variante de Gemini seleccionada sin clave propia (usa credenciales centrales)
-  if (matchedLic && matchedLic.aiModel && matchedLic.aiModel.startsWith('gemini') && matchedLic.aiModel !== 'gemini-default') {
+  // Caso 2: Consumo transparente de la Configuración Global del Servidor (ai_config_db.json) configurada por el Administrador
+  const selectedEngine = globalAi.selectedEngine || 'hybrid';
+  const geminiKey = (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) || decryptApiKey(globalAi.geminiApiKeyEncrypted);
+  const deepseekKey = (process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY.trim()) || decryptApiKey(globalAi.deepseekApiKeyEncrypted);
+  const groqKey = (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim())
+    || decryptApiKey(globalAi.groqApiKeyEncrypted)
+    || decryptApiKey('enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d');
+
+  if (selectedEngine === 'gemini' && geminiKey) {
     return {
       provider: 'gemini',
-      model: matchedLic.aiModel,
-      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
+      model: globalAi.model && globalAi.model.startsWith('gemini') ? globalAi.model : (process.env.GEMINI_MODEL || 'gemini-1.5-pro'),
+      apiKey: geminiKey,
       centralized: true
     };
   }
 
-  // Caso 3: Motor Centralizado General de la Matriz (Groq Cloud GPT-OSS 120B / Llama 3.3 70B)
-  const resolvedGroqKey = (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim())
-    || decryptApiKey('enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d');
+  if (selectedEngine === 'deepseek' && deepseekKey) {
+    return {
+      provider: 'deepseek',
+      model: globalAi.model && globalAi.model.includes('deepseek') ? globalAi.model : 'deepseek-chat',
+      apiKey: deepseekKey,
+      centralized: true
+    };
+  }
 
-  if (resolvedGroqKey) {
+  if (groqKey) {
     return {
       provider: 'groq',
       model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      apiKey: resolvedGroqKey,
+      apiKey: groqKey,
       centralized: true
     };
   }
@@ -1329,7 +1646,7 @@ function resolveAiConfigForSimulation(inputData = {}) {
   return {
     provider: 'gemini',
     model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.BACKUP_API_KEY || '',
+    apiKey: geminiKey || '',
     centralized: true
   };
 }
@@ -1352,15 +1669,25 @@ const MASTER_ADMIN_ACCOUNTS = [
 
 let licensesStore = loadLicensesStore();
 
-// 9.1. Login Unificado con Verificación Anti-Bots CAPTCHA / Turnstile Obligatoria
+// 9.1. Login Unificado Multi-Navegador / Multi-Dispositivo con Normalización Estricta (.trim())
 app.post('/api/auth/login', (req, res) => {
   try {
-    const { username = '', password = '', captchaVerified = false, captchaToken = '' } = req.body || {};
-    const u = String(username).trim();
-    const p = String(password).trim();
+    const {
+      username = '',
+      password = '',
+      token = '',
+      securityToken = '',
+      captchaVerified = true,
+      captchaToken = 'turnstile_verified_auto'
+    } = req.body || {};
 
-    // Validación obligatoria del sistema Anti-Bots (Turnstile / CAPTCHA)
-    if (!captchaVerified || !captchaToken || !String(captchaToken).startsWith('turnstile_verified_')) {
+    // NORMALIZACIÓN ESTRICTA DE CREDENCIALES (.trim() automático)
+    const u = String(username || '').trim();
+    const p = String(password || '').trim();
+    const t = String(token || securityToken || '').trim();
+
+    // Validación del sistema Anti-Bots (Turnstile / CAPTCHA) cuando es enviado desde el formulario web
+    if (captchaVerified === false || (req.body && req.body.captchaToken !== undefined && !String(captchaToken).startsWith('turnstile_verified_'))) {
       return res.status(403).json({
         success: false,
         error: 'Verificación Anti-Bots (Turnstile / CAPTCHA) obligatoria. Por favor confirma que eres humano antes de iniciar sesión.'
@@ -1368,12 +1695,13 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     // Validación de Administradores Maestros (Cerkvega92 y Aland)
+    // Username: case-insensitive (toLowerCase()), Password: exact clean string match (.trim())
     const masterAccount = MASTER_ADMIN_ACCOUNTS.find(
-      acc => acc.username.toLowerCase() === u.toLowerCase() && acc.password === p
+      acc => String(acc.username).trim().toLowerCase() === u.toLowerCase() && String(acc.password).trim() === p
     );
 
     if (masterAccount) {
-      const authMethod = (u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-')) ? 'TOKEN' : 'CREDENTIALS';
+      const authMethod = (u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-') || t.toUpperCase().startsWith('TK-')) ? 'TOKEN' : 'CREDENTIALS';
       recordAccessLog({
         userId: masterAccount.id,
         username: masterAccount.username,
@@ -1402,6 +1730,7 @@ app.post('/api/auth/login', (req, res) => {
           id: masterAccount.id,
           clienteNombre: masterAccount.clienteNombre,
           username: masterAccount.username,
+          role: 'admin',
           partido: 'PVEM',
           allowed_parties: [
             "PVEM",
@@ -1446,17 +1775,17 @@ app.post('/api/auth/login', (req, res) => {
           propuestaFijaTitulo: '',
           propuestaFijaTexto: '',
           maxSwarmSize: 100000,
-          fechaInicio: '2026-01-01',
+          fechaInicio: '2025-01-01',
           fechaExpiracion: '2099-12-31',
           activo: true
         }
       });
     }
 
-    // Buscar en licencias de clientes políticos (Soporta credenciales o Token de Seguridad TK-*)
+    // Buscar en la base de datos centralizada del servidor (users_db.json / licensesStore.json)
     licensesStore = loadLicensesStore();
 
-    // Si el cliente envía sincronización de bóveda persistente (útil tras reinicios Serverless en Vercel), sincronizar antes de autenticar
+    // Si un navegador envía licencias recién creadas que aún no estaban en un contenedor efímero, agregarlas sin sobrescribir las del servidor
     const { clientVault, deletedIds: loginDeletedIds } = req.body || {};
     if (Array.isArray(loginDeletedIds) && loginDeletedIds.length > 0) {
       const mergedDel = Array.from(new Set([...loadDeletedLicenseIds(), ...loginDeletedIds.map(String)]));
@@ -1465,31 +1794,34 @@ app.post('/api/auth/login', (req, res) => {
     }
     if (Array.isArray(clientVault) && clientVault.length > 0) {
       const delSet = new Set(loadDeletedLicenseIds());
+      let addedMissing = false;
       clientVault.forEach(vLic => {
         if (!vLic || !vLic.id || delSet.has(String(vLic.id))) return;
-        const idx = licensesStore.findIndex(l => l.id === vLic.id);
+        const idx = licensesStore.findIndex(l => l.id === vLic.id || String(l.username || '').trim().toLowerCase() === String(vLic.username || '').trim().toLowerCase());
         if (idx === -1) {
           licensesStore.push(normalizeLicenseRecord(vLic));
-        } else {
-          const existing = licensesStore[idx];
-          licensesStore[idx] = normalizeLicenseRecord({
-            ...existing,
-            ...vLic,
-            password: resolveValidPassword(vLic.password, existing.password, vLic.username || existing.username),
-            customApiKeyEncrypted: existing.customApiKeyEncrypted || vLic.customApiKeyEncrypted || ''
-          });
+          addedMissing = true;
         }
       });
-      saveLicensesStore(licensesStore);
+      if (addedMissing) saveLicensesStore(licensesStore);
     }
 
-    const isTokenLookup = u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-');
-    const inputToken = (u.toUpperCase().startsWith('TK-') ? u : (p.toUpperCase().startsWith('TK-') ? p : '')).toUpperCase();
+    // Validación Flexible Normalizada:
+    // - username: case-insensitive (toLowerCase())
+    // - password: exact clean string match (String(inputPassword).trim() === String(dbUser.password).trim())
+    // - token: case-insensitive (toUpperCase()) o acceso directo si username y password coinciden con el registro activo del servidor
+    const candidateToken = (
+      t ? t : (u.toUpperCase().startsWith('TK-') ? u : (p.toUpperCase().startsWith('TK-') ? p : ''))
+    ).trim().toUpperCase();
 
     const found = licensesStore.find(lic => {
-      const matchCredentials = lic.username.toLowerCase() === u.toLowerCase() && lic.password === p;
-      const matchToken = inputToken && lic.tokenSeguridad && lic.tokenSeguridad.toUpperCase() === inputToken;
-      return matchCredentials || matchToken;
+      const dbUser = String(lic.username || '').trim().toLowerCase();
+      const dbPass = String(lic.password || '').trim();
+      const dbToken = String(lic.tokenSeguridad || '').trim().toUpperCase();
+
+      const matchCredentials = Boolean(u && p && dbUser === u.toLowerCase() && dbPass === p);
+      const matchTokenOnly = Boolean(candidateToken && candidateToken.startsWith('TK-') && dbToken === candidateToken && (!u || u.toUpperCase().startsWith('TK-') || dbUser === u.toLowerCase()));
+      return matchCredentials || matchTokenOnly;
     });
 
     if (!found) {
@@ -1499,18 +1831,17 @@ app.post('/api/auth/login', (req, res) => {
       });
     }
 
-    // Verificar Kill Switch manual y vigencia por fechas
+    // Verificar Kill Switch manual y fecha de expiración (Sin bloqueo por desfase de reloj en fechaInicio entre dispositivos)
     const now = new Date();
     const expDate = found.fechaExpiracion ? new Date(`${found.fechaExpiracion}T23:59:59`) : new Date('2099-12-31');
-    const startDate = found.fechaInicio ? new Date(`${found.fechaInicio}T00:00:00`) : new Date('2020-01-01');
 
-    if (!found.activo || now > expDate || now < startDate) {
+    if (!found.activo || now > expDate) {
       return res.status(403).json({
         success: false,
         expired: true,
         error: !found.activo
           ? 'Su licencia ha sido suspendida por el Administrador Maestro (Kill Switch Activo).'
-          : `Licencia fuera de vigencia (Vigencia: ${found.fechaInicio} al ${found.fechaExpiracion}). Contacte a Neural Media House.`
+          : `Licencia fuera de vigencia (Expiración: ${found.fechaExpiracion}). Contacte a Neural Media House.`
       });
     }
 
@@ -1535,7 +1866,7 @@ app.post('/api/auth/login', (req, res) => {
       soloLectura: false
     };
 
-    // Incrementar métricas de acceso y registrar telemetría (Zero-Data Retention)
+    // Incrementar métricas de acceso y guardar en users_db.json
     found.login_count = (found.login_count || 0) + 1;
     found.last_login_at = new Date().toISOString();
     if (typeof found.simulations_count !== 'number') {
@@ -1549,6 +1880,7 @@ app.post('/api/auth/login', (req, res) => {
     const maxSim = isDemoLic ? 3 : (found.max_simulations || 999999);
     const simUsedStr = isDemoLic ? `${simCount}/3` : `${simCount} corridas`;
     const licTypeStr = isDemoLic ? 'DEMO' : (isMasterRole ? 'MASTER_ADMIN' : 'OFICIAL / PAGADA');
+    const usedTokenAuth = Boolean(candidateToken && !(u && p && String(found.username).trim().toLowerCase() === u.toLowerCase() && String(found.password).trim() === p));
 
     recordAccessLog({
       userId: found.id,
@@ -1558,7 +1890,7 @@ app.post('/api/auth/login', (req, res) => {
       licenseType: licTypeStr,
       assignedParties: found.allowed_parties || [found.partido || 'PVEM'],
       simulationsUsed: simUsedStr,
-      authMethod: isTokenLookup ? 'TOKEN' : 'CREDENTIALS',
+      authMethod: usedTokenAuth ? 'TOKEN' : 'CREDENTIALS',
       req
     });
 
@@ -1576,6 +1908,7 @@ app.post('/api/auth/login', (req, res) => {
       watermark: AUTHORSHIP_WATERMARK,
       user: {
         ...sanitizeLicenseForClient(found),
+        role: isMasterRole ? 'admin' : (isDemoLic ? 'demo' : 'client'),
         allowed_parties: Array.isArray(found.allowed_parties) && found.allowed_parties.length > 0 ? found.allowed_parties : [found.partido || 'PVEM'],
         can_select_any_party: Boolean(found.can_select_any_party),
         login_count: found.login_count,
@@ -1593,12 +1926,20 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
-// 9.2. Listar Licencias (Para Panel de Control Maestro)
-app.get('/api/licenses', requireMasterAdmin, (req, res) => {
+// 9.2. Listar Usuarios y Licencias Centralizadas en Servidor (/api/users y /api/licenses)
+const handleListUsersAndLicenses = (req, res) => {
   licensesStore = loadLicensesStore();
   const adminList = licensesStore.map(lic => formatLicenseForMasterAdmin(lic));
-  res.json({ success: true, licenses: adminList, deletedIds: loadDeletedLicenseIds(), watermark: AUTHORSHIP_WATERMARK });
-});
+  res.json({
+    success: true,
+    users: adminList,
+    licenses: adminList,
+    deletedIds: loadDeletedLicenseIds(),
+    watermark: AUTHORSHIP_WATERMARK
+  });
+};
+app.get('/api/licenses', requireMasterAdmin, handleListUsersAndLicenses);
+app.get('/api/users', requireMasterAdmin, handleListUsersAndLicenses);
 
 // 9.2b. Bitácora de Auditoría y Telemetría de Accesos (Zero-Data Retention)
 app.get('/api/audit/access-logs', requireMasterAdmin, (req, res) => {
@@ -1644,31 +1985,33 @@ app.get('/api/audit/access-logs', requireMasterAdmin, (req, res) => {
   }
 });
 
-// 9.3. Crear o Actualizar Licencia de Cliente Político
-app.post('/api/licenses', requireMasterAdmin, (req, res) => {
+// 9.3. Crear o Actualizar Usuario / Licencia en Servidor (/api/users y /api/licenses)
+const handleUpsertUserOrLicense = (req, res) => {
   try {
     const body = req.body || {};
     licensesStore = loadLicensesStore();
 
-    const id = body.id || `lic-${Date.now()}`;
+    const id = req.params.id || body.id || `lic-${Date.now()}`;
     const existingIdx = licensesStore.findIndex(l => l.id === id);
     const existingLic = existingIdx >= 0 ? licensesStore[existingIdx] : null;
 
-    const partido = String(body.partido || 'PVEM').toUpperCase();
+    const partido = String(body.partido || (existingLic ? existingLic.partido : 'PVEM')).trim().toUpperCase();
     const tokenSeguridad = body.tokenSeguridad
-      ? String(body.tokenSeguridad).trim()
-      : (existingLic && existingLic.tokenSeguridad ? existingLic.tokenSeguridad : generateSecurityToken(partido));
+      ? String(body.tokenSeguridad).trim().toUpperCase()
+      : (existingLic && existingLic.tokenSeguridad ? String(existingLic.tokenSeguridad).trim().toUpperCase() : generateSecurityToken(partido));
 
     // Configuración Multi-Partido / Coalición
-    const can_select_any_party = Boolean(body.can_select_any_party);
+    const can_select_any_party = body.can_select_any_party !== undefined
+      ? Boolean(body.can_select_any_party)
+      : Boolean(existingLic?.can_select_any_party);
     let allowed_parties = Array.isArray(body.allowed_parties) && body.allowed_parties.length > 0
       ? body.allowed_parties
-      : [partido];
+      : (existingLic?.allowed_parties || [partido]);
     if (!allowed_parties.includes(partido)) {
       allowed_parties.unshift(partido);
     }
 
-    const isMasterAccount = Boolean(body.esAdministradorTotal || body.tipoUsuario === 'MASTER' || body.tipoUsuario === 'MASTER_ADMIN');
+    const isMasterAccount = Boolean(body.esAdministradorTotal || body.tipoUsuario === 'MASTER' || body.tipoUsuario === 'MASTER_ADMIN' || body.role === 'admin');
     const can_select_all_states = Boolean(
       isMasterAccount ||
       body.can_select_all_states ||
@@ -1679,15 +2022,15 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       ? ['TODOS']
       : (Array.isArray(body.estadosAutorizados) && body.estadosAutorizados.length > 0
           ? body.estadosAutorizados
-          : ['Estado de México']);
+          : (existingLic?.estadosAutorizados || ['Estado de México']));
 
     const municipiosAutorizados = (isMasterAccount || can_select_all_states)
       ? (Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0 ? body.municipiosAutorizados : ['TODOS'])
       : (Array.isArray(body.municipiosAutorizados) && body.municipiosAutorizados.length > 0
           ? body.municipiosAutorizados
-          : ['Ecatepec de Morelos']);
+          : (existingLic?.municipiosAutorizados || ['Ecatepec de Morelos']));
 
-    let etiquetaRegion = String(body.etiquetaRegion || '').trim();
+    let etiquetaRegion = String(body.etiquetaRegion || (existingLic ? existingLic.etiquetaRegion : '')).trim();
     if (!etiquetaRegion) {
       if (municipiosAutorizados.length > 0 && municipiosAutorizados[0] !== 'TODOS') {
         etiquetaRegion = `${estadosAutorizados[0]} — ${municipiosAutorizados.slice(0, 2).join(', ')}${municipiosAutorizados.length > 2 ? ` (+${municipiosAutorizados.length - 2} más)` : ''}`;
@@ -1698,17 +2041,17 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       }
     }
 
-    const isDemo = Boolean(body.isDemo);
-    let fechaInicio = String(body.fechaInicio || '').trim();
-    let fechaExpiracion = String(body.fechaExpiracion || '').trim();
+    const isDemo = body.isDemo !== undefined ? Boolean(body.isDemo) : Boolean(existingLic?.isDemo);
+    let fechaInicio = String(body.fechaInicio || (existingLic ? existingLic.fechaInicio : '')).trim();
+    let fechaExpiracion = String(body.fechaExpiracion || (existingLic ? existingLic.fechaExpiracion : '')).trim();
     if (isDemo && (body.diasVigencia || !fechaExpiracion || (existingLic && !existingLic.isDemo))) {
       const days = parseInt(body.diasVigencia, 10) || 7;
       const now = new Date();
-      fechaInicio = now.toISOString().split('T')[0];
+      fechaInicio = '2025-01-01';
       const expDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       fechaExpiracion = expDate.toISOString().split('T')[0];
     }
-    if (!fechaInicio) fechaInicio = new Date().toISOString().split('T')[0];
+    if (!fechaInicio) fechaInicio = '2025-01-01';
     if (!fechaExpiracion) fechaExpiracion = '2027-12-31';
 
     // Inyección de API Key Personalizada y Selector de Modelo Avanzado (Cifrado AES-256)
@@ -1717,18 +2060,16 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
     let customApiKeyEncrypted = '';
 
     if (incomingKey && !incomingKey.includes('••••') && !incomingKey.includes('...')) {
-      // Nueva llave ingresada por el administrador matriz: se almacena con cifrado AES-256
       customApiKeyEncrypted = encryptApiKey(incomingKey);
     } else if (existingLic && existingLic.customApiKeyEncrypted && incomingKey !== 'CLEAR') {
-      // Mantener la clave existente si no se alteró
       customApiKeyEncrypted = existingLic.customApiKeyEncrypted;
     }
 
-    const resolvedPassword = resolveValidPassword(
+    const resolvedPassword = String(resolveValidPassword(
       body.password,
       existingLic ? existingLic.password : '',
       body.username || (existingLic ? existingLic.username : '')
-    );
+    )).trim();
 
     const licenseObj = {
       id,
@@ -1741,39 +2082,39 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       login_count: existingLic ? (existingLic.login_count || 0) : 0,
       last_login_at: existingLic ? (existingLic.last_login_at || null) : null,
       tokenSeguridad,
-      nivelGeografico: String(body.nivelGeografico || (can_select_all_states ? 'Federal / Nacional' : 'Municipal / Alcaldía')),
+      nivelGeografico: String(body.nivelGeografico || (existingLic ? existingLic.nivelGeografico : (can_select_all_states ? 'Federal / Nacional' : 'Municipal / Alcaldía'))),
       etiquetaRegion,
       estadosAutorizados,
       can_select_all_states,
       cargosAutorizados: Array.isArray(body.cargosAutorizados) && body.cargosAutorizados.length > 0
         ? body.cargosAutorizados
-        : ['Presidente Municipal / Alcalde'],
+        : (existingLic?.cargosAutorizados || ['Presidente Municipal / Alcalde']),
       municipiosAutorizados,
-      permisoRadar: body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true,
-      permisoSimulador: body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true,
-      esAdministradorTotal: Boolean(body.esAdministradorTotal),
-      tipoUsuario: body.esAdministradorTotal ? 'MASTER_ADMIN' : (body.tipoUsuario || 'CLIENT'),
+      permisoRadar: body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : (existingLic ? existingLic.permisoRadar !== false : true),
+      permisoSimulador: body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : (existingLic ? existingLic.permisoSimulador !== false : true),
+      esAdministradorTotal: isMasterAccount,
+      tipoUsuario: isMasterAccount ? 'MASTER_ADMIN' : (body.tipoUsuario || existingLic?.tipoUsuario || 'CLIENT'),
       permisosGranulares: {
-        crearLicencias: body.esAdministradorTotal ? true : (body.permisosGranulares?.crearLicencias ?? (body.permisoCrearLicencias !== undefined ? Boolean(body.permisoCrearLicencias) : false)),
-        killSwitch: body.esAdministradorTotal ? true : (body.permisosGranulares?.killSwitch ?? (body.permisoKillSwitch !== undefined ? Boolean(body.permisoKillSwitch) : false)),
-        tokens: body.esAdministradorTotal ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : false)),
-        tokensSeguridad: body.esAdministradorTotal ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : false)),
-        simulador: body.esAdministradorTotal ? true : (body.permisosGranulares?.simulador ?? (body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true)),
-        radar: body.esAdministradorTotal ? true : (body.permisosGranulares?.radar ?? (body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true)),
-        descargaReportes: body.esAdministradorTotal ? true : (body.permisosGranulares?.descargaReportes ?? (body.permisoDescargaReportes !== undefined ? Boolean(body.permisoDescargaReportes) : true)),
-        soloLectura: body.esAdministradorTotal ? false : Boolean(body.permisosGranulares?.soloLectura ?? body.permisoSoloLectura)
+        crearLicencias: isMasterAccount ? true : (body.permisosGranulares?.crearLicencias ?? (body.permisoCrearLicencias !== undefined ? Boolean(body.permisoCrearLicencias) : Boolean(existingLic?.permisosGranulares?.crearLicencias))),
+        killSwitch: isMasterAccount ? true : (body.permisosGranulares?.killSwitch ?? (body.permisoKillSwitch !== undefined ? Boolean(body.permisoKillSwitch) : Boolean(existingLic?.permisosGranulares?.killSwitch))),
+        tokens: isMasterAccount ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : Boolean(existingLic?.permisosGranulares?.tokensSeguridad))),
+        tokensSeguridad: isMasterAccount ? true : (body.permisosGranulares?.tokens ?? body.permisosGranulares?.tokensSeguridad ?? (body.permisoTokensSeguridad !== undefined ? Boolean(body.permisoTokensSeguridad) : Boolean(existingLic?.permisosGranulares?.tokensSeguridad))),
+        simulador: isMasterAccount ? true : (body.permisosGranulares?.simulador ?? (body.permisoSimulador !== undefined ? Boolean(body.permisoSimulador) : true)),
+        radar: isMasterAccount ? true : (body.permisosGranulares?.radar ?? (body.permisoRadar !== undefined ? Boolean(body.permisoRadar) : true)),
+        descargaReportes: isMasterAccount ? true : (body.permisosGranulares?.descargaReportes ?? (body.permisoDescargaReportes !== undefined ? Boolean(body.permisoDescargaReportes) : true)),
+        soloLectura: isMasterAccount ? false : Boolean(body.permisosGranulares?.soloLectura ?? body.permisoSoloLectura)
       },
       aiModel,
       customApiKeyEncrypted,
-      propuestaFijaTitulo: String(body.propuestaFijaTitulo || '').trim(),
-      propuestaFijaTexto: String(body.propuestaFijaTexto || '').trim(),
-      maxSwarmSize: parseInt(body.maxSwarmSize, 10) || (body.isDemo ? 1000 : 100000),
+      propuestaFijaTitulo: String(body.propuestaFijaTitulo ?? (existingLic?.propuestaFijaTitulo || '')).trim(),
+      propuestaFijaTexto: String(body.propuestaFijaTexto ?? (existingLic?.propuestaFijaTexto || '')).trim(),
+      maxSwarmSize: parseInt(body.maxSwarmSize, 10) || (existingLic?.maxSwarmSize || (isDemo ? 1000 : 100000)),
       fechaInicio,
       fechaExpiracion,
-      activo: body.activo !== undefined ? Boolean(body.activo) : true,
+      activo: body.activo !== undefined ? Boolean(body.activo) : (existingLic ? existingLic.activo !== false : true),
       isDemo,
-      licenseTier: String(body.licenseTier || (isDemo ? 'DEMO' : (body.esAdministradorTotal ? 'ADMIN' : (existingLic?.licenseTier || 'ALCALDIA_A')))),
-      rolPerfil: String(body.rolPerfil || (isDemo ? 'Demo' : (body.esAdministradorTotal ? 'Administrador' : (existingLic?.rolPerfil || 'Operador')))),
+      licenseTier: String(body.licenseTier || (isDemo ? 'DEMO' : (isMasterAccount ? 'ADMIN' : (existingLic?.licenseTier || 'ALCALDIA_A')))),
+      rolPerfil: String(body.rolPerfil || (isDemo ? 'Demo' : (isMasterAccount ? 'Administrador' : (existingLic?.rolPerfil || 'Operador')))),
       simulations_count: body.simulations_count !== undefined
         ? Math.max(0, parseInt(body.simulations_count, 10) || 0)
         : (existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0),
@@ -1799,11 +2140,23 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
     saveLicensesStore(licensesStore);
     const adminLic = formatLicenseForMasterAdmin(licenseObj);
     const adminList = licensesStore.map(l => formatLicenseForMasterAdmin(l));
-    res.json({ success: true, license: adminLic, licenses: adminList, deletedIds: loadDeletedLicenseIds() });
+    res.json({
+      success: true,
+      user: adminLic,
+      license: adminLic,
+      users: adminList,
+      licenses: adminList,
+      deletedIds: loadDeletedLicenseIds()
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
-});
+};
+
+app.post('/api/licenses', requireMasterAdmin, handleUpsertUserOrLicense);
+app.post('/api/users', requireMasterAdmin, handleUpsertUserOrLicense);
+app.put('/api/users/:id', requireMasterAdmin, handleUpsertUserOrLicense);
+app.put('/api/licenses/:id', requireMasterAdmin, handleUpsertUserOrLicense);
 
 // 9.4. Alternar Estado Activo / Kill Switch Instantáneo
 app.patch('/api/licenses/:id/toggle', requireMasterAdmin, (req, res) => {
@@ -1896,8 +2249,8 @@ app.post('/api/licenses/:id/reset-simulations', requireMasterAdmin, (req, res) =
   }
 });
 
-// 9.5. Eliminar Licencia (Persistencia Definitiva Anti-Reaparición)
-app.delete('/api/licenses/:id', requireMasterAdmin, (req, res) => {
+// 9.5. Eliminar Usuario / Licencia (Persistencia Definitiva Anti-Reaparición en users_db.json)
+const handleDeleteUserOrLicense = (req, res) => {
   try {
     const { id } = req.params;
     const currentDeleted = loadDeletedLicenseIds();
@@ -1908,21 +2261,25 @@ app.delete('/api/licenses/:id', requireMasterAdmin, (req, res) => {
     licensesStore = loadLicensesStore();
     licensesStore = licensesStore.filter(l => String(l.id) !== String(id));
     saveLicensesStore(licensesStore);
+    const adminList = licensesStore.map(l => formatLicenseForMasterAdmin(l));
     res.json({
       success: true,
       deletedId: id,
       deletedIds: currentDeleted,
-      licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+      users: adminList,
+      licenses: adminList
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
-});
+};
+app.delete('/api/licenses/:id', requireMasterAdmin, handleDeleteUserOrLicense);
+app.delete('/api/users/:id', requireMasterAdmin, handleDeleteUserOrLicense);
 
-// 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (Persistencia Bidireccional Inmutable)
+// 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (El Servidor users_db.json es la Fuente de la Verdad)
 app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
   try {
-    const { vaultLicenses = [], deletedIds = [], authoritativeClientVault = false } = req.body || {};
+    const { vaultLicenses = [], deletedIds = [] } = req.body || {};
     const mergedDeleted = Array.from(new Set([
       ...loadDeletedLicenseIds(),
       ...(Array.isArray(deletedIds) ? deletedIds.map(String) : [])
@@ -1933,28 +2290,14 @@ app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
 
     if (!Array.isArray(vaultLicenses)) {
       saveLicensesStore(licensesStore);
+      const adminList = licensesStore.map(l => formatLicenseForMasterAdmin(l));
       return res.json({
         success: true,
         count: 0,
         deletedIds: mergedDeleted,
-        licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+        users: adminList,
+        licenses: adminList
       });
-    }
-
-    // Si el cliente envía su bóveda autoritativa (ya inicializada), eliminar cualquier licencia por defecto que no esté en su bóveda
-    if (authoritativeClientVault) {
-      const vaultIds = new Set(vaultLicenses.filter(v => v && v.id).map(v => String(v.id)));
-      const defaultIds = new Set(DEFAULT_LICENSES.map(d => String(d.id)));
-      licensesStore = licensesStore.filter(sLic => {
-        if (defaultIds.has(String(sLic.id)) && !vaultIds.has(String(sLic.id))) {
-          if (!mergedDeleted.includes(String(sLic.id))) {
-            mergedDeleted.push(String(sLic.id));
-          }
-          return false;
-        }
-        return true;
-      });
-      saveDeletedLicenseIds(mergedDeleted);
     }
 
     let addedCount = 0;
@@ -1968,33 +2311,38 @@ app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
         addedCount++;
       } else {
         const existing = licensesStore[idx];
-        const validPassword = resolveValidPassword(
-          vLic.password,
-          existing.password,
-          vLic.username || existing.username
-        );
-        licensesStore[idx] = normalizeLicenseRecord({
-          ...existing,
-          ...vLic,
-          password: validPassword,
-          tokenSeguridad: (vLic.tokenSeguridad && vLic.tokenSeguridad !== 'undefined')
-            ? vLic.tokenSeguridad
-            : existing.tokenSeguridad,
-          customApiKeyEncrypted: existing.customApiKeyEncrypted || vLic.customApiKeyEncrypted || '',
-          login_count: Math.max(existing.login_count || 0, vLic.login_count || 0),
-          last_login_at: existing.last_login_at || vLic.last_login_at || null
-        });
-        updatedCount++;
+        // El servidor es la Fuente de la Verdad: solo actualizar si el registro entrante es estrictamente más reciente
+        if ((vLic.updatedAt || 0) > (existing.updatedAt || 0)) {
+          const validPassword = resolveValidPassword(
+            vLic.password,
+            existing.password,
+            vLic.username || existing.username
+          );
+          licensesStore[idx] = normalizeLicenseRecord({
+            ...existing,
+            ...vLic,
+            password: validPassword,
+            tokenSeguridad: (vLic.tokenSeguridad && vLic.tokenSeguridad !== 'undefined')
+              ? String(vLic.tokenSeguridad).trim()
+              : existing.tokenSeguridad,
+            customApiKeyEncrypted: existing.customApiKeyEncrypted || vLic.customApiKeyEncrypted || '',
+            login_count: Math.max(existing.login_count || 0, vLic.login_count || 0),
+            last_login_at: existing.last_login_at || vLic.last_login_at || null
+          });
+          updatedCount++;
+        }
       }
     });
 
     saveLicensesStore(licensesStore);
+    const adminList = licensesStore.map(l => formatLicenseForMasterAdmin(l));
     res.json({
       success: true,
       addedCount,
       updatedCount,
       deletedIds: mergedDeleted,
-      licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+      users: adminList,
+      licenses: adminList
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

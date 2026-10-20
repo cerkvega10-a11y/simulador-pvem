@@ -2085,10 +2085,92 @@ function showToast(message) {
 /**
  * ========================================================
  * MÓDULO DE CONFIGURACIÓN DE IA Y MODELOS EXTERNOS (MODAL)
+ * CON BLINDAJE DE CAJA NEGRA POR ROL (ADMIN vs CLIENTE)
  * ========================================================
  */
 
+let _cachedBtnHeaderAiEngine = null;
+let _cachedBtnHeaderAiEngineParent = null;
+let _cachedModalConfig = null;
+let _cachedModalConfigParent = null;
+
+function isCurrentUserMasterAdmin() {
+  const s = appState?.activeSession;
+  if (!s) return false;
+  const r = String(s.role || s.user?.role || s.user?.tipoUsuario || '').toLowerCase();
+  return (
+    r === 'master_admin' ||
+    r === 'admin' ||
+    r === 'superadmin' ||
+    r === 'master' ||
+    r === 'administrador' ||
+    Boolean(s.user?.esAdministradorTotal)
+  );
+}
+
+window.applyBlackBoxAiShielding = function(isMasterAdmin = false) {
+  const isAdmin = Boolean(isMasterAdmin || isCurrentUserMasterAdmin());
+
+  const clientBadge = document.getElementById('client-blackbox-engine-badge');
+  const clientBadgeLabel = document.getElementById('client-blackbox-engine-label');
+  if (clientBadgeLabel) {
+    clientBadgeLabel.innerText = 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)';
+  }
+
+  let btnAi = document.getElementById('btn-header-ai-engine');
+  let modalCfg = document.getElementById('modal-config');
+
+  if (!isAdmin) {
+    // BLINDAJE CAJA NEGRA PARA USUARIOS CON LICENCIA / OPERADOR / CANDIDATO / DEMO:
+    // Mostrar únicamente el badge ejecutivo estático y remover del DOM cualquier selector o modal de IA/API
+    if (clientBadge) {
+      clientBadge.classList.remove('hidden');
+      clientBadge.classList.add('inline-flex');
+    }
+    if (btnAi) {
+      _cachedBtnHeaderAiEngine = btnAi;
+      _cachedBtnHeaderAiEngineParent = btnAi.parentNode;
+      btnAi.remove();
+    }
+    if (modalCfg) {
+      modalCfg.classList.add('hidden');
+      _cachedModalConfig = modalCfg;
+      _cachedModalConfigParent = modalCfg.parentNode;
+      modalCfg.remove();
+    }
+  } else {
+    // ACCESO EXCLUSIVO PARA ADMINISTRADOR (CONTROL MAESTRO):
+    // Restaurar elementos al DOM si estaban removidos y habilitar Selector de Motor IA + API Keys
+    if (clientBadge) {
+      clientBadge.classList.add('hidden');
+      clientBadge.classList.remove('inline-flex');
+    }
+    if (!btnAi && _cachedBtnHeaderAiEngine && _cachedBtnHeaderAiEngineParent) {
+      _cachedBtnHeaderAiEngineParent.appendChild(_cachedBtnHeaderAiEngine);
+      btnAi = _cachedBtnHeaderAiEngine;
+    }
+    if (btnAi) {
+      btnAi.classList.remove('hidden');
+      btnAi.classList.add('inline-flex');
+    }
+    if (!modalCfg && _cachedModalConfig && _cachedModalConfigParent) {
+      _cachedModalConfigParent.appendChild(_cachedModalConfig);
+      modalCfg = _cachedModalConfig;
+    }
+    syncCentralAIEngineStatus();
+  }
+};
+
 window.openConfigModal = function() {
+  if (!isCurrentUserMasterAdmin()) {
+    if (typeof showToast === 'function') {
+      showToast('🔒 Acceso restringido: La configuración de motores IA y API Keys es exclusiva del Administrador Maestro.');
+    }
+    return;
+  }
+  if (!document.getElementById('modal-config') && _cachedModalConfig && _cachedModalConfigParent) {
+    _cachedModalConfigParent.appendChild(_cachedModalConfig);
+  }
   const modal = document.getElementById('modal-config');
   if (!modal) return;
   modal.classList.remove('hidden');
@@ -2102,11 +2184,27 @@ window.closeConfigModal = function() {
 
 async function syncCentralAIEngineStatus() {
   try {
-    const res = await fetch('/api/ai-engine/status');
+    const isAdmin = isCurrentUserMasterAdmin();
+    const headers = typeof getAdminHeaders === 'function' ? getAdminHeaders() : { 'Content-Type': 'application/json' };
+    const res = await fetch('/api/ai-engine/status', { headers });
     const data = await res.json();
     if (data.success) {
-      const p = data.provider || (data.engine && data.engine.includes('Groq') ? 'groq' : 'gemini');
-      const m = data.model || (p === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-1.5-pro');
+      if (!isAdmin || data.blackBoxMode) {
+        appState.aiConfig = {
+          provider: 'govtech_neural',
+          model: 'neural-engine-v4',
+          centralized: true,
+          mode: 'blackbox_shielded'
+        };
+        const clientBadgeLabel = document.getElementById('client-blackbox-engine-label');
+        if (clientBadgeLabel) {
+          clientBadgeLabel.innerText = 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)';
+        }
+        return;
+      }
+
+      const p = data.provider || 'hybrid';
+      const m = data.model || 'gemini-1.5-pro';
       appState.aiConfig = {
         provider: p,
         model: m,
@@ -2114,6 +2212,22 @@ async function syncCentralAIEngineStatus() {
         mode: data.mode || 'centralized_master'
       };
       updateNavModelBadge(data);
+
+      // Si es Administrador, sincronizar el selector y estado de llaves en el modal
+      const selEngine = document.getElementById('select-global-ai-engine');
+      if (selEngine && data.selectedEngine) {
+        selEngine.value = data.selectedEngine;
+      }
+      const badgeStatus = document.getElementById('global-ai-keys-status-badge');
+      if (badgeStatus) {
+        const activeKeys = [];
+        if (data.hasGeminiKey) activeKeys.push('Gemini ✔');
+        if (data.hasDeepseekKey) activeKeys.push('DeepSeek ✔');
+        if (data.hasGroqKey) activeKeys.push('Groq ✔');
+        badgeStatus.innerText = activeKeys.length > 0
+          ? `Llaves Cifradas en Servidor: ${activeKeys.join(' | ')}`
+          : 'Motor Centralizado Servidor Activo';
+      }
     }
   } catch (e) {
     console.warn('Sincronización de motor centralizado en servidor activo:', e);
@@ -2121,17 +2235,10 @@ async function syncCentralAIEngineStatus() {
 }
 
 function loadStoredAIConfig() {
-  const savedKey = localStorage.getItem('pvem_groq_key');
-  if (savedKey && savedKey.startsWith('gsk_')) {
-    fetch('/api/ai-engine/setup-key', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: savedKey, model: 'openai/gpt-oss-120b' })
-    }).then(r => r.json()).then(() => syncCentralAIEngineStatus()).catch(() => {});
-  }
-  // Purga de llaves cliente para garantizar seguridad total y cero fricción
+  // Purga de llaves en navegador para garantizar persistencia centralizada en servidor y caja negra
   try {
     localStorage.removeItem('pvem_ai_config');
+    localStorage.removeItem('pvem_groq_key');
   } catch (e) {
     // Silencioso
   }
@@ -2139,42 +2246,64 @@ function loadStoredAIConfig() {
 }
 
 function updateNavModelBadge(engineInfo) {
+  if (!isCurrentUserMasterAdmin()) return;
   const badge = document.getElementById('nav-model-badge');
   if (!badge) return;
-  const label = engineInfo?.engine || (appState.aiConfig?.provider === 'groq' ? 'Groq GPT-OSS 120B' : 'Gemini Pro Central');
+  const label = engineInfo?.engine || 'Modo Híbrido (Gemini + Groq)';
   badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> ${label}`;
   badge.className = 'text-[10px] bg-emerald-100 text-emerald-950 font-black px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1 shadow-2xs';
 }
 
-async function saveGroqKeyInCloud() {
-  const input = document.getElementById('input-groq-key');
+window.saveGlobalAiConfigInServer = async function() {
+  if (!isCurrentUserMasterAdmin()) {
+    alert('Acceso denegado (403): Solo el Administrador Maestro puede modificar el motor de IA o las API Keys.');
+    return;
+  }
+  const selEngine = document.getElementById('select-global-ai-engine');
+  const geminiInput = document.getElementById('input-gemini-key');
+  const deepseekInput = document.getElementById('input-deepseek-key');
+  const groqInput = document.getElementById('input-groq-key');
   const msg = document.getElementById('msg-groq-key');
-  if (!input || !input.value.trim()) return;
-  const key = input.value.trim();
+
+  const selectedEngine = selEngine ? selEngine.value : 'hybrid';
+  const payload = {
+    selectedEngine,
+    provider: selectedEngine === 'hybrid' ? 'gemini' : selectedEngine,
+    geminiApiKey: geminiInput?.value?.trim() || undefined,
+    deepseekApiKey: deepseekInput?.value?.trim() || undefined,
+    groqApiKey: groqInput?.value?.trim() || undefined
+  };
+
   try {
-    if (msg) msg.innerHTML = '<span class="text-blue-600 font-bold">Conectando con el servidor...</span>';
-    const res = await fetch('/api/ai-engine/setup-key', {
+    if (msg) msg.innerHTML = '<span class="text-blue-600 font-bold">Guardando configuración global en el servidor...</span>';
+    const headers = typeof getAdminHeaders === 'function' ? getAdminHeaders() : { 'Content-Type': 'application/json' };
+    const res = await fetch('/api/ai-config', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: key, model: 'openai/gpt-oss-120b' })
+      headers,
+      body: JSON.stringify(payload)
     });
     const d = await res.json();
-    if (d.success) {
-      localStorage.setItem('pvem_groq_key', key);
-      appState.aiConfig = { provider: 'groq', apiKey: key, model: 'openai/gpt-oss-120b' };
-      if (msg) msg.innerHTML = '<span class="text-emerald-700 font-bold">¡IA Groq conectada exitosamente en el servidor!</span>';
+    if (res.ok && d.success) {
+      if (geminiInput) geminiInput.value = '';
+      if (deepseekInput) deepseekInput.value = '';
+      if (groqInput) groqInput.value = '';
+      if (msg) msg.innerHTML = '<span class="text-emerald-700 font-bold">✅ Motor de IA y API Keys actualizados en el servidor para todos los dispositivos.</span>';
       await syncCentralAIEngineStatus();
-      setTimeout(() => { if (typeof closeConfigModal === 'function') closeConfigModal(); }, 1200);
+      setTimeout(() => { if (typeof closeConfigModal === 'function') closeConfigModal(); }, 1000);
     } else {
-      if (msg) msg.innerHTML = `<span class="text-rose-600 font-bold">${d.error}</span>`;
+      if (msg) msg.innerHTML = `<span class="text-rose-600 font-bold">${d.error || 'Error al guardar configuración'}</span>`;
     }
   } catch (err) {
     if (msg) msg.innerHTML = `<span class="text-rose-600 font-bold">${err.message}</span>`;
   }
+};
+
+async function saveGroqKeyInCloud() {
+  return window.saveGlobalAiConfigInServer();
 }
 
 function getProviderLabel() {
-  return 'Google Gemini Pro (Motor Centralizado GovTech)';
+  return 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)';
 }
 
 /**
@@ -2942,8 +3071,9 @@ window.closeAuthLoginModal = function() {
 
 window.handleAuthLogin = async function(event) {
   if (event) event.preventDefault();
-  const username = document.getElementById('auth-username')?.value?.trim() || '';
-  const password = document.getElementById('auth-password')?.value?.trim() || '';
+  const username = (document.getElementById('auth-username')?.value || '').trim();
+  const password = (document.getElementById('auth-password')?.value || '').trim();
+  const token = (document.getElementById('auth-token')?.value || '').trim();
   const captchaToken = document.getElementById('auth-captcha-token')?.value || turnstileState.token || '';
   const errBox = document.getElementById('auth-error-box');
 
@@ -2967,6 +3097,7 @@ window.handleAuthLogin = async function(event) {
       body: JSON.stringify({
         username,
         password,
+        token: token || undefined,
         captchaVerified: turnstileState.verified,
         captchaToken,
         clientVault: Array.isArray(clientVault) && clientVault.length > 0 ? clientVault : undefined,
@@ -3095,9 +3226,11 @@ window.logoutSession = function() {
   // 3. Limpiar formulario de login y reiniciar Turnstile CAPTCHA
   const uInput = document.getElementById('auth-username');
   const pInput = document.getElementById('auth-password');
+  const tInput = document.getElementById('auth-token');
   const errBox = document.getElementById('auth-error-box');
   if (uInput) uInput.value = '';
   if (pInput) pInput.value = '';
+  if (tInput) tInput.value = '';
   if (errBox) errBox.classList.add('hidden');
 
   // 4. Forzar regreso a la Página de Bienvenida Neutral (Cero colores de partido)
@@ -3128,6 +3261,9 @@ async function applyLicenseRestrictionsToUI(licenseUser, isMasterAdmin = false) 
   ];
 
   const isMaster = isMasterAdmin || licenseUser.esAdministradorTotal === true || licenseUser.tipoUsuario === 'MASTER' || licenseUser.tipoUsuario === 'MASTER_ADMIN';
+  if (typeof window.applyBlackBoxAiShielding === 'function') {
+    window.applyBlackBoxAiShielding(isMaster);
+  }
   const canSelectAny = isMasterAdmin || licenseUser.can_select_any_party === true || isMaster;
   let allowedParties = Array.isArray(licenseUser.allowed_parties) && licenseUser.allowed_parties.length > 0
     ? licenseUser.allowed_parties
@@ -3637,9 +3773,11 @@ window.filterLicenseMunicipalitiesList = function(query) {
 
 function getAdminHeaders() {
   const token = appState.activeSession?.sessionToken || sessionStorage.getItem('pvem_session_token') || '';
+  const role = appState.activeSession?.role || appState.activeSession?.user?.role || '';
   return {
     'Content-Type': 'application/json',
-    'x-session-token': token
+    'x-session-token': token,
+    'x-user-role': role
   };
 }
 
@@ -3748,43 +3886,20 @@ function loadPersistentUsersVault() {
 }
 
 async function loadMasterLicenses() {
-  const isAlreadyInitialized = localStorage.getItem(USERS_INIT_FLAG_KEY) === 'true';
   const storedUsers = loadPersistentUsersVault();
   const deletedIds = getDeletedLicenseIds();
 
   try {
-    // REGLA DE ORO DE INICIALIZACIÓN:
-    // Si ya existen datos guardados en el almacenamiento persistente, sincronizarlos como fuente de verdad sin reinjectar mocks por defecto.
-    if (isAlreadyInitialized && Array.isArray(storedUsers)) {
-      const syncRes = await fetch('/api/licenses/sync-vault', {
-        method: 'POST',
-        headers: getAdminHeaders(),
-        body: JSON.stringify({
-          vaultLicenses: storedUsers,
-          deletedIds,
-          authoritativeClientVault: true
-        })
-      });
-      const syncData = await syncRes.json();
-      if (syncData.success && Array.isArray(syncData.licenses)) {
-        if (Array.isArray(syncData.deletedIds)) {
-          saveDeletedLicenseIdsToStorage(syncData.deletedIds);
-        }
-        masterLicensesCache = savePersistentUsersVault(syncData.licenses);
-        renderMasterLicensesList();
-        return;
-      }
-    }
-
-    // Primera vez en la historia o fallback si aún no estaba inicializada la bóveda
-    const res = await fetch('/api/licenses', { headers: getAdminHeaders() });
+    // 1. FUENTE DE VERDAD PRIMARIA EN EL SERVIDOR (/api/users -> users_db.json)
+    // Garantiza que usuarios creados desde cualquier navegador o dispositivo estén disponibles al instante
+    const res = await fetch('/api/users', { headers: getAdminHeaders() });
     const data = await res.json();
-    if (data.success && Array.isArray(data.licenses)) {
+    if (data.success && Array.isArray(data.users)) {
       if (Array.isArray(data.deletedIds)) {
         saveDeletedLicenseIdsToStorage([...deletedIds, ...data.deletedIds]);
       }
-      // Si teníamos usuarios previos en la bóveda legada, preservar sus contraseñas y ediciones
-      let merged = data.licenses;
+      let merged = data.users;
+      // Si el navegador local tenía algún usuario adicional en caché local, fusionarlo sin borrar los del servidor
       if (Array.isArray(storedUsers) && storedUsers.length > 0) {
         const syncRes = await fetch('/api/licenses/sync-vault', {
           method: 'POST',
@@ -3792,7 +3907,7 @@ async function loadMasterLicenses() {
           body: JSON.stringify({
             vaultLicenses: storedUsers,
             deletedIds: getDeletedLicenseIds(),
-            authoritativeClientVault: true
+            authoritativeClientVault: false
           })
         });
         const syncData = await syncRes.json();
@@ -3807,7 +3922,7 @@ async function loadMasterLicenses() {
 
     renderMasterLicensesList();
   } catch (err) {
-    console.warn('Error cargando licencias:', err);
+    console.warn('Error cargando usuarios del servidor:', err);
     if (Array.isArray(storedUsers)) {
       masterLicensesCache = savePersistentUsersVault(storedUsers);
       renderMasterLicensesList();
@@ -4095,12 +4210,18 @@ function renderClientProfileDetail(lic) {
       <div class="p-2.5 rounded-lg bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div>
           <span class="text-[10px] font-black uppercase text-slate-400 block">🛡️ Token de Seguridad Único Asignado:</span>
-          <span id="detail-token-seguridad" class="font-mono font-black text-indigo-950 text-xs select-all">${lic.tokenSeguridad || 'TK-PVEM-2027'}</span>
+          <span id="detail-token-seguridad" class="font-mono font-black text-indigo-950 text-xs select-all">${String(lic.tokenSeguridad || 'TK-PVEM-2027').trim()}</span>
         </div>
-        <button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');"
-          class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-[11px] cursor-pointer">
-          📋 Copiar Token
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="navigator.clipboard.writeText('${String(lic.tokenSeguridad || '').trim()}'); showToast('Token copiado al portapapeles');"
+            class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-bold text-[11px] cursor-pointer">
+            📋 Copiar Token
+          </button>
+          <button type="button" onclick="copyClientAccessCredentials('${lic.id}')"
+            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow-xs cursor-pointer flex items-center gap-1">
+            📋 Copiar Credenciales de Acceso
+          </button>
+        </div>
       </div>
     </div>
 
@@ -4577,21 +4698,48 @@ window.saveClientProfileDetail = async function(id) {
 
   try {
     removeDeletedLicenseId(lic.id);
-    const res = await fetch('/api/licenses', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (data.success && Array.isArray(data.licenses)) {
-      masterLicensesCache = savePersistentUsersVault(data.licenses);
+    const list = data.users || data.licenses;
+    if (data.success && Array.isArray(list)) {
+      masterLicensesCache = savePersistentUsersVault(list);
       renderMasterLicensesList();
-      showToast(`✅ Expediente de ${clienteNombre} (@${username}) guardado y persistido correctamente.`);
+      showToast(`✅ Expediente de ${clienteNombre} (@${username}) guardado en el servidor.`);
     } else {
       alert(data.error || 'Error al guardar cambios del perfil.');
     }
   } catch (err) {
     alert('Error de conexión al guardar perfil: ' + err.message);
+  }
+};
+
+window.copyClientAccessCredentials = function(id) {
+  const lic = masterLicensesCache.find(l => String(l.id) === String(id));
+  if (!lic) return;
+  const u = (document.getElementById('detail-username')?.value ?? lic.username ?? '').trim();
+  const p = (document.getElementById('detail-password')?.value ?? lic.password ?? '').trim();
+  const t = (document.getElementById('detail-token-seguridad')?.innerText ?? lic.tokenSeguridad ?? 'TK-PVEM-2027').trim();
+  const nombre = (document.getElementById('detail-cliente-nombre')?.value ?? lic.clienteNombre ?? 'Cliente').trim();
+
+  const text = `*CREDENCIALES DE ACCESO — GOVTECH WAR ROOM*\n` +
+    `👤 *Titular:* ${nombre}\n` +
+    `🌐 *Plataforma:* https://simulador-pvem.vercel.app/\n\n` +
+    `Usuario: ${u}\n` +
+    `Contraseña: ${p}\n` +
+    `Token: ${t}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 Credenciales limpias (Usuario, Contraseña y Token) copiadas para WhatsApp.');
+    }).catch(() => {
+      prompt('Copia las credenciales de acceso:', text);
+    });
+  } else {
+    prompt('Copia las credenciales de acceso:', text);
   }
 };
 
@@ -5088,19 +5236,20 @@ window.saveClientLicense = async function(event) {
 
   try {
     if (id) removeDeletedLicenseId(id);
-    const res = await fetch('/api/licenses', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (data.success) {
-      masterLicensesCache = savePersistentUsersVault(data.licenses);
+    const list = data.users || data.licenses;
+    if (data.success && Array.isArray(list)) {
+      masterLicensesCache = savePersistentUsersVault(list);
       renderMasterLicensesList();
       resetLicenseForm();
       showToast(isDemo
-        ? `⚡ Licencia Demo Exprés (3 Propuestas / 7 Días) guardada para ${clienteNombre}.`
-        : `♾️ Licencia Oficial / Socio Operador (Propuestas Ilimitadas) guardada para ${clienteNombre}.`);
+        ? `⚡ Licencia Demo Exprés (3 Propuestas / 7 Días) guardada en servidor para ${clienteNombre}.`
+        : `♾️ Licencia Oficial / Socio Operador (Propuestas Ilimitadas) guardada en servidor para ${clienteNombre}.`);
     }
   } catch (err) {
     alert('Error guardando licencia: ' + err.message);
@@ -5215,16 +5364,17 @@ window.deleteClientLicense = async function(id) {
     savePersistentUsersVault(masterLicensesCache);
     renderMasterLicensesList();
 
-    // 2. Eliminar en el servidor
-    const res = await fetch(`/api/licenses/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAdminHeaders() });
+    // 2. Eliminar en el servidor (/api/users/:id)
+    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAdminHeaders() });
     const data = await res.json();
-    if (data.success) {
+    const list = data.users || data.licenses;
+    if (data.success && Array.isArray(list)) {
       if (Array.isArray(data.deletedIds)) {
         saveDeletedLicenseIdsToStorage([...getDeletedLicenseIds(), ...data.deletedIds]);
       }
-      masterLicensesCache = savePersistentUsersVault(data.licenses);
+      masterLicensesCache = savePersistentUsersVault(list);
       renderMasterLicensesList();
-      showToast('Licencia eliminada definitivamente del sistema.');
+      showToast('Licencia eliminada definitivamente del servidor.');
     }
   } catch (err) {
     console.error(err);
@@ -5366,15 +5516,17 @@ window.saveQuickDemoLicense = async function(event) {
   };
 
   try {
-    const res = await fetch('/api/licenses', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: getAdminHeaders(),
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (data.success && data.license) {
-      currentQuickDemoResult = cleanUserRecord(data.license);
-      masterLicensesCache = savePersistentUsersVault(data.licenses);
+    const created = data.user || data.license;
+    const list = data.users || data.licenses;
+    if (data.success && created) {
+      currentQuickDemoResult = cleanUserRecord(created);
+      masterLicensesCache = savePersistentUsersVault(list);
       renderMasterLicensesList();
 
       const formBox = document.getElementById('quick-demo-form-container');

@@ -154,15 +154,27 @@
           <span class="lg:hidden text-[11px]">Reiniciar</span>
         </button>
 
+        <!-- BADGE ESTÁTICO DE CAJA NEGRA PARA USUARIOS CON LICENCIA (Cero exposición de motores externos o APIs) -->
+        <div id="client-blackbox-engine-badge"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-slate-900 text-emerald-300 text-[10px] sm:text-[11px] font-black shadow-xs select-none"
+          title="Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)">
+          <span class="relative flex h-2 w-2 shrink-0">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+          </span>
+          <span id="client-blackbox-engine-text">Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)</span>
+        </div>
+
+        <!-- SELECTOR DE MOTOR IA Y CONFIGURACIÓN DE API (EXCLUSIVO ADMINISTRADOR MAESTRO) -->
         <button type="button" onclick="openConfigModal()" id="btn-header-ai-engine"
-          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-white text-emerald-950 text-xs font-black shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
-          title="Motor de IA Centralizado y Autónomo (Google Gemini Pro - Plug & Play)">
+          class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-white text-emerald-950 text-xs font-black shadow-xs hover:shadow-sm transition-all active:scale-95 cursor-pointer"
+          title="Selector de Motor de IA y Configuración de API Keys (Exclusivo Administrador Maestro)">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
           </span>
-          <span class="hidden sm:inline text-[11px] font-bold text-slate-700">Motor IA:</span>
-          <span id="nav-model-badge" class="text-[10px] bg-emerald-700 text-white font-extrabold px-1.5 py-0.5 rounded shadow-2xs">Gemini Pro Central</span>
+          <span class="hidden sm:inline text-[11px] font-bold text-slate-700">Selector Motor IA:</span>
+          <span id="nav-model-badge" class="text-[10px] bg-emerald-700 text-white font-extrabold px-1.5 py-0.5 rounded shadow-2xs">Modo Híbrido</span>
         </button>
 
         <!-- BOTÓN DE CIERRE DE SESIÓN SEGURO (LOGOUT) -->
@@ -838,80 +850,99 @@
     </div>
   </footer>
 
-  <!-- MODAL INFORMATIVO: MOTOR DE IA CENTRALIZADO GOVTECH (PLUG & PLAY) -->
-  <div id="modal-config" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="card-pvem max-w-lg w-full p-6 space-y-4 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95">
+  <!-- MODAL EXCLUSIVO ADMINISTRADOR MAESTRO: SELECTOR GLOBAL DE MOTOR DE IA Y CONFIGURACIÓN DE API KEYS -->
+  <div id="modal-config" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[65] hidden flex items-center justify-center p-4">
+    <div class="card-pvem max-w-xl w-full p-6 space-y-4 bg-white shadow-2xl relative border-emerald-300 animate-in fade-in zoom-in-95 max-h-[92vh] overflow-y-auto">
       
       <!-- Encabezado del Modal -->
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-black flex items-center justify-center text-lg shadow-xs">⚡</div>
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-black flex items-center justify-center text-lg shadow-xs">⚙️</div>
           <div>
-            <h3 class="text-base font-black text-slate-900">Motor de IA Centralizado GovTech</h3>
-            <p class="text-xs text-slate-500 font-semibold">Google Gemini Pro / Enterprise Neural Swarm</p>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black text-slate-900">Selector de Motor de IA y Configuración de API Keys</h3>
+              <span class="text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">Exclusivo Admin</span>
+            </div>
+            <p class="text-xs text-slate-500 font-semibold">Persistencia Centralizada en Servidor • Invisible para Clientes (Black-Box)</p>
           </div>
         </div>
         <button type="button" onclick="closeConfigModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center text-base font-bold transition-colors">✕</button>
       </div>
 
-      <!-- Estado y Especificaciones del Motor Centralizado -->
-      <div class="space-y-3 text-xs">
+      <!-- Estado del Motor Global en Servidor -->
+      <div class="space-y-3.5 text-xs">
         <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-300 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="relative flex h-2.5 w-2.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
             </span>
-            <span class="font-black text-emerald-950 text-xs">Estado del Motor:</span>
+            <span class="font-black text-emerald-950 text-xs">Estado en Servidor Central:</span>
           </div>
-          <span class="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-700 text-white uppercase tracking-wider shadow-2xs">ONLINE • ALTA PRECISIÓN</span>
+          <span id="admin-ai-status-pill" class="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-700 text-white uppercase tracking-wider shadow-2xs">ONLINE • CIFRADO AES-256</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 text-[11px]">
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Arquitectura:</span>
-            <span class="font-black text-slate-900">Google Gemini Pro</span>
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Gestión de Llaves:</span>
-            <span class="font-black text-emerald-700">Servidor Seguro (Plug & Play)</span>
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Capa Estocástica:</span>
-            <span class="font-black text-slate-900">Enjambre Sintético INEGI</span>
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Nivel de Fricción:</span>
-            <span class="font-black text-slate-900">Cero Configuración Requerida</span>
-          </div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-blue-50/70 border border-blue-200 text-blue-950 text-[11px] leading-relaxed space-y-1">
-          <div class="font-bold flex items-center gap-1.5">
-            <span>🛡️</span>
-            <span>Encapsulamiento de Seguridad Industrial:</span>
-          </div>
-          <p class="text-slate-600">
-            Todas las corridas analíticas, simulaciones predictivas y dictámenes territoriales son procesados directamente por la infraestructura centralizada de la administración matriz. Las credenciales de inferencia residen exclusivamente en el servidor backend para garantizar máxima seguridad y evitar fugas de claves.
+        <!-- 1. Selector del Motor de IA Global -->
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <label for="admin-global-engine-select" class="block text-[11px] font-black text-slate-900 uppercase">
+            1. Seleccionar Motor de IA Global del Servidor (Consumido por todos los clientes):
+          </label>
+          <select id="admin-global-engine-select" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black text-slate-900 text-xs focus:ring-2 focus:ring-emerald-500">
+            <option value="hybrid">⚡ Modo Híbrido (Neural Engine + Multi-Modelo Automático)</option>
+            <option value="gemini">🌟 Google Gemini Pro (Gemini 1.5 Pro / 2.0 Flash)</option>
+            <option value="deepseek">🧠 DeepSeek R1 / V3 (Razonamiento Político Profundo)</option>
+            <option value="groq">🚀 Groq Cloud LPU (Llama 3.3 70B / GPT-OSS 120B Ultra-Rápido)</option>
+          </select>
+          <p class="text-[10px] text-slate-500">
+            Los usuarios con licencia nunca ven este selector ni qué modelo corre por detrás; ellos únicamente ven el badge blindado <b>"Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)"</b>.
           </p>
+        </div>
+
+        <!-- 2. Configuración de API Keys en Servidor -->
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+          <span class="block text-[11px] font-black text-slate-900 uppercase">2. Configuración de API Keys en Servidor (AES-256-GCM):</span>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-slate-700">Clave API Google Gemini (`AIzaSy...`):</label>
+              <span id="status-key-gemini" class="text-[10px] font-mono font-bold text-emerald-700"></span>
+            </div>
+            <input type="password" id="input-gemini-key" placeholder="AIzaSy... (Dejar vacío para conservar actual)" autocomplete="new-password"
+              class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-500 font-mono bg-white" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-slate-700">Clave API DeepSeek (`sk-...`):</label>
+              <span id="status-key-deepseek" class="text-[10px] font-mono font-bold text-emerald-700"></span>
+            </div>
+            <input type="password" id="input-deepseek-key" placeholder="sk-... (Dejar vacío para conservar actual)" autocomplete="new-password"
+              class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-500 font-mono bg-white" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-slate-700">Clave API Groq Cloud LPU (`gsk_...`):</label>
+              <span id="status-key-groq" class="text-[10px] font-mono font-bold text-emerald-700"></span>
+            </div>
+            <input type="password" id="input-groq-key" placeholder="gsk_... (Dejar vacío para conservar actual)" autocomplete="new-password"
+              class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-500 font-mono bg-white" />
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <p id="msg-groq-key" class="text-[11px] font-semibold text-slate-600">Los cambios se guardan directamente en el servidor central.</p>
+            <button type="button" onclick="saveGlobalAiConfigInServer()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg transition-colors shadow-xs shrink-0 cursor-pointer">
+              💾 Guardar Motor y API Keys en Servidor
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Activador en Caliente de Clave de IA -->
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <label class="block text-[11px] font-bold text-slate-700">Clave de API Groq (Para activar IA Real en vivo):</label>
-          <div class="flex gap-2">
-            <input type="password" id="input-groq-key" placeholder="gsk_..." class="flex-1 text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-500 font-mono bg-white" />
-            <button type="button" onclick="saveGroqKeyInCloud()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors shadow-xs">Conectar</button>
-          </div>
-          <p id="msg-groq-key" class="text-[10px] text-slate-500">Ingresa tu clave de Groq para activar el motor de inferencia neuronal en caliente.</p>
-        </div>
-
-        <!-- Botón de Cierre -->
+      <!-- Botón de Cierre -->
       <div class="flex items-center justify-end pt-2 border-t border-slate-100">
         <button type="button" onclick="closeConfigModal()"
           class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition-all cursor-pointer">
-          Entendido / Cerrar
+          Cerrar Panel de Motor IA
         </button>
       </div>
 
@@ -1207,6 +1238,12 @@
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
           </div>
 
+          <div>
+            <label for="auth-token" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">Token de Seguridad <span class="font-normal text-slate-400 normal-case">(Opcional si ingresas Usuario y Contraseña)</span></label>
+            <input type="text" id="auth-token" name="govtech_token_manual" value="" autocomplete="off" spellcheck="false" placeholder="Ej. TK-PVEM-XXXX-XXXX (Opcional)"
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
+          </div>
+
           <!-- COMPONENTE DE VERIFICACIÓN ANTI-BOTS (TURNSTILE / CAPTCHA OBLIGATORIO) -->
           <div class="pt-1">
             <div id="turnstile-widget-box" onclick="triggerTurnstileVerification(event)"
@@ -1329,6 +1366,9 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openConfigModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-emerald-400" title="Selector de Motor de IA Global y Configuración de API Keys en Servidor">
+            <span>⚙️</span><span>Motor IA y API Keys</span>
+          </button>
           <button type="button" onclick="openAccessAuditModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-700 to-purple-800 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-indigo-400">
             <span>🛡️</span><span>Auditoría de Accesos</span>
           </button>

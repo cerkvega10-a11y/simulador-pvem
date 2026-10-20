@@ -38,16 +38,21 @@ class WatchdogAuditAgent {
       tituloProyecto
     );
 
-    // 2. Consulta al Motor Centralizado de IA (Google Gemini Pro / Groq Enterprise)
+    // 2. Consulta al Motor Centralizado de IA (Neural Engine GovTech v4.0)
     let llmEvaluation = null;
-    let motorInferenciaUsado = 'Motor Híbrido INEGI-ABM + Watchdog Territorial';
+    const isAdminRun = Boolean(
+      inputData?.activeSession?.role === 'MASTER_ADMIN' ||
+      inputData?.activeSession?.role === 'admin' ||
+      inputData?.activeSession?.role === 'superadmin' ||
+      inputData?.activeSession?.user?.esAdministradorTotal
+    );
+    let motorInferenciaUsado = 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)';
 
-    const hasCentralKey = Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY);
+    const hasCentralKey = Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || process.env.DEEPSEEK_API_KEY);
     const hasClientKey = Boolean(inputData.aiConfig && inputData.aiConfig.apiKey);
 
     if (hasCentralKey || hasClientKey) {
       try {
-        const isCustom = Boolean(inputData.aiConfig?.custom);
         const provider = inputData.aiConfig?.provider || (process.env.GROQ_API_KEY ? 'groq' : 'gemini');
         const model = inputData.aiConfig?.model || (provider === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro'));
         const apiKey = inputData.aiConfig?.apiKey || (provider === 'groq' ? process.env.GROQ_API_KEY : (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || ''));
@@ -65,12 +70,10 @@ class WatchdogAuditAgent {
           topProblems,
           activeAiConfig
         );
-        if (llmEvaluation) {
-          if (isCustom) {
-            motorInferenciaUsado = `${provider.toUpperCase()} (${model}) [Modelo Avanzado Dedicado] + Watchdog Territorial`;
-          } else {
-            motorInferenciaUsado = 'Google Gemini Pro / Groq LPU (Motor Centralizado GovTech) + Watchdog Territorial';
-          }
+        if (llmEvaluation && isAdminRun) {
+          motorInferenciaUsado = `Motor Activo: Neural Engine GovTech v4.0 (${provider.toUpperCase()} / ${model})`;
+        } else {
+          motorInferenciaUsado = 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)';
         }
       } catch (llmErr) {
         console.warn('[Watchdog] Fallback a inferencia territorial nativa:', llmErr.message);
