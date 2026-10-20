@@ -904,46 +904,119 @@ const DEFAULT_LICENSES = [
   }
 ];
 
-function loadLicensesStore() {
+const DELETED_LICENSES_FILE = path.join(DATA_DIR, 'deletedLicenses.json');
+
+function loadDeletedLicenseIds() {
   try {
+    if (fs.existsSync(DELETED_LICENSES_FILE)) {
+      const raw = fs.readFileSync(DELETED_LICENSES_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    }
+  } catch (_) {}
+  return [];
+}
+
+function saveDeletedLicenseIds(ids = []) {
+  try {
+    const dir = path.dirname(DELETED_LICENSES_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const unique = Array.from(new Set(ids.filter(Boolean).map(String)));
+    fs.writeFileSync(DELETED_LICENSES_FILE, JSON.stringify(unique, null, 2), 'utf8');
+  } catch (_) {}
+}
+
+function resolveValidPassword(candidatePassword, fallbackPassword = '', username = '') {
+  const cleanCandidate = (candidatePassword !== undefined && candidatePassword !== null)
+    ? String(candidatePassword).trim()
+    : '';
+  if (cleanCandidate && cleanCandidate !== 'undefined' && cleanCandidate !== 'null') {
+    return cleanCandidate;
+  }
+  const cleanFallback = (fallbackPassword !== undefined && fallbackPassword !== null)
+    ? String(fallbackPassword).trim()
+    : '';
+  if (cleanFallback && cleanFallback !== 'undefined' && cleanFallback !== 'null') {
+    return cleanFallback;
+  }
+  const uLower = String(username || '').toLowerCase().trim();
+  const defMatch = DEFAULT_LICENSES.find(d => d.username.toLowerCase() === uLower);
+  if (defMatch && defMatch.password) return defMatch.password;
+  return 'Clave2027*';
+}
+
+function normalizeLicenseRecord(lic) {
+  const validPassword = resolveValidPassword(lic.password, '', lic.username);
+  const partido = String(lic.partido || 'PVEM').toUpperCase();
+  return {
+    ...lic,
+    password: validPassword,
+    tokenSeguridad: (lic.tokenSeguridad && lic.tokenSeguridad !== 'undefined')
+      ? lic.tokenSeguridad
+      : generateSecurityToken(partido),
+    estadosAutorizados: Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'],
+    permisoRadar: lic.permisoRadar !== undefined ? lic.permisoRadar : true,
+    permisoSimulador: lic.permisoSimulador !== undefined ? lic.permisoSimulador : true,
+    propuestaFijaTitulo: lic.propuestaFijaTitulo || '',
+    propuestaFijaTexto: lic.propuestaFijaTexto || '',
+    allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [partido],
+    can_select_any_party: Boolean(lic.can_select_any_party),
+    login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
+    last_login_at: lic.last_login_at || null,
+    simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
+    max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
+    isDemo: Boolean(lic.isDemo),
+    updatedAt: lic.updatedAt || Date.now()
+  };
+}
+
+function loadLicensesStore() {
+  const deletedIds = loadDeletedLicenseIds();
+  try {
+    // REGLA DE ORO DE INICIALIZACIÓN:
+    // Si el archivo persistente ya existe en disco, JAMÁS reinicializar con DEFAULT_LICENSES (incluso si el arreglo quedó vacío tras borrar usuarios).
     if (fs.existsSync(LICENSES_FILE)) {
       const raw = fs.readFileSync(LICENSES_FILE, 'utf8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(lic => ({
-          ...lic,
-          estadosAutorizados: Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México'],
-          permisoRadar: lic.permisoRadar !== undefined ? lic.permisoRadar : true,
-          permisoSimulador: lic.permisoSimulador !== undefined ? lic.permisoSimulador : true,
-          propuestaFijaTitulo: lic.propuestaFijaTitulo || '',
-          propuestaFijaTexto: lic.propuestaFijaTexto || '',
-          allowed_parties: Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'],
-          can_select_any_party: Boolean(lic.can_select_any_party),
-          login_count: typeof lic.login_count === 'number' ? lic.login_count : 0,
-          last_login_at: lic.last_login_at || null,
-          simulations_count: typeof lic.simulations_count === 'number' ? lic.simulations_count : 0,
-          max_simulations: lic.isDemo ? 3 : (lic.max_simulations || 999999),
-          isDemo: Boolean(lic.isDemo),
-        }));
+      if (Array.isArray(parsed)) {
+        let hadCorruptedPassword = false;
+        const cleaned = parsed
+          .filter(lic => lic && lic.id && !deletedIds.includes(String(lic.id)))
+          .map(lic => {
+            if (!lic.password || lic.password === 'undefined' || lic.password === 'null') {
+              hadCorruptedPassword = true;
+            }
+            return normalizeLicenseRecord(lic);
+          });
+        if (hadCorruptedPassword) {
+          saveLicensesStore(cleaned);
+        }
+        return cleaned;
       }
     } else {
-      // Inicializar archivo persistente solo si no existe en disco
-      saveLicensesStore(DEFAULT_LICENSES);
-      return [...DEFAULT_LICENSES];
+      // SOLO la primera vez que se abre el sistema y no existe archivo en disco
+      const initial = DEFAULT_LICENSES
+        .filter(lic => !deletedIds.includes(String(lic.id)))
+        .map(lic => normalizeLicenseRecord(lic));
+      saveLicensesStore(initial);
+      return initial;
     }
   } catch (e) {
     console.error('Error crítico leyendo licensesStore.json:', e.message);
   }
-  return [...DEFAULT_LICENSES];
+  return DEFAULT_LICENSES
+    .filter(lic => !deletedIds.includes(String(lic.id)))
+    .map(lic => normalizeLicenseRecord(lic));
 }
 
 function saveLicensesStore(list) {
   try {
     const dir = path.dirname(LICENSES_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const normalizedList = Array.isArray(list) ? list.map(lic => normalizeLicenseRecord(lic)) : [];
     // Escritura atómica para evitar corrupción de JSON por operaciones concurrentes
     const tmpFile = `${LICENSES_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmpFile, JSON.stringify(list, null, 2), 'utf8');
+    fs.writeFileSync(tmpFile, JSON.stringify(normalizedList, null, 2), 'utf8');
     fs.renameSync(tmpFile, LICENSES_FILE);
   } catch (e) {
     console.warn('Advertencia guardando licensesStore.json:', e.message);
@@ -1021,6 +1094,20 @@ function sanitizeLicenseForClient(lic) {
     hasCustomKey: Boolean(customApiKeyEncrypted),
     customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
     aiModel: lic.aiModel || 'gemini-default'
+  };
+}
+
+function formatLicenseForMasterAdmin(lic) {
+  if (!lic) return null;
+  const normalized = normalizeLicenseRecord(lic);
+  const { customApiKeyEncrypted, ...adminLic } = normalized;
+  return {
+    ...adminLic,
+    password: normalized.password,
+    tokenSeguridad: normalized.tokenSeguridad,
+    hasCustomKey: Boolean(customApiKeyEncrypted),
+    customApiKeyMasked: maskApiKey(customApiKeyEncrypted),
+    aiModel: normalized.aiModel || 'gemini-default'
   };
 }
 
@@ -1297,6 +1384,34 @@ app.post('/api/auth/login', (req, res) => {
 
     // Buscar en licencias de clientes políticos (Soporta credenciales o Token de Seguridad TK-*)
     licensesStore = loadLicensesStore();
+
+    // Si el cliente envía sincronización de bóveda persistente (útil tras reinicios Serverless en Vercel), sincronizar antes de autenticar
+    const { clientVault, deletedIds: loginDeletedIds } = req.body || {};
+    if (Array.isArray(loginDeletedIds) && loginDeletedIds.length > 0) {
+      const mergedDel = Array.from(new Set([...loadDeletedLicenseIds(), ...loginDeletedIds.map(String)]));
+      saveDeletedLicenseIds(mergedDel);
+      licensesStore = licensesStore.filter(l => !mergedDel.includes(String(l.id)));
+    }
+    if (Array.isArray(clientVault) && clientVault.length > 0) {
+      const delSet = new Set(loadDeletedLicenseIds());
+      clientVault.forEach(vLic => {
+        if (!vLic || !vLic.id || delSet.has(String(vLic.id))) return;
+        const idx = licensesStore.findIndex(l => l.id === vLic.id);
+        if (idx === -1) {
+          licensesStore.push(normalizeLicenseRecord(vLic));
+        } else {
+          const existing = licensesStore[idx];
+          licensesStore[idx] = normalizeLicenseRecord({
+            ...existing,
+            ...vLic,
+            password: resolveValidPassword(vLic.password, existing.password, vLic.username || existing.username),
+            customApiKeyEncrypted: existing.customApiKeyEncrypted || vLic.customApiKeyEncrypted || ''
+          });
+        }
+      });
+      saveLicensesStore(licensesStore);
+    }
+
     const isTokenLookup = u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-');
     const inputToken = (u.toUpperCase().startsWith('TK-') ? u : (p.toUpperCase().startsWith('TK-') ? p : '')).toUpperCase();
 
@@ -1410,8 +1525,8 @@ app.post('/api/auth/login', (req, res) => {
 // 9.2. Listar Licencias (Para Panel de Control Maestro)
 app.get('/api/licenses', requireMasterAdmin, (req, res) => {
   licensesStore = loadLicensesStore();
-  const safeList = licensesStore.map(lic => sanitizeLicenseForClient(lic));
-  res.json({ success: true, licenses: safeList, watermark: AUTHORSHIP_WATERMARK });
+  const adminList = licensesStore.map(lic => formatLicenseForMasterAdmin(lic));
+  res.json({ success: true, licenses: adminList, deletedIds: loadDeletedLicenseIds(), watermark: AUTHORSHIP_WATERMARK });
 });
 
 // 9.2b. Bitácora de Auditoría y Telemetría de Accesos (Zero-Data Retention)
@@ -1527,11 +1642,17 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       customApiKeyEncrypted = existingLic.customApiKeyEncrypted;
     }
 
+    const resolvedPassword = resolveValidPassword(
+      body.password,
+      existingLic ? existingLic.password : '',
+      body.username || (existingLic ? existingLic.username : '')
+    );
+
     const licenseObj = {
       id,
-      clienteNombre: String(body.clienteNombre || 'Cliente Político').trim(),
-      username: String(body.username || `usuario_${Date.now()}`).trim(),
-      password: String(body.password || 'Clave2027*').trim(),
+      clienteNombre: String(body.clienteNombre || (existingLic ? existingLic.clienteNombre : 'Cliente Político')).trim(),
+      username: String(body.username || (existingLic ? existingLic.username : `usuario_${Date.now()}`)).trim(),
+      password: resolvedPassword,
       partido,
       allowed_parties,
       can_select_any_party,
@@ -1570,8 +1691,15 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       isDemo,
       simulations_count: existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0,
       max_simulations: isDemo ? 3 : 999999,
-      creadoEn: body.creadoEn || new Date().toISOString().split('T')[0]
+      creadoEn: body.creadoEn || (existingLic ? existingLic.creadoEn : new Date().toISOString().split('T')[0]),
+      updatedAt: Date.now()
     };
+
+    // Si estaba en lista de eliminados y se vuelve a crear con mismo id, remover de eliminados
+    const currentDeleted = loadDeletedLicenseIds();
+    if (currentDeleted.includes(String(id))) {
+      saveDeletedLicenseIds(currentDeleted.filter(dId => dId !== String(id)));
+    }
 
     if (existingIdx >= 0) {
       licensesStore[existingIdx] = licenseObj;
@@ -1580,9 +1708,9 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
     }
 
     saveLicensesStore(licensesStore);
-    const safeLic = sanitizeLicenseForClient(licenseObj);
-    const safeList = licensesStore.map(l => sanitizeLicenseForClient(l));
-    res.json({ success: true, license: safeLic, licenses: safeList });
+    const adminLic = formatLicenseForMasterAdmin(licenseObj);
+    const adminList = licensesStore.map(l => formatLicenseForMasterAdmin(l));
+    res.json({ success: true, license: adminLic, licenses: adminList, deletedIds: loadDeletedLicenseIds() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1598,8 +1726,9 @@ app.patch('/api/licenses/:id/toggle', requireMasterAdmin, (req, res) => {
       return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
     }
     lic.activo = !lic.activo;
+    lic.updatedAt = Date.now();
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    res.json({ success: true, license: formatLicenseForMasterAdmin(lic), licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1627,8 +1756,9 @@ app.patch('/api/licenses/:id/expiration', requireMasterAdmin, (req, res) => {
     if (fechaInicio) {
       lic.fechaInicio = String(fechaInicio).trim();
     }
+    lic.updatedAt = Date.now();
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    res.json({ success: true, license: formatLicenseForMasterAdmin(lic), licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1646,8 +1776,9 @@ app.patch('/api/licenses/:id/permissions', requireMasterAdmin, (req, res) => {
     }
     if (permisoRadar !== undefined) lic.permisoRadar = Boolean(permisoRadar);
     if (permisoSimulador !== undefined) lic.permisoSimulador = Boolean(permisoSimulador);
+    lic.updatedAt = Date.now();
     saveLicensesStore(licensesStore);
-    res.json({ success: true, license: sanitizeLicenseForClient(lic), licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    res.json({ success: true, license: formatLicenseForMasterAdmin(lic), licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l)) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1663,61 +1794,119 @@ app.post('/api/licenses/:id/reset-simulations', requireMasterAdmin, (req, res) =
       return res.status(404).json({ success: false, error: 'Licencia no encontrada' });
     }
     lic.simulations_count = 0;
+    lic.updatedAt = Date.now();
     saveLicensesStore(licensesStore);
     res.json({
       success: true,
       message: `Contador de propuestas reiniciado a 0 para ${lic.username}`,
-      license: sanitizeLicenseForClient(lic),
-      licenses: licensesStore.map(l => sanitizeLicenseForClient(l))
+      license: formatLicenseForMasterAdmin(lic),
+      licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 9.5. Eliminar Licencia
+// 9.5. Eliminar Licencia (Persistencia Definitiva Anti-Reaparición)
 app.delete('/api/licenses/:id', requireMasterAdmin, (req, res) => {
   try {
     const { id } = req.params;
+    const currentDeleted = loadDeletedLicenseIds();
+    if (!currentDeleted.includes(String(id))) {
+      currentDeleted.push(String(id));
+      saveDeletedLicenseIds(currentDeleted);
+    }
     licensesStore = loadLicensesStore();
-    licensesStore = licensesStore.filter(l => l.id !== id);
+    licensesStore = licensesStore.filter(l => String(l.id) !== String(id));
     saveLicensesStore(licensesStore);
-    res.json({ success: true, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    res.json({
+      success: true,
+      deletedId: id,
+      deletedIds: currentDeleted,
+      licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (Persistencia Bidireccional)
+// 9.6. Sincronización y Bóveda Anti-Pérdida de Licencias (Persistencia Bidireccional Inmutable)
 app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
   try {
-    const { vaultLicenses = [] } = req.body || {};
-    if (!Array.isArray(vaultLicenses) || vaultLicenses.length === 0) {
-      licensesStore = loadLicensesStore();
-      return res.json({ success: true, count: 0, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    const { vaultLicenses = [], deletedIds = [], authoritativeClientVault = false } = req.body || {};
+    const mergedDeleted = Array.from(new Set([
+      ...loadDeletedLicenseIds(),
+      ...(Array.isArray(deletedIds) ? deletedIds.map(String) : [])
+    ]));
+    saveDeletedLicenseIds(mergedDeleted);
+
+    licensesStore = loadLicensesStore().filter(l => !mergedDeleted.includes(String(l.id)));
+
+    if (!Array.isArray(vaultLicenses)) {
+      saveLicensesStore(licensesStore);
+      return res.json({
+        success: true,
+        count: 0,
+        deletedIds: mergedDeleted,
+        licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+      });
     }
 
-    licensesStore = loadLicensesStore();
+    // Si el cliente envía su bóveda autoritativa (ya inicializada), eliminar cualquier licencia por defecto que no esté en su bóveda
+    if (authoritativeClientVault) {
+      const vaultIds = new Set(vaultLicenses.filter(v => v && v.id).map(v => String(v.id)));
+      const defaultIds = new Set(DEFAULT_LICENSES.map(d => String(d.id)));
+      licensesStore = licensesStore.filter(sLic => {
+        if (defaultIds.has(String(sLic.id)) && !vaultIds.has(String(sLic.id))) {
+          if (!mergedDeleted.includes(String(sLic.id))) {
+            mergedDeleted.push(String(sLic.id));
+          }
+          return false;
+        }
+        return true;
+      });
+      saveDeletedLicenseIds(mergedDeleted);
+    }
+
     let addedCount = 0;
+    let updatedCount = 0;
 
     vaultLicenses.forEach(vLic => {
-      if (!vLic || !vLic.id) return;
+      if (!vLic || !vLic.id || mergedDeleted.includes(String(vLic.id))) return;
       const idx = licensesStore.findIndex(l => l.id === vLic.id);
       if (idx === -1) {
-        licensesStore.push(vLic);
+        licensesStore.push(normalizeLicenseRecord(vLic));
         addedCount++;
       } else {
-        // Preservar datos y merge seguro
-        licensesStore[idx] = { ...licensesStore[idx], ...vLic };
+        const existing = licensesStore[idx];
+        const validPassword = resolveValidPassword(
+          vLic.password,
+          existing.password,
+          vLic.username || existing.username
+        );
+        licensesStore[idx] = normalizeLicenseRecord({
+          ...existing,
+          ...vLic,
+          password: validPassword,
+          tokenSeguridad: (vLic.tokenSeguridad && vLic.tokenSeguridad !== 'undefined')
+            ? vLic.tokenSeguridad
+            : existing.tokenSeguridad,
+          customApiKeyEncrypted: existing.customApiKeyEncrypted || vLic.customApiKeyEncrypted || '',
+          login_count: Math.max(existing.login_count || 0, vLic.login_count || 0),
+          last_login_at: existing.last_login_at || vLic.last_login_at || null
+        });
+        updatedCount++;
       }
     });
 
-    if (addedCount > 0) {
-      saveLicensesStore(licensesStore);
-      console.log(`[VAULT-SYNC] Sincronización exitosa: ${addedCount} licencias restauradas y blindadas.`);
-    }
-
-    res.json({ success: true, addedCount, licenses: licensesStore.map(l => sanitizeLicenseForClient(l)) });
+    saveLicensesStore(licensesStore);
+    res.json({
+      success: true,
+      addedCount,
+      updatedCount,
+      deletedIds: mergedDeleted,
+      licenses: licensesStore.map(l => formatLicenseForMasterAdmin(l))
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

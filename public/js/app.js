@@ -49,6 +49,50 @@ async function initApp() {
   await loadPresets();
   setExactSwarmSize(500);
   switchWarRoomTab('tab-resumen-demografia');
+
+  // Restaurar sesión autenticada en recargas de página (F5) si existe token activo en sessionStorage
+  try {
+    const savedSessionRaw = sessionStorage.getItem('govtech_active_session_v1');
+    const savedToken = sessionStorage.getItem('pvem_session_token');
+    if (savedSessionRaw && savedToken) {
+      const savedSession = JSON.parse(savedSessionRaw);
+      if (savedSession && savedSession.user) {
+        appState.activeSession = savedSession;
+        ['app-main-header', 'app-main-workspace', 'app-main-footer'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.remove('hidden');
+        });
+        closeAuthLoginModal();
+        const isMaster = savedSession.role === 'MASTER_ADMIN' || savedSession.user.esAdministradorTotal;
+        const btnMaster = document.getElementById('btn-master-admin-header');
+        if (btnMaster) {
+          if (isMaster) {
+            btnMaster.classList.remove('hidden');
+            btnMaster.classList.add('flex');
+          } else {
+            btnMaster.classList.add('hidden');
+            btnMaster.classList.remove('flex');
+          }
+        }
+        const userBadge = document.getElementById('active-user-badge');
+        if (userBadge) {
+          userBadge.classList.remove('hidden');
+          userBadge.classList.add('flex');
+        }
+        const navLabel = document.getElementById('nav-session-label');
+        if (navLabel) navLabel.innerText = `${isMaster ? '👑' : '👤'} ${savedSession.user.username}`;
+        const adminBadge = document.getElementById('master-admin-badge');
+        if (adminBadge && isMaster) adminBadge.innerText = `Admin: ${savedSession.user.username}`;
+
+        await applyLicenseRestrictionsToUI(savedSession.user, isMaster);
+        if (isMaster) {
+          await openMasterAdminModal();
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error restaurando sesión tras recarga:', e);
+  }
 }
 
 function enforceNeutralWelcomeState() {
@@ -2730,6 +2774,8 @@ window.handleAuthLogin = async function(event) {
   }
 
   try {
+    const clientVault = typeof loadPersistentUsersVault === 'function' ? loadPersistentUsersVault() : [];
+    const deletedIds = typeof getDeletedLicenseIds === 'function' ? getDeletedLicenseIds() : [];
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2737,7 +2783,9 @@ window.handleAuthLogin = async function(event) {
         username,
         password,
         captchaVerified: turnstileState.verified,
-        captchaToken
+        captchaToken,
+        clientVault: Array.isArray(clientVault) && clientVault.length > 0 ? clientVault : undefined,
+        deletedIds: Array.isArray(deletedIds) && deletedIds.length > 0 ? deletedIds : undefined
       })
     });
     const data = await res.json();
@@ -2759,6 +2807,7 @@ window.handleAuthLogin = async function(event) {
     if (data.sessionToken) {
       sessionStorage.setItem('pvem_session_token', data.sessionToken);
     }
+    sessionStorage.setItem('govtech_active_session_v1', JSON.stringify(appState.activeSession));
 
     // Desbloquear contenedores principales de la plataforma (War Room Vista 2 como Ventana Principal)
     ['app-main-header', 'app-main-workspace', 'app-main-footer'].forEach(id => {
@@ -3431,50 +3480,174 @@ function getAdminHeaders() {
   };
 }
 
-async function loadMasterLicenses() {
-  try {
-    const res = await fetch('/api/licenses', { headers: getAdminHeaders() });
-    const data = await res.json();
-    if (data.success && Array.isArray(data.licenses)) {
-      masterLicensesCache = data.licenses;
-    }
+// =========================================================================
+// FUENTE ÚNICA DE VERDAD PERSISTENTE DE USUARIOS Y LICENCIAS (INMUTABLE)
+// =========================================================================
+const USERS_STORAGE_KEY = 'govtech_warroom_users_v1';
+const USERS_VAULT_LEGACY_KEY = 'govtech_master_licenses_vault';
+const USERS_INIT_FLAG_KEY = 'govtech_warroom_users_initialized_v1';
+const DELETED_USERS_STORAGE_KEY = 'govtech_warroom_deleted_ids_v1';
 
-    // Bóveda Local Segura (Anti-Pérdida de Datos en Despliegues y Reinicios de Contenedor)
-    const localVaultRaw = localStorage.getItem('govtech_master_licenses_vault');
-    if (localVaultRaw) {
-      try {
-        const localVault = JSON.parse(localVaultRaw);
-        if (Array.isArray(localVault) && localVault.length > 0) {
-          const missingInServer = localVault.filter(vl => !masterLicensesCache.some(sl => sl.id === vl.id));
-          if (missingInServer.length > 0) {
-            console.log(`[VAULT] Restaurando ${missingInServer.length} licencias desde la bóveda local al servidor...`);
-            const syncRes = await fetch('/api/licenses/sync-vault', {
-              method: 'POST',
-              headers: getAdminHeaders(),
-              body: JSON.stringify({ vaultLicenses: localVault })
-            });
-            const syncData = await syncRes.json();
-            if (syncData.success && Array.isArray(syncData.licenses)) {
-              masterLicensesCache = syncData.licenses;
-              showToast(`🛡️ Bóveda Segura: ${missingInServer.length} licencias restauradas y blindadas automáticamente.`);
-            }
-          }
+function sanitizeUserPasswordValue(candidatePassword, fallbackPassword = '', username = '') {
+  const c = (candidatePassword !== undefined && candidatePassword !== null) ? String(candidatePassword).trim() : '';
+  if (c && c !== 'undefined' && c !== 'null') return c;
+  const f = (fallbackPassword !== undefined && fallbackPassword !== null) ? String(fallbackPassword).trim() : '';
+  if (f && f !== 'undefined' && f !== 'null') return f;
+  const u = String(username || '').toLowerCase().trim();
+  if (u === 'ecatepec2027') return 'Verde2027*';
+  if (u === 'distrito04') return 'Morena2027*';
+  return 'Clave2027*';
+}
+
+function cleanUserRecord(lic) {
+  if (!lic || typeof lic !== 'object') return null;
+  const validPass = sanitizeUserPasswordValue(lic.password, '', lic.username);
+  return {
+    ...lic,
+    password: validPass,
+    tokenSeguridad: (lic.tokenSeguridad && String(lic.tokenSeguridad) !== 'undefined')
+      ? lic.tokenSeguridad
+      : `TK-${String(lic.partido || 'PVEM').toUpperCase()}-2027`
+  };
+}
+
+function getDeletedLicenseIds() {
+  try {
+    const raw = localStorage.getItem(DELETED_USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    }
+  } catch (_) {}
+  return [];
+}
+
+function saveDeletedLicenseIdsToStorage(ids = []) {
+  try {
+    const unique = Array.from(new Set(ids.filter(Boolean).map(String)));
+    localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(unique));
+  } catch (_) {}
+}
+
+function addDeletedLicenseId(id) {
+  if (!id) return;
+  const current = getDeletedLicenseIds();
+  if (!current.includes(String(id))) {
+    current.push(String(id));
+    saveDeletedLicenseIdsToStorage(current);
+  }
+}
+
+function removeDeletedLicenseId(id) {
+  if (!id) return;
+  const current = getDeletedLicenseIds();
+  if (current.includes(String(id))) {
+    saveDeletedLicenseIdsToStorage(current.filter(x => x !== String(id)));
+  }
+}
+
+function savePersistentUsersVault(list = []) {
+  try {
+    const deletedSet = new Set(getDeletedLicenseIds());
+    const cleaned = (Array.isArray(list) ? list : [])
+      .filter(u => u && u.id && !deletedSet.has(String(u.id)))
+      .map(u => cleanUserRecord(u))
+      .filter(Boolean);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(cleaned));
+    localStorage.setItem(USERS_VAULT_LEGACY_KEY, JSON.stringify(cleaned));
+    localStorage.setItem(USERS_INIT_FLAG_KEY, 'true');
+    return cleaned;
+  } catch (e) {
+    console.warn('Error guardando bóveda persistente de usuarios:', e);
+    return list;
+  }
+}
+
+function loadPersistentUsersVault() {
+  try {
+    const deletedSet = new Set(getDeletedLicenseIds());
+    const rawPrimary = localStorage.getItem(USERS_STORAGE_KEY);
+    const rawLegacy = localStorage.getItem(USERS_VAULT_LEGACY_KEY);
+    const raw = rawPrimary !== null ? rawPrimary : rawLegacy;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(u => u && u.id && !deletedSet.has(String(u.id)))
+          .map(u => cleanUserRecord(u))
+          .filter(Boolean);
+      }
+    }
+  } catch (e) {
+    console.warn('Error leyendo bóveda persistente de usuarios:', e);
+  }
+  return null;
+}
+
+async function loadMasterLicenses() {
+  const isAlreadyInitialized = localStorage.getItem(USERS_INIT_FLAG_KEY) === 'true';
+  const storedUsers = loadPersistentUsersVault();
+  const deletedIds = getDeletedLicenseIds();
+
+  try {
+    // REGLA DE ORO DE INICIALIZACIÓN:
+    // Si ya existen datos guardados en el almacenamiento persistente, sincronizarlos como fuente de verdad sin reinjectar mocks por defecto.
+    if (isAlreadyInitialized && Array.isArray(storedUsers)) {
+      const syncRes = await fetch('/api/licenses/sync-vault', {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({
+          vaultLicenses: storedUsers,
+          deletedIds,
+          authoritativeClientVault: true
+        })
+      });
+      const syncData = await syncRes.json();
+      if (syncData.success && Array.isArray(syncData.licenses)) {
+        if (Array.isArray(syncData.deletedIds)) {
+          saveDeletedLicenseIdsToStorage(syncData.deletedIds);
         }
-      } catch (vaultErr) {
-        console.warn('Error en bóveda local:', vaultErr);
+        masterLicensesCache = savePersistentUsersVault(syncData.licenses);
+        renderMasterLicensesList();
+        return;
       }
     }
 
-    localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+    // Primera vez en la historia o fallback si aún no estaba inicializada la bóveda
+    const res = await fetch('/api/licenses', { headers: getAdminHeaders() });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.licenses)) {
+      if (Array.isArray(data.deletedIds)) {
+        saveDeletedLicenseIdsToStorage([...deletedIds, ...data.deletedIds]);
+      }
+      // Si teníamos usuarios previos en la bóveda legada, preservar sus contraseñas y ediciones
+      let merged = data.licenses;
+      if (Array.isArray(storedUsers) && storedUsers.length > 0) {
+        const syncRes = await fetch('/api/licenses/sync-vault', {
+          method: 'POST',
+          headers: getAdminHeaders(),
+          body: JSON.stringify({
+            vaultLicenses: storedUsers,
+            deletedIds: getDeletedLicenseIds(),
+            authoritativeClientVault: true
+          })
+        });
+        const syncData = await syncRes.json();
+        if (syncData.success && Array.isArray(syncData.licenses)) {
+          merged = syncData.licenses;
+        }
+      }
+      masterLicensesCache = savePersistentUsersVault(merged);
+    } else if (Array.isArray(storedUsers)) {
+      masterLicensesCache = savePersistentUsersVault(storedUsers);
+    }
+
     renderMasterLicensesList();
   } catch (err) {
     console.warn('Error cargando licencias:', err);
-    const fallbackVault = localStorage.getItem('govtech_master_licenses_vault');
-    if (fallbackVault) {
-      try {
-        masterLicensesCache = JSON.parse(fallbackVault);
-        renderMasterLicensesList();
-      } catch (e) {}
+    if (Array.isArray(storedUsers)) {
+      masterLicensesCache = savePersistentUsersVault(storedUsers);
+      renderMasterLicensesList();
     }
   }
 }
@@ -3533,11 +3706,13 @@ function renderMasterLicensesList() {
           ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' })
           : '<span class="text-slate-500">Nunca</span>';
 
+        const safePassword = sanitizeUserPasswordValue(lic.password, '', lic.username);
+
         return `
           <tr class="hover:bg-slate-900/60 transition-colors">
             <td class="py-2.5 px-3">
               <div class="font-black text-white text-xs">${lic.clienteNombre}</div>
-              <div class="text-[10px] font-mono text-slate-400">@${lic.username}</div>
+              <div class="text-[10px] font-mono text-slate-400">@${lic.username} • <span class="text-emerald-400 font-bold">${safePassword}</span></div>
             </td>
             <td class="py-2.5 px-2">${licTypeBadge}</td>
             <td class="py-2.5 px-2"><div class="flex flex-wrap gap-1">${partiesBadges}</div></td>
@@ -3632,7 +3807,7 @@ function renderMasterLicensesList() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Credenciales Manuales:</span>
-            <span class="font-mono font-bold text-slate-900">${lic.username}</span> / <span class="font-mono text-emerald-700 font-bold">${lic.password}</span>
+            <span class="font-mono font-bold text-slate-900">${lic.username}</span> / <span class="font-mono text-emerald-700 font-bold">${sanitizeUserPasswordValue(lic.password, '', lic.username)}</span>
           </div>
           <div>
             <span class="text-slate-400 block text-[10px] font-bold uppercase">🛡️ Token de Seguridad:</span>
@@ -3772,9 +3947,9 @@ window.resetLicenseSimulations = async function(id) {
     });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
-      showToast(data.message || 'Contador de propuestas reiniciado a 0/3 con éxito.');
+      showToast(data.message || 'Contador de propuestas reiniciado a 0 con éxito.');
     } else {
       alert(`Error al reiniciar: ${data.error}`);
     }
@@ -3812,7 +3987,7 @@ window.updateLicenseExpirationQuick = async function(id) {
     });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
       showToast(`📅 Vigencia actualizada al ${dateInput.value}. Kill Switch sincronizado.`);
     }
@@ -3853,7 +4028,7 @@ window.toggleLicenseModulePermQuick = async function(id, modType, checked) {
     });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
       showToast(`Permisos de módulos actualizados para ${lic.clienteNombre}.`);
     }
@@ -4087,9 +4262,18 @@ window.saveClientLicense = async function(event) {
   if (event) event.preventDefault();
 
   const id = document.getElementById('lic-id')?.value || '';
+  const existingUser = id ? masterLicensesCache.find(l => l.id === id) : null;
   const clienteNombre = document.getElementById('lic-cliente-nombre')?.value?.trim();
   const username = document.getElementById('lic-username')?.value?.trim();
-  const password = document.getElementById('lic-password')?.value?.trim();
+  const rawPasswordInput = document.getElementById('lic-password')?.value;
+  const typedPassword = (rawPasswordInput !== undefined && rawPasswordInput !== null && String(rawPasswordInput).trim() !== 'undefined')
+    ? String(rawPasswordInput).trim()
+    : '';
+  const password = typedPassword || sanitizeUserPasswordValue(existingUser?.password, '', username);
+  if (!password) {
+    alert('Ingresa una contraseña válida para el usuario.');
+    return;
+  }
   const partido = document.getElementById('lic-partido')?.value || 'PVEM';
   const maxSwarmSize = parseInt(document.getElementById('lic-max-swarm')?.value, 10) || 100000;
   const fechaInicio = document.getElementById('lic-fecha-inicio')?.value || '2026-01-01';
@@ -4213,6 +4397,7 @@ window.saveClientLicense = async function(event) {
   };
 
   try {
+    if (id) removeDeletedLicenseId(id);
     const res = await fetch('/api/licenses', {
       method: 'POST',
       headers: getAdminHeaders(),
@@ -4220,8 +4405,7 @@ window.saveClientLicense = async function(event) {
     });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
-      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
       resetLicenseForm();
       showToast(isDemo
@@ -4238,11 +4422,13 @@ window.editClientLicense = async function(id) {
   const lic = masterLicensesCache.find(l => l.id === id);
   if (!lic) return;
 
+  const currentPassword = sanitizeUserPasswordValue(lic.password, '', lic.username);
+
   document.getElementById('lic-id').value = lic.id;
-  document.getElementById('lic-cliente-nombre').value = lic.clienteNombre;
-  document.getElementById('lic-username').value = lic.username;
-  document.getElementById('lic-password').value = lic.password;
-  document.getElementById('lic-partido').value = lic.partido;
+  document.getElementById('lic-cliente-nombre').value = lic.clienteNombre || '';
+  document.getElementById('lic-username').value = lic.username || '';
+  document.getElementById('lic-password').value = currentPassword;
+  document.getElementById('lic-partido').value = lic.partido || 'PVEM';
   document.getElementById('lic-max-swarm').value = String(lic.maxSwarmSize || 100000);
   if (typeof window.onLicenseDemoModeChange === 'function') {
     window.onLicenseDemoModeChange(Boolean(lic.isDemo), true);
@@ -4321,7 +4507,7 @@ window.toggleClientLicenseKillSwitch = async function(id) {
     const res = await fetch(`/api/licenses/${encodeURIComponent(id)}/toggle`, { method: 'PATCH', headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
       showToast('Estado de licencia actualizado (Kill Switch).');
     }
@@ -4332,12 +4518,22 @@ window.toggleClientLicenseKillSwitch = async function(id) {
 
 window.deleteClientLicense = async function(id) {
   try {
+    // 1. Marcar como eliminado permanentemente y actualizar bóveda local al instante
+    addDeletedLicenseId(id);
+    masterLicensesCache = masterLicensesCache.filter(l => String(l.id) !== String(id));
+    savePersistentUsersVault(masterLicensesCache);
+    renderMasterLicensesList();
+
+    // 2. Eliminar en el servidor
     const res = await fetch(`/api/licenses/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAdminHeaders() });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
+      if (Array.isArray(data.deletedIds)) {
+        saveDeletedLicenseIdsToStorage([...getDeletedLicenseIds(), ...data.deletedIds]);
+      }
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
-      showToast('Licencia eliminada del sistema.');
+      showToast('Licencia eliminada definitivamente del sistema.');
     }
   } catch (err) {
     console.error(err);
@@ -4486,9 +4682,8 @@ window.saveQuickDemoLicense = async function(event) {
     });
     const data = await res.json();
     if (data.success && data.license) {
-      currentQuickDemoResult = data.license;
-      masterLicensesCache = data.licenses;
-      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+      currentQuickDemoResult = cleanUserRecord(data.license);
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
 
       const formBox = document.getElementById('quick-demo-form-container');
@@ -4496,13 +4691,13 @@ window.saveQuickDemoLicense = async function(event) {
       if (formBox) formBox.classList.add('hidden');
       if (resBox) resBox.classList.remove('hidden');
 
-      document.getElementById('qd-res-nombre').innerText = data.license.clienteNombre;
-      document.getElementById('qd-res-partido').innerText = data.license.partido;
+      document.getElementById('qd-res-nombre').innerText = currentQuickDemoResult.clienteNombre;
+      document.getElementById('qd-res-partido').innerText = currentQuickDemoResult.partido;
       document.getElementById('qd-res-region').innerText = `${estado} — ${muni}`;
-      document.getElementById('qd-res-user').innerText = data.license.username;
-      document.getElementById('qd-res-pass').innerText = data.license.password;
-      document.getElementById('qd-res-token').innerText = data.license.tokenSeguridad;
-      document.getElementById('qd-res-exp').innerText = data.license.fechaExpiracion;
+      document.getElementById('qd-res-user').innerText = currentQuickDemoResult.username;
+      document.getElementById('qd-res-pass').innerText = currentQuickDemoResult.password;
+      document.getElementById('qd-res-token').innerText = currentQuickDemoResult.tokenSeguridad;
+      document.getElementById('qd-res-exp').innerText = currentQuickDemoResult.fechaExpiracion;
 
       showToast(`¡Demo 7 Días (3 Propuestas) activada exitosamente para ${nombre}!`);
     } else {
@@ -4574,10 +4769,9 @@ window.importLicensesBackup = async function(event) {
     });
     const data = await res.json();
     if (data.success) {
-      masterLicensesCache = data.licenses;
-      localStorage.setItem('govtech_master_licenses_vault', JSON.stringify(masterLicensesCache));
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
       renderMasterLicensesList();
-      showToast(`¡Bóveda restaurada! ${data.licenses.length} licencias sincronizadas y blindadas.`);
+      showToast(`¡Bóveda restaurada! ${masterLicensesCache.length} licencias sincronizadas y blindadas.`);
     }
   } catch (err) {
     alert('Error al importar la bóveda: ' + err.message);
