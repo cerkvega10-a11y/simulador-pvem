@@ -17,6 +17,7 @@ let appState = {
   cargoElectoral: 'Presidente Municipal / Alcalde',
   radarAnalysis: null,
   isLocked: false,
+  isSimulating: false,
   aiConfig: {
     provider: 'gemini',
     model: 'gemini-1.5-pro',
@@ -84,6 +85,7 @@ async function initApp() {
         const adminBadge = document.getElementById('master-admin-badge');
         if (adminBadge && isMaster) adminBadge.innerText = `Admin: ${savedSession.user.username}`;
 
+        startInactivityMonitor();
         await applyLicenseRestrictionsToUI(savedSession.user, isMaster);
         if (isMaster) {
           await openMasterAdminModal();
@@ -1503,6 +1505,7 @@ async function startSimulation() {
   }
 
   // Bloquear controles de inmediato según directriz de State Locking
+  appState.isSimulating = true;
   lockSimulationControls(true);
 
   // Mostrar sección de consola de progreso y scroll
@@ -1710,6 +1713,7 @@ async function startSimulation() {
 }
 
 function restoreSimulateButton() {
+  appState.isSimulating = false;
   const btnSimular = document.getElementById('btn-iniciar-simulacion');
   if (!btnSimular) return;
   if (appState.isLocked) {
@@ -1847,6 +1851,8 @@ function clearTerminal() {
  * Conclusión de la simulación y despliegue del Dashboard de Resultados
  */
 function onSimulationFinished(report) {
+  appState.isSimulating = false;
+  if (typeof resetInactivityTimer === 'function') resetInactivityTimer();
   if (!report || !report.resumenEjecutivo) {
     console.error('Reporte inválido recibido en onSimulationFinished:', report);
     return;
@@ -2692,6 +2698,7 @@ window.runRadarAnalysis = async function() {
   appState.cicloElectoral = ciclo;
   appState.tituloProyecto = titulo;
   appState.propuestaTexto = propuesta;
+  appState.isSimulating = true;
 
   if (btn) {
     btn.disabled = true;
@@ -2745,6 +2752,8 @@ window.runRadarAnalysis = async function() {
       </div>
     `;
   } finally {
+    appState.isSimulating = false;
+    if (typeof resetInactivityTimer === 'function') resetInactivityTimer();
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = `<span>🔍</span><span>1. Iniciar Diagnóstico de Radar</span>`;
@@ -3055,10 +3064,12 @@ async function ensureNationalCatalogLoaded() {
   }
 }
 
-window.openAuthLoginModal = function() {
+window.openAuthLoginModal = function(showInactivity = false) {
   const modal = document.getElementById('modal-auth-login');
   const errBox = document.getElementById('auth-error-box');
+  const inactBanner = document.getElementById('auth-inactivity-banner');
   if (errBox) errBox.classList.add('hidden');
+  if (!showInactivity && inactBanner) inactBanner.classList.add('hidden');
   if (modal) modal.classList.remove('hidden');
 };
 
@@ -3133,6 +3144,9 @@ window.handleAuthLogin = async function(event) {
 
     closeAuthLoginModal();
     window.history.pushState({ authenticated: true }, '', window.location.pathname);
+    const inactBanner = document.getElementById('auth-inactivity-banner');
+    if (inactBanner) inactBanner.classList.add('hidden');
+    startInactivityMonitor();
 
     if (data.role === 'MASTER_ADMIN') {
       const btnMaster = document.getElementById('btn-master-admin-header');
@@ -3193,6 +3207,7 @@ window.handleAuthLogin = async function(event) {
  * Destruye sesión activa, purga simulaciones, elimina colores partidistas y regresa al Portal Neutral
  */
 window.logoutSession = function() {
+  if (typeof clearInactivityTimer === 'function') clearInactivityTimer();
   // 1. Destruir sesión activa y almacenamiento temporal
   appState.activeSession = null;
   sessionStorage.removeItem('pvem_session_token');
@@ -3240,6 +3255,150 @@ window.logoutSession = function() {
   window.history.replaceState({ loggedOut: true }, '', window.location.pathname);
   window.history.pushState({ loggedOut: true }, '', window.location.pathname);
 };
+
+/**
+ * =========================================================================
+ * PROTOCOLO DE AUTOCIERRE DE SESIÓN POR INACTIVIDAD (5 MINUTOS / 300,000 MS)
+ * =========================================================================
+ */
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos = 300,000 ms
+let inactivityTimer = null;
+let lastUserActivityTimestamp = Date.now();
+let lastThrottledResetTime = 0;
+let inactivityListenersAttached = false;
+
+function isSimulationRunning() {
+  if (appState && appState.isSimulating) return true;
+  const consoleSection = document.getElementById('progress-console-section');
+  if (consoleSection && !consoleSection.classList.contains('hidden')) {
+    const btnSimular = document.getElementById('btn-iniciar-simulacion');
+    if (btnSimular && btnSimular.disabled) return true;
+  }
+  const radarBtn = document.getElementById('btn-run-radar-diag');
+  if (radarBtn && radarBtn.disabled) return true;
+  return false;
+}
+
+function onUserActivityDetected(e) {
+  if (!appState || !appState.activeSession) return;
+  const now = Date.now();
+  lastUserActivityTimestamp = now;
+  if (now - lastThrottledResetTime < 500) {
+    return;
+  }
+  lastThrottledResetTime = now;
+  resetInactivityTimer();
+}
+
+function attachInactivityEventListeners() {
+  if (inactivityListenersAttached) return;
+  const events = ['click', 'mousemove', 'keypress', 'keydown', 'scroll', 'touchstart'];
+  events.forEach(evt => {
+    window.addEventListener(evt, onUserActivityDetected, { passive: true });
+    document.addEventListener(evt, onUserActivityDetected, { passive: true });
+  });
+  inactivityListenersAttached = true;
+}
+
+function startInactivityMonitor() {
+  attachInactivityEventListeners();
+  resetInactivityTimer();
+}
+
+function resetInactivityTimer() {
+  clearInactivityTimer();
+  if (!appState || !appState.activeSession) return;
+  lastUserActivityTimestamp = Date.now();
+  inactivityTimer = setTimeout(() => {
+    handleInactivityTimeout();
+  }, INACTIVITY_TIMEOUT_MS);
+}
+
+function clearInactivityTimer() {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+}
+
+function handleInactivityTimeout() {
+  if (!appState || !appState.activeSession) {
+    clearInactivityTimer();
+    return;
+  }
+
+  // EXCEPCIÓN PARA PANTALLAS DE CARGA LARGA Y SIMULACIONES:
+  // Si el enjambre sintético o diagnóstico está ejecutándose o pestaña en primer plano con proceso activo,
+  // mantener viva la sesión y no disparar el autocierre por error.
+  if (isSimulationRunning()) {
+    console.log('[Cyber Sentinel] Auto-Logout pausado: Simulación del enjambre activa en ejecución.');
+    resetInactivityTimer();
+    return;
+  }
+
+  // 1. Cerrar sesión activa y purgar datos locales
+  if (typeof window.logoutSession === 'function') {
+    window.logoutSession();
+  }
+
+  // 2. Redirigir al inicio de sesión (/login)
+  try {
+    window.history.replaceState({ loggedOut: true, reason: 'inactivity' }, '', '/login');
+  } catch (e) {
+    // Silencioso
+  }
+
+  // 3. Mostrar pantalla de login y desplegar mensaje y modal informativo
+  if (typeof enforceNeutralWelcomeState === 'function') {
+    enforceNeutralWelcomeState();
+  }
+  if (typeof openAuthLoginModal === 'function') {
+    openAuthLoginModal(true);
+  }
+
+  window.showInactivityNotice();
+}
+
+window.showInactivityNotice = function() {
+  const banner = document.getElementById('auth-inactivity-banner');
+  if (banner) {
+    banner.classList.remove('hidden');
+  }
+  const modal = document.getElementById('modal-inactivity-timeout');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  if (typeof showToast === 'function') {
+    showToast('⏱️ Sesión cerrada por seguridad debido a 5 minutos de inactividad.');
+  }
+};
+
+window.closeInactivityTimeoutModal = function() {
+  const modal = document.getElementById('modal-inactivity-timeout');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+  const uInput = document.getElementById('auth-username');
+  if (uInput) uInput.focus();
+};
+
+// Exportación y alias universal de cierre de sesión
+window.logout = window.logoutSession;
+window.startInactivityMonitor = startInactivityMonitor;
+window.resetInactivityTimer = resetInactivityTimer;
+window.clearInactivityTimer = clearInactivityTimer;
+window.handleInactivityTimeout = handleInactivityTimeout;
+window.isSimulationRunning = isSimulationRunning;
+window.getInactivityRemainingSeconds = function() {
+  const elapsed = Date.now() - lastUserActivityTimestamp;
+  return Math.max(0, Math.round((INACTIVITY_TIMEOUT_MS - elapsed) / 1000));
+};
+window.triggerInactivityTimeoutForTesting = function() {
+  handleInactivityTimeout();
+};
+
 
 /**
  * Aplica en tiempo real la mutación White-Label, permisos Radar/Simulador, estados/municipios permitidos y tope flexible de agentes

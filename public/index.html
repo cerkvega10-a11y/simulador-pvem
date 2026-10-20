@@ -1219,6 +1219,14 @@
 
         <!-- Formulario de Acceso Limpio (Cero Autocompletado + Turnstile Anti-Bots) -->
         <form onsubmit="handleAuthLogin(event)" autocomplete="off" class="p-6 space-y-4">
+          <!-- Mensaje Informativo de Cierre de Sesión por Inactividad (5 Minutos) -->
+          <div id="auth-inactivity-banner" class="hidden p-3.5 rounded-xl bg-amber-50 border-2 border-amber-400 text-amber-950 text-xs font-bold leading-relaxed flex items-start gap-2.5 shadow-xs mb-3">
+            <span class="text-base shrink-0">⏱️</span>
+            <div>
+              <div class="font-black text-amber-900 uppercase tracking-wider text-[11px]">Seguridad de Sesión</div>
+              <div class="text-[12px] text-amber-950 font-bold mt-0.5">Sesión cerrada por seguridad debido a 5 minutos de inactividad.</div>
+            </div>
+          </div>
           <div id="auth-error-box" class="hidden p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold leading-relaxed"></div>
 
           <div>
@@ -2156,6 +2164,43 @@
         </span>
         <button type="button" onclick="closeAccessAuditModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold transition-colors cursor-pointer">
           Cerrar Bitácora
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL DE CIERRE DE SESIÓN POR INACTIVIDAD (5 MINUTOS)
+       ===================================================================== -->
+  <div id="modal-inactivity-timeout" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[95] hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeInactivityTimeoutModal()">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border-2 border-amber-400 overflow-hidden transform transition-all animate-fadeIn">
+      <div class="bg-gradient-to-r from-amber-600 via-amber-700 to-slate-900 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-2xl font-black shrink-0">
+            ⏱️
+          </div>
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider bg-black/25 text-amber-200 px-2 py-0.5 rounded-full">Protocolo Cyber Sentinel</span>
+            <h3 class="text-base font-black text-white mt-0.5">Sesión Cerrada por Seguridad</h3>
+          </div>
+        </div>
+        <button type="button" onclick="closeInactivityTimeoutModal()" class="text-white/80 hover:text-white p-1 text-xl font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="p-6 space-y-4 text-slate-800">
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-slate-900 space-y-2">
+          <div class="flex items-center gap-2 text-amber-900 font-black text-xs uppercase tracking-wide">
+            <span>⚠️</span> Inactividad Detectada
+          </div>
+          <p class="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800">
+            Sesión cerrada por seguridad debido a <b>5 minutos de inactividad</b>.
+          </p>
+          <p class="text-[11px] text-slate-500 font-medium leading-normal">
+            Los datos temporales fueron purgados de la memoria para proteger tus estrategias electorales y credenciales de acceso.
+          </p>
+        </div>
+        <button type="button" onclick="closeInactivityTimeoutModal()"
+          class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer">
+          <span>🔐</span><span>Ingresar a mi Cuenta Nuevamente</span>
         </button>
       </div>
     </div>
