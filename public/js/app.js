@@ -3399,7 +3399,9 @@ window.onLicenseModulePermChange = function() {
 window.openMasterAdminModal = async function() {
   const modal = document.getElementById('modal-master-admin');
   if (!modal) return;
+  selectedMasterClientId = null;
   await ensureNationalCatalogLoaded();
+  fetchAccessAuditLogsForMaster();
   renderLicenseStatesCheckboxes(['Estado de México']);
   renderLicenseMunicipalitiesCheckboxes(['Ecatepec de Morelos']);
   await loadMasterLicenses();
@@ -3698,276 +3700,795 @@ async function loadMasterLicenses() {
   }
 }
 
+let selectedMasterClientId = null;
+let cachedAccessAuditLogs = [];
+
+async function fetchAccessAuditLogsForMaster() {
+  try {
+    const res = await fetch('/api/audit/access-logs', { headers: getAdminHeaders() });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.logs)) {
+      cachedAccessAuditLogs = data.logs;
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+function resolveClientLicenseTier(lic) {
+  if (!lic) return 'ALCALDIA_A';
+  if (lic.licenseTier) return lic.licenseTier;
+  if (lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN') return 'ADMIN';
+  if (lic.isDemo) return 'DEMO';
+  if (lic.nivelGeografico === 'Federal / Nacional' || lic.can_select_all_states) return 'COMITE_NACIONAL';
+  const cargos = Array.isArray(lic.cargosAutorizados) ? lic.cargosAutorizados : [];
+  if (cargos.includes('Gobernador') || lic.nivelGeografico === 'Estatal') return 'GUBERNATURA';
+  if (cargos.includes('Senador')) return 'SENADURIA';
+  if (cargos.includes('Diputado Federal') || cargos.includes('Diputado Local') || lic.nivelGeografico === 'Distrital (Federal o Local)') return 'DIPUTACION';
+  if ((lic.maxSwarmSize || 100000) <= 5000) return 'ALCALDIA_B';
+  return 'ALCALDIA_A';
+}
+
+function resolveClientRolPerfil(lic) {
+  if (!lic) return 'Operador';
+  if (lic.rolPerfil) return lic.rolPerfil;
+  if (lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN') return 'Administrador';
+  if (lic.isDemo) return 'Demo';
+  if (String(lic.clienteNombre || '').toLowerCase().includes('candidat')) return 'Candidato';
+  return 'Operador';
+}
+
+function getCompactLicenseBadgeHtml(lic) {
+  const tier = resolveClientLicenseTier(lic);
+  const now = new Date();
+  const exp = new Date(`${lic.fechaExpiracion || '2027-07-31'}T23:59:59`);
+  const isExpired = now > exp;
+  const isActive = lic.activo !== false && !isExpired;
+
+  const simCount = typeof lic.simulations_count === 'number' ? lic.simulations_count : 0;
+  const maxSim = typeof lic.max_simulations === 'number' ? lic.max_simulations : (lic.isDemo ? 3 : 999999);
+  const isQuotaReached = (lic.isDemo || maxSim < 999999) && simCount >= maxSim;
+
+  let tierBadge = '';
+  if (tier === 'DEMO' || lic.isDemo) {
+    const cap = maxSim < 999999 ? maxSim : 3;
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO (${simCount}/${cap})</span>`;
+  } else if (tier === 'ADMIN') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300">👑 ADMIN</span>`;
+  } else if (tier === 'COMITE_NACIONAL') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">🇲🇽 COMITÉ NACIONAL</span>`;
+  } else if (tier === 'GUBERNATURA') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-teal-100 text-teal-900 border border-teal-300">🏛️ GUBERNATURA</span>`;
+  } else if (tier === 'SENADURIA') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-cyan-100 text-cyan-900 border border-cyan-300">🏛️ SENADURÍA</span>`;
+  } else if (tier === 'DIPUTACION') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-sky-100 text-sky-900 border border-sky-300">⚖️ DIPUTACIÓN</span>`;
+  } else if (tier === 'ALCALDIA_B') {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🏙️ ALCALDÍA B</span>`;
+  } else {
+    tierBadge = `<span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🏙️ ALCALDÍA</span>`;
+  }
+
+  const statusBadge = (isActive && !isQuotaReached)
+    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 ACTIVO</span>`
+    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🔴 BLOQUEADO</span>`;
+
+  return `<div class="flex items-center gap-1.5 flex-wrap">${tierBadge}${statusBadge}</div>`;
+}
+
 function renderMasterLicensesList() {
+  const listView = document.getElementById('master-clients-list-view');
+  const detailView = document.getElementById('master-client-detail-view');
   const container = document.getElementById('master-licenses-list');
-  const telemetryTbody = document.getElementById('telemetry-usage-table-body');
   const countBadge = document.getElementById('monitor-active-count-badge');
 
   if (countBadge) {
-    countBadge.innerText = `${masterLicensesCache.length} Licencias`;
+    countBadge.innerText = `${masterLicensesCache.length} ${masterLicensesCache.length === 1 ? 'Licencia' : 'Licencias'}`;
   }
 
-  const activeUser = appState.activeSession?.user;
-  const activeIsMaster = appState.activeSession?.role === 'MASTER_ADMIN' || activeUser?.esAdministradorTotal === true || activeUser?.tipoUsuario === 'MASTER';
-  const activePerms = activeUser?.permisosGranulares || {};
-  const canUseKillSwitch = activeIsMaster || activePerms.killSwitch !== false;
-  const canManageTokens = activeIsMaster || activePerms.tokens !== false;
-  const canEditLicenses = activeIsMaster || activePerms.crearLicencias !== false;
-
-  // 1. RENDERIZADO DE TABLA: MONITOR DE ACCESOS Y USO DE LICENCIAS (MÓDULO 3)
-  if (telemetryTbody) {
-    if (!masterLicensesCache.length) {
-      telemetryTbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 text-xs">No hay licencias registradas aún.</td></tr>`;
+  // Si hay un cliente seleccionado en Vista 2, verificar que siga existiendo y actualizar su expediente
+  if (selectedMasterClientId !== null) {
+    const selectedClient = masterLicensesCache.find(l => String(l.id) === String(selectedMasterClientId));
+    if (selectedClient) {
+      if (listView) listView.classList.add('hidden');
+      if (detailView) detailView.classList.remove('hidden');
+      renderClientProfileDetail(selectedClient);
+      return;
     } else {
-      telemetryTbody.innerHTML = masterLicensesCache.map(lic => {
-        const isMasterUser = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || lic.tipoUsuario === 'MASTER_ADMIN';
-        const licTypeBadge = lic.isDemo
-          ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/40">⚡ DEMO (7 DÍAS)</span>`
-          : (isMasterUser
-              ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40">👑 MASTER</span>`
-              : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">💼 OFICIAL</span>`);
-
-        const partiesBadges = lic.can_select_any_party
-          ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">🌐 LIBRE (8)</span>`
-          : (lic.allowed_parties || [lic.partido || 'PVEM']).map(p => `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-200 border border-slate-700">${p}</span>`).join(' ');
-
-        const now = new Date();
-        const exp = new Date(`${lic.fechaExpiracion}T23:59:59`);
-        const isExpired = now > exp;
-        const isActive = lic.activo && !isExpired;
-
-        let quotaBadge = '';
-        if (lic.isDemo) {
-          const cnt = lic.simulations_count || 0;
-          if (cnt >= 3) {
-            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white animate-pulse">3/3 - BLOQUEADO</span>`;
-          } else {
-            quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">${cnt}/3 (Demo 7D)</span>`;
-          }
-        } else {
-          quotaBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">♾️ ILIMITADAS (${lic.simulations_count || 0})</span>`;
-        }
-
-        const lastLoginStr = lic.last_login_at
-          ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' })
-          : '<span class="text-slate-500">Nunca</span>';
-
-        const safePassword = sanitizeUserPasswordValue(lic.password, '', lic.username);
-
-        return `
-          <tr class="hover:bg-slate-900/60 transition-colors">
-            <td class="py-2.5 px-3">
-              <div class="font-black text-white text-xs">${lic.clienteNombre}</div>
-              <div class="text-[10px] font-mono text-slate-400">@${lic.username} • <span class="text-emerald-400 font-bold">${safePassword}</span></div>
-            </td>
-            <td class="py-2.5 px-2">${licTypeBadge}</td>
-            <td class="py-2.5 px-2"><div class="flex flex-wrap gap-1">${partiesBadges}</div></td>
-            <td class="py-2.5 px-2 text-center">
-              <span class="font-black text-slate-100">${lic.login_count || 0}</span>
-            </td>
-            <td class="py-2.5 px-2 text-xs">${lastLoginStr}</td>
-            <td class="py-2.5 px-2 text-center">${quotaBadge}</td>
-            <td class="py-2.5 px-3 text-right">
-              <div class="flex items-center justify-end gap-1">
-                ${lic.isDemo ? `
-                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota Demo a 0/3 propuestas" class="px-2 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
-                  🔄 (0/3)
-                </button>
-                ` : `
-                <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Licencia Ilimitada — Reiniciar contador de auditoría a 0" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
-                  🔄 (0)
-                </button>
-                `}
-                <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')" title="${lic.activo ? 'Suspender acceso (Kill Switch)' : 'Reactivar acceso'}" class="px-2 py-1 rounded ${lic.activo ? 'bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-slate-950 border border-amber-500/40' : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-200 hover:text-white border border-emerald-500/40'} font-bold text-[10px] transition-colors cursor-pointer">
-                  🔌
-                </button>
-                <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 7)" title="Extender vigencia +7 días" class="px-2 py-1 rounded bg-teal-500/20 hover:bg-teal-500 border border-teal-500/40 text-teal-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer">
-                  📅 +7d
-                </button>
-                <button type="button" onclick="editClientLicense('${lic.id}')" title="Editar Licencia Completa" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[10px] transition-colors cursor-pointer">
-                  ✏️
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      selectedMasterClientId = null;
     }
   }
 
-  // 2. RENDERIZADO DE TARJETAS DETALLADAS EN MASTER-LICENSES-LIST
+  // VISTA 1: LISTA COMPACTA DE CLIENTES (selectedMasterClientId === null)
+  if (listView) listView.classList.remove('hidden');
+  if (detailView) detailView.classList.add('hidden');
   if (!container) return;
 
-  if (!masterLicensesCache.length) {
-    container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No hay licencias registradas.</div>`;
+  const searchQuery = (document.getElementById('master-clients-search-input')?.value || '').toLowerCase().trim();
+  const filteredList = masterLicensesCache.filter(lic => {
+    if (!searchQuery) return true;
+    const name = String(lic.clienteNombre || '').toLowerCase();
+    const user = String(lic.username || '').toLowerCase();
+    const tier = resolveClientLicenseTier(lic).toLowerCase();
+    const party = String(lic.partido || '').toLowerCase();
+    return name.includes(searchQuery) || user.includes(searchQuery) || tier.includes(searchQuery) || party.includes(searchQuery);
+  });
+
+  if (!filteredList.length) {
+    container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-slate-200">No se encontraron clientes o licencias registradas.</div>`;
     return;
   }
 
-  container.innerHTML = masterLicensesCache.map(lic => {
-    const now = new Date();
-    const exp = new Date(`${lic.fechaExpiracion}T23:59:59`);
-    const isExpired = now > exp;
-    const isActive = lic.activo && !isExpired;
-
-    const isMasterUser = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER';
-    const roleBadge = isMasterUser
-      ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300">👑 MASTER TOTAL</span>`
-      : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300">👥 SOCIO OPERADOR</span>`;
-
-    const statusBadge = isActive
-      ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 LICENCIA ACTIVA</span>`
-      : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🔴 BLOQUEADA / EXPIRADA</span>`;
-
-    const perms = lic.permisosGranulares || {};
-    const permBadges = isMasterUser
-      ? `<span class="text-[10px] text-purple-700 font-bold">✨ Acceso Irrestricto a todos los módulos y llaves maestras</span>`
-      : `
-        <div class="flex flex-wrap gap-1 mt-1">
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.crearLicencias !== false ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-400 line-through'}">Licencias</span>
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.killSwitch !== false ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-400 line-through'}">Kill Switch</span>
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.tokens !== false ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-400 line-through'}">Tokens</span>
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.simulador !== false ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-400 line-through'}">War Room</span>
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.radar !== false ? 'bg-teal-100 text-teal-800 border border-teal-200' : 'bg-slate-100 text-slate-400 line-through'}">Radar</span>
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${perms.descargaReportes !== false ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' : 'bg-slate-100 text-slate-400 line-through'}">Reportes PDF</span>
-          ${perms.soloLectura ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-200">Solo Lectura</span>` : ''}
-        </div>
-      `;
-
-    const estadosStr = (lic.estadosAutorizados || ['Estado de México']).join(', ');
-    const munisStr = (lic.municipiosAutorizados || []).slice(0, 6).join(', ') + ((lic.municipiosAutorizados || []).length > 6 ? ` (+${lic.municipiosAutorizados.length - 6} más)` : '');
-    const tokenDisplay = canManageTokens ? (lic.tokenSeguridad || 'TK-AUTORIZADO-XXXX') : '•••••••••••• (Restringido)';
-
+  // Cada fila muestra ESTRICTAMENTE SOLO 3 ELEMENTOS:
+  // 1. Nombre del Cliente / Titular (con su usuario o alias debajo en texto sutil)
+  // 2. Licencia / Estado de Control (badge limpio: DEMO (2/3), ALCALDÍA, GUBERNATURA, ADMIN + ACTIVO / BLOQUEADO)
+  // 3. Acción de Control: Fila clickeable + botón "Abrir Control del Perfil →"
+  container.innerHTML = filteredList.map(lic => {
+    const badgeHtml = getCompactLicenseBadgeHtml(lic);
     return `
-      <div class="p-4 rounded-xl border ${isActive ? 'border-slate-200 bg-slate-50/70' : 'border-rose-200 bg-rose-50/30'} space-y-3 text-xs shadow-2xs">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white">${lic.partido}</span>
-            <h4 class="font-black text-slate-900 text-sm">${lic.clienteNombre}</h4>
-            ${roleBadge}
-            ${lic.can_select_any_party ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">🌐 LIBRE ELECCIÓN</span>` : ((lic.allowed_parties && lic.allowed_parties.length > 1) ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-950 border border-indigo-300">🤝 COALICIÓN (${lic.allowed_parties.length})</span>` : '')}
-            ${lic.isDemo ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⚡ DEMO 7 DÍAS (MÁX. 3 PROPUESTAS)</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">♾️ PROPUESTAS ILIMITADAS</span>`}
-          </div>
-          ${statusBadge}
+      <div onclick="openClientProfileDetail('${lic.id}')"
+        class="group grid grid-cols-12 items-center gap-2 px-4 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50/50 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer">
+        <!-- 1. Nombre del Cliente / Titular + @usuario debajo -->
+        <div class="col-span-12 sm:col-span-5 min-w-0">
+          <div class="font-black text-slate-900 text-sm truncate group-hover:text-indigo-950 transition-colors">${lic.clienteNombre || 'Cliente Sin Nombre'}</div>
+          <div class="text-[11px] font-mono text-slate-400 truncate">@${lic.username}</div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-[11px]">
-          <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Credenciales Manuales:</span>
-            <span class="font-mono font-bold text-slate-900">${lic.username}</span> / <span class="font-mono text-emerald-700 font-bold">${sanitizeUserPasswordValue(lic.password, '', lic.username)}</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">🛡️ Token de Seguridad:</span>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="font-mono font-extrabold text-indigo-950 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded text-[10px] select-all">${tokenDisplay}</span>
-              ${canManageTokens ? `<button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');" class="text-slate-400 hover:text-slate-900 p-0.5 rounded cursor-pointer" title="Copiar Token">📋</button>` : ''}
-            </div>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Capacidad Enjambre:</span>
-            <span class="font-black text-slate-900">Hasta ${(lic.maxSwarmSize || 100000).toLocaleString()} Agentes</span>
-          </div>
+        <!-- 2. Licencia / Estado de Control -->
+        <div class="col-span-7 sm:col-span-4">
+          ${badgeHtml}
         </div>
 
-        <!-- TELEMETRÍA Y AUDITORÍA DE ACCESOS (ZERO-DATA RETENTION) -->
-        <div class="p-2.5 rounded-lg bg-indigo-50/40 border border-indigo-200/70 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[10px] font-black uppercase text-indigo-950 flex items-center gap-1">
-              <span>🛡️</span><span>Auditoría de Accesos:</span>
-            </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">
-              👁️ ${lic.login_count || 0} ${(lic.login_count === 1) ? 'ingreso' : 'ingresos'}
-            </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black ${lic.isDemo && (lic.simulations_count || 0) >= 3 ? 'bg-rose-100 text-rose-900 border border-rose-300' : (lic.isDemo ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300')}">
-              📊 Propuestas: ${lic.isDemo ? `${lic.simulations_count || 0}/3 (Demo 7 Días)` : `♾️ ILIMITADAS (${lic.simulations_count || 0} ejecutadas)`}
-            </span>
-          </div>
-          <div class="text-[10px] text-slate-600">
-            🕒 Último acceso: <b class="text-slate-900">${lic.last_login_at ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : 'Sin accesos registrados aún'}</b>
-          </div>
-        </div>
-
-        <!-- CONTROL DE TIEMPO FLEXIBLE: CALENDARIO INTERACTIVO (DATEPICKER) PARA ALARGAR O ACORTAR VIGENCIA -->
-        <div class="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <span class="text-[10px] font-black uppercase text-amber-950 block">📅 Gestión Rápida de Vigencia (Kill Switch Datepicker):</span>
-            <span class="text-[10px] text-slate-600">Inicio: <b>${lic.fechaInicio}</b> • Modifica la fecha para alargar o acortar acceso al instante</span>
-          </div>
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <input type="date" id="quick-exp-${lic.id}" value="${lic.fechaExpiracion}" ${!canUseKillSwitch ? 'disabled' : ''}
-              class="px-2 py-1 rounded border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 ${!canUseKillSwitch ? 'opacity-60 cursor-not-allowed' : ''}">
-            <button type="button" onclick="updateLicenseExpirationQuick('${lic.id}')" ${!canUseKillSwitch ? 'disabled' : ''}
-              class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
-              Guardar Fecha
-            </button>
-            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 7)" ${!canUseKillSwitch ? 'disabled' : ''} title="Alargar +7 días"
-              class="px-2 py-1 rounded bg-teal-100 hover:bg-teal-200 text-teal-900 font-bold text-[10px] cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
-              +7d
-            </button>
-            <button type="button" onclick="addDaysToLicenseExpiration('${lic.id}', 30)" ${!canUseKillSwitch ? 'disabled' : ''} title="Alargar +30 días"
-              class="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
-              +30d
-            </button>
-          </div>
-        </div>
-
-        <!-- PERMISOS Y ROLES -->
-        <div class="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-200/80 space-y-1.5">
-          <div class="flex items-center justify-between flex-wrap gap-2 text-[11px]">
-            <span class="font-black text-indigo-950 text-[10px] uppercase">Permisos del Perfil:</span>
-          </div>
-          ${permBadges}
-        </div>
-
-        <!-- MOTOR DE IA Y CREDENCIALES CIFRADAS -->
-        <div class="p-2.5 rounded-lg bg-purple-50/60 border border-purple-200/80 flex flex-wrap items-center justify-between gap-1 text-[11px]">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="font-black text-purple-950 text-[10px] uppercase">⚡ Motor de IA:</span>
-            <span class="px-2 py-0.5 rounded font-black text-[10px] bg-purple-100 text-purple-900 border border-purple-300">${getAIModelDisplay(lic.aiModel)}</span>
-          </div>
-          <div>
-            ${lic.hasCustomKey ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">🔒 Key Cifrada: ${lic.customApiKeyMasked}</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-300">🌐 API Central Matriz</span>`}
-          </div>
-        </div>
-
-        <div class="text-[11px] text-slate-600 space-y-1">
-          <div><b>🎯 Partidos Autorizados:</b> ${lic.can_select_any_party ? '<span class="text-emerald-700 font-bold">Catálogo Completo (8 Partidos)</span>' : `<span class="font-bold text-slate-800">${(lic.allowed_parties || [lic.partido || 'PVEM']).join(' • ')}</span>`}</div>
-          <div><b>🇲🇽 Estado(s):</b> ${estadosStr} | <b>📍 Región:</b> ${lic.etiquetaRegion} (${munisStr})</div>
-          <div><b>🗳️ Cargos Autorizados:</b> ${(lic.cargosAutorizados || []).join(' • ')}</div>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/70">
-          <button type="button" onclick="previewClientLicenseSession('${lic.id}')"
-            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition-all cursor-pointer">
-            👁️ Simular como este Cliente
-          </button>
-          ${lic.isDemo ? `
-          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Reiniciar cuota Demo a 0/3 propuestas"
-            class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold text-[11px] transition-all cursor-pointer">
-            🔄 Reiniciar Demo (0/3)
-          </button>
-          ` : `
-          <button type="button" onclick="resetLicenseSimulations('${lic.id}')" title="Licencia con Propuestas Ilimitadas — Reiniciar contador de auditoría a 0"
-            class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-all cursor-pointer">
-            🔄 Reiniciar Contador
-          </button>
-          `}
-          <button type="button" onclick="editClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
-            class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
-            ✏️ Editar
-          </button>
-          <button type="button" onclick="toggleClientLicenseKillSwitch('${lic.id}')" ${!canUseKillSwitch ? 'disabled' : ''}
-            class="px-3 py-1.5 rounded-lg ${lic.activo ? 'bg-amber-100 hover:bg-amber-200 text-amber-900' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'} font-bold text-[11px] transition-all cursor-pointer ${!canUseKillSwitch ? 'opacity-50 cursor-not-allowed' : ''}">
-            🔌 ${lic.activo ? 'Suspender (Kill Switch)' : 'Reactivar'}
-          </button>
-          <button type="button" onclick="deleteClientLicense('${lic.id}')" ${!canEditLicenses ? 'disabled' : ''}
-            class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-all cursor-pointer ${!canEditLicenses ? 'opacity-50 cursor-not-allowed' : ''}">
-            🗑️
+        <!-- 3. Acción de Control -->
+        <div class="col-span-5 sm:col-span-3 flex justify-end">
+          <button type="button" onclick="event.stopPropagation(); openClientProfileDetail('${lic.id}')"
+            class="px-3 py-1.5 rounded-lg bg-slate-900 group-hover:bg-indigo-600 text-white font-black text-[11px] transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0">
+            <span>Abrir Control del Perfil</span>
+            <span>→</span>
           </button>
         </div>
       </div>
     `;
   }).join('');
 }
+
+window.openClientProfileDetail = async function(id) {
+  await ensureNationalCatalogLoaded();
+  await fetchAccessAuditLogsForMaster();
+  const lic = masterLicensesCache.find(l => String(l.id) === String(id));
+  if (!lic) return;
+  selectedMasterClientId = String(lic.id);
+  const listView = document.getElementById('master-clients-list-view');
+  const detailView = document.getElementById('master-client-detail-view');
+  if (listView) listView.classList.add('hidden');
+  if (detailView) detailView.classList.remove('hidden');
+  renderClientProfileDetail(lic);
+};
+
+window.closeClientProfileDetail = function() {
+  selectedMasterClientId = null;
+  renderMasterLicensesList();
+};
+
+function renderClientProfileDetail(lic) {
+  const detailView = document.getElementById('master-client-detail-view');
+  if (!detailView || !lic) return;
+
+  const safePassword = sanitizeUserPasswordValue(lic.password, '', lic.username);
+  const tier = resolveClientLicenseTier(lic);
+  const rolPerfil = resolveClientRolPerfil(lic);
+  const isMaster = lic.esAdministradorTotal || lic.tipoUsuario === 'MASTER' || tier === 'ADMIN';
+
+  const now = new Date();
+  const exp = new Date(`${lic.fechaExpiracion || '2027-07-31'}T23:59:59`);
+  const isExpired = now > exp;
+  const isActive = lic.activo !== false && !isExpired;
+
+  const simUsed = typeof lic.simulations_count === 'number' ? lic.simulations_count : 0;
+  const simMax = typeof lic.max_simulations === 'number' ? lic.max_simulations : (lic.isDemo ? 3 : 999999);
+  const isUnlimited = !lic.isDemo && simMax >= 999999;
+
+  const allStatesActive = Boolean(lic.can_select_all_states || isMaster || (Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.includes('TODOS')));
+  const selectedStates = allStatesActive ? ['TODOS'] : (Array.isArray(lic.estadosAutorizados) && lic.estadosAutorizados.length > 0 ? lic.estadosAutorizados : ['Estado de México']);
+  const allMunisActive = Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.includes('TODOS');
+  const selectedMunis = Array.isArray(lic.municipiosAutorizados) && lic.municipiosAutorizados.length > 0 ? lic.municipiosAutorizados : ['Ecatepec de Morelos'];
+
+  const canSelectAnyParty = Boolean(lic.can_select_any_party || isMaster);
+  const allowedParties = Array.isArray(lic.allowed_parties) && lic.allowed_parties.length > 0 ? lic.allowed_parties : [lic.partido || 'PVEM'];
+
+  const ALL_PARTIES = ['PVEM', 'MORENA', 'PAN', 'PRI', 'MC', 'PT', 'CANDIDATURA INDEPENDIENTE', 'COALICIÓN / ALIANZA'];
+
+  // Filtrar historial de accesos recientes de este cliente
+  const clientLogs = cachedAccessAuditLogs.filter(entry =>
+    String(entry.username || '').toLowerCase() === String(lic.username || '').toLowerCase()
+  ).slice(0, 8);
+
+  const lastLoginFormatted = lic.last_login_at
+    ? new Date(lic.last_login_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'medium', timeStyle: 'short' })
+    : 'Sin accesos registrados aún';
+
+  detailView.innerHTML = `
+    <!-- 1. BARRA SUPERIOR DE NAVEGACIÓN (BOTÓN HACIA ATRÁS) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
+      <button type="button" onclick="closeClientProfileDetail()"
+        class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer">
+        <span>← Volver a Clientes y Licencias</span>
+      </button>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <button type="button" onclick="previewClientLicenseSession('${lic.id}')"
+          class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all cursor-pointer">
+          👁️ Simular como este Cliente
+        </button>
+        <button type="button" onclick="saveClientProfileDetail('${lic.id}')"
+          class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-sm transition-all cursor-pointer">
+          💾 Guardar Cambios del Perfil
+        </button>
+      </div>
+    </div>
+
+    <!-- CABECERA DEL EXPEDIENTE INDIVIDUAL -->
+    <div class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+      <div>
+        <div class="text-[10px] font-black uppercase tracking-widest text-amber-400">Expediente y Control Total del Perfil</div>
+        <h3 class="text-lg font-black text-white mt-0.5">${lic.clienteNombre || 'Cliente Registrado'}</h3>
+        <div class="text-xs font-mono text-slate-300">@${lic.username} • ID: ${lic.id}</div>
+      </div>
+      <div class="flex items-center gap-2">
+        ${getCompactLicenseBadgeHtml(lic)}
+      </div>
+    </div>
+
+    <!-- TARJETA 1: CREDENCIALES Y ACCESO -->
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h4 class="text-xs font-black uppercase tracking-wider text-slate-900">🔐 1. Credenciales y Acceso</h4>
+        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Persistencia Inmutable Activa</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Nombre del Cliente / Titular</label>
+          <input type="text" id="detail-cliente-nombre" value="${(lic.clienteNombre || '').replace(/"/g, '&quot;')}"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Usuario / Alias de Acceso</label>
+          <input type="text" id="detail-username" value="${(lic.username || '').replace(/"/g, '&quot;')}"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Contraseña (Texto Exacto)</label>
+          <div class="relative flex items-center">
+            <input type="text" id="detail-password" value="${safePassword.replace(/"/g, '&quot;')}"
+              placeholder="Escribe la contraseña exacta..."
+              class="w-full px-3 py-2 rounded-lg border border-emerald-400 bg-white font-mono font-black text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Rol del Perfil</label>
+          <select id="detail-rol-perfil" onchange="onDetailRolPerfilChange(this.value)"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="Operador" ${rolPerfil === 'Operador' ? 'selected' : ''}>👥 Operador (Socio Operador)</option>
+            <option value="Candidato" ${rolPerfil === 'Candidato' ? 'selected' : ''}>🗳️ Candidato / Titular</option>
+            <option value="Demo" ${rolPerfil === 'Demo' ? 'selected' : ''}>⚡ Demo (Prospecto 7 Días)</option>
+            <option value="Administrador" ${rolPerfil === 'Administrador' ? 'selected' : ''}>👑 Administrador (Control Maestro)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="p-2.5 rounded-lg bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div>
+          <span class="text-[10px] font-black uppercase text-slate-400 block">🛡️ Token de Seguridad Único Asignado:</span>
+          <span id="detail-token-seguridad" class="font-mono font-black text-indigo-950 text-xs select-all">${lic.tokenSeguridad || 'TK-PVEM-2027'}</span>
+        </div>
+        <button type="button" onclick="navigator.clipboard.writeText('${lic.tokenSeguridad || ''}'); showToast('Token copiado al portapapeles');"
+          class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-[11px] cursor-pointer">
+          📋 Copiar Token
+        </button>
+      </div>
+    </div>
+
+    <!-- TARJETA 2: CONTROL DE LICENCIA, FECHAS Y LÍMITES -->
+    <div class="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-3.5">
+      <div class="flex items-center justify-between border-b border-amber-200/80 pb-2">
+        <h4 class="text-xs font-black uppercase tracking-wider text-amber-950">📅 2. Control de Licencia, Fechas y Límites de Corridas</h4>
+        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
+          ${isActive ? '🟢 Vigente y Activa' : '🔴 Suspendida / Expirada'}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <!-- Tipo de Licencia -->
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-700 mb-1">Tipo de Licencia</label>
+          <select id="detail-license-tier" onchange="onDetailLicenseTierChange(this.value)"
+            class="w-full px-3 py-2 rounded-lg border border-amber-300 bg-white font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="DEMO" ${tier === 'DEMO' ? 'selected' : ''}>⚡ Demo (7 Días / 3 Propuestas)</option>
+            <option value="ALCALDIA_B" ${tier === 'ALCALDIA_B' ? 'selected' : ''}>🏙️ Alcaldía B (Municipal Estándar)</option>
+            <option value="ALCALDIA_A" ${tier === 'ALCALDIA_A' ? 'selected' : ''}>🏙️ Alcaldía A (Municipal Metropolitano)</option>
+            <option value="DIPUTACION" ${tier === 'DIPUTACION' ? 'selected' : ''}>⚖️ Diputación (Local / Federal)</option>
+            <option value="SENADURIA" ${tier === 'SENADURIA' ? 'selected' : ''}>🏛️ Senaduría (Estatal / República)</option>
+            <option value="GUBERNATURA" ${tier === 'GUBERNATURA' ? 'selected' : ''}>🏛️ Gubernatura (Comando Estatal)</option>
+            <option value="COMITE_NACIONAL" ${tier === 'COMITE_NACIONAL' ? 'selected' : ''}>🇲🇽 Comité Nacional (32 Estados)</option>
+            <option value="ADMIN" ${tier === 'ADMIN' ? 'selected' : ''}>👑 Administrador (Control Maestro)</option>
+          </select>
+        </div>
+
+        <!-- Fecha de Vigencia / Expiración -->
+        <div>
+          <label class="block text-[10px] font-black uppercase text-slate-700 mb-1">Fecha de Vigencia / Expiración</label>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <input type="date" id="detail-fecha-expiracion" value="${lic.fechaExpiracion || '2027-07-31'}"
+              class="flex-1 px-2.5 py-1.5 rounded-lg border border-amber-300 bg-white font-black text-slate-900 text-xs">
+            <button type="button" onclick="adjustDetailExpDays(-7)" class="px-2 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-900 font-black text-[10px] cursor-pointer" title="Recortar 7 días">-7d</button>
+            <button type="button" onclick="adjustDetailExpDays(7)" class="px-2 py-1.5 rounded-lg bg-teal-100 hover:bg-teal-200 text-teal-900 font-black text-[10px] cursor-pointer" title="Ampliar 7 días">+7d</button>
+            <button type="button" onclick="adjustDetailExpDays(30)" class="px-2 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-black text-[10px] cursor-pointer" title="Ampliar 30 días">+30d</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control de Límite de Propuestas / Corridas -->
+      <div class="p-3 rounded-xl bg-white border border-amber-200 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-black uppercase text-slate-900 block">📊 Control de Límite de Propuestas / Corridas</span>
+            <span id="detail-sim-summary-label" class="text-[11px] font-bold text-slate-600">
+              Usadas: <b class="text-slate-900">${simUsed}</b> de <b class="text-indigo-700">${isUnlimited ? 'Ilimitadas (∞)' : simMax}</b>
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" onclick="resetDetailSimCount('${lic.id}')"
+              class="px-2.5 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-black text-[10px] cursor-pointer">
+              🔄 Reiniciar contador a 0
+            </button>
+            <button type="button" onclick="setDetailSimUnlimited()"
+              class="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-black text-[10px] cursor-pointer">
+              ♾️ Hacer Ilimitadas
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 text-xs">
+          <div class="flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <span class="text-[10px] font-black uppercase text-slate-600">Corridas Usadas:</span>
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="adjustDetailSimUsed(-1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 font-black text-slate-800 cursor-pointer">-</button>
+              <input type="number" id="detail-sim-used" min="0" value="${simUsed}"
+                class="w-16 text-center px-1.5 py-1 rounded border border-slate-300 bg-white font-black text-slate-900 text-xs">
+              <button type="button" onclick="adjustDetailSimUsed(1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 font-black text-slate-800 cursor-pointer">+</button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <span class="text-[10px] font-black uppercase text-slate-600">Límite Permitido:</span>
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="adjustDetailSimLimit(-1)" class="w-6 h-6 rounded bg-amber-200 hover:bg-amber-300 font-black text-amber-950 cursor-pointer">-</button>
+              <input type="number" id="detail-sim-max" min="1" value="${simMax}"
+                class="w-20 text-center px-1.5 py-1 rounded border border-amber-300 bg-white font-black text-slate-900 text-xs">
+              <button type="button" onclick="adjustDetailSimLimit(1)" class="w-6 h-6 rounded bg-amber-200 hover:bg-amber-300 font-black text-amber-950 cursor-pointer">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Switch de Estado de Cuenta (Kill Switch) -->
+      <div class="p-3 rounded-xl ${lic.activo !== false ? 'bg-emerald-50 border-emerald-300' : 'bg-rose-50 border-rose-300'} border flex items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-black ${lic.activo !== false ? 'text-emerald-950' : 'text-rose-950'} block">
+            🔌 Estado Manual de la Cuenta (Kill Switch)
+          </span>
+          <span class="text-[11px] text-slate-600">
+            ${lic.activo !== false ? 'La cuenta está ACTIVA y autorizada para iniciar sesión.' : 'La cuenta está BLOQUEADA manualmente por el Administrador.'}
+          </span>
+        </div>
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="detail-activo-switch" ${lic.activo !== false ? 'checked' : ''}
+            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="text-xs font-black uppercase ${lic.activo !== false ? 'text-emerald-800' : 'text-rose-800'}">
+            ${lic.activo !== false ? 'ACTIVA' : 'BLOQUEADA'}
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- TARJETA 3: PERMISOS TERRITORIALES Y DE PARTIDOS POLÍTICOS -->
+    <div class="p-4 rounded-xl bg-indigo-50/40 border border-indigo-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
+        <h4 class="text-xs font-black uppercase tracking-wider text-indigo-950">🇲🇽 3. Permisos Territoriales y de Partidos Políticos</h4>
+      </div>
+
+      <!-- A) Estados y Municipios -->
+      <div class="space-y-2.5 bg-white p-3 rounded-xl border border-indigo-100">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-[11px] font-black uppercase text-slate-800">Estado(s) Autorizado(s) (32 Entidades)</span>
+          <label class="flex items-center gap-1.5 text-[11px] font-black text-emerald-900 cursor-pointer bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg border border-emerald-300">
+            <input type="checkbox" id="detail-todos-estados" ${allStatesActive ? 'checked' : ''} onchange="onDetailAllStatesToggle(this.checked)" class="rounded text-emerald-600">
+            <span>🇲🇽 Permitir Todos los Estados (Nacional)</span>
+          </label>
+        </div>
+
+        <div id="detail-estados-list" class="max-h-28 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1 p-2 rounded-lg border border-slate-200 bg-slate-50">
+          ${nationalStatesList.map(st => {
+            const checked = allStatesActive || selectedStates.includes(st) ? 'checked' : '';
+            return `
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer hover:bg-white p-1 rounded">
+                <input type="checkbox" name="detail_estado_cb" value="${st}" ${checked} onchange="onDetailStateCheckboxChange()" class="rounded text-indigo-600">
+                <span class="truncate font-medium">${st}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <span class="text-[11px] font-black uppercase text-slate-800">Municipio(s) / Alcaldía(s) Autorizados</span>
+          <label class="flex items-center gap-1.5 text-[11px] font-bold text-indigo-900 cursor-pointer bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+            <input type="checkbox" id="detail-todos-municipios" ${allMunisActive ? 'checked' : ''} onchange="onDetailAllMunisToggle(this.checked)" class="rounded text-indigo-600">
+            <span>Autorizar TODOS los Municipios del Estado</span>
+          </label>
+        </div>
+
+        <div id="detail-municipios-list" class="max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1 p-2 rounded-lg border border-slate-200 bg-slate-50">
+          <!-- Renderizado por renderDetailMunicipalitiesCheckboxes -->
+        </div>
+      </div>
+
+      <!-- B) Partidos Políticos Autorizados -->
+      <div class="space-y-2.5 bg-white p-3 rounded-xl border border-indigo-100">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-black uppercase text-slate-800 block">Partido(s) Político(s) Autorizados</span>
+            <span class="text-[10px] text-slate-500">Elige un partido único, una coalición o habilita la Libre Elección de los 8 partidos.</span>
+          </div>
+          <label class="flex items-center gap-1.5 text-[11px] font-black text-indigo-950 cursor-pointer bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1 rounded-lg border border-indigo-300">
+            <input type="checkbox" id="detail-can-select-any-party" ${canSelectAnyParty ? 'checked' : ''} onchange="onDetailAnyPartyToggle(this.checked)" class="rounded text-indigo-600">
+            <span>🌐 Libre Elección de Todos los Partidos</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Partido Principal por Defecto</label>
+            <select id="detail-partido-principal" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold text-xs text-slate-900">
+              ${ALL_PARTIES.map(p => `<option value="${p}" ${(lic.partido || 'PVEM') === p ? 'selected' : ''}>${p}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div id="detail-parties-cb-wrapper" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 ${canSelectAnyParty ? 'opacity-50 pointer-events-none' : ''}">
+          ${ALL_PARTIES.map(p => {
+            const isChecked = canSelectAnyParty || allowedParties.includes(p) ? 'checked' : '';
+            return `
+              <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white cursor-pointer text-[11px] font-bold text-slate-800">
+                <input type="checkbox" name="detail_party_cb" value="${p}" ${isChecked} class="rounded text-indigo-600">
+                <span class="truncate">${p}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETA 4: TELEMETRÍA E HISTORIAL DE USO DE ESTE CLIENTE -->
+    <div class="p-4 rounded-xl bg-slate-900 text-white space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h4 class="text-xs font-black uppercase tracking-wider text-amber-400">📊 4. Telemetría e Historial de Uso del Cliente</h4>
+        <span class="text-[10px] text-slate-400 font-mono">Auditoría en Tiempo Real</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+        <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Total de Accesos</span>
+          <span class="text-lg font-black text-emerald-400">${lic.login_count || 0}</span>
+          <span class="text-[10px] text-slate-400 block">inicios de sesión</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Último Acceso</span>
+          <span class="text-xs font-black text-white block mt-1">${lastLoginFormatted}</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Simulaciones Ejecutadas</span>
+          <span class="text-lg font-black text-amber-300">${simUsed}</span>
+          <span class="text-[10px] text-slate-400 block">${isUnlimited ? 'Licencia Ilimitada' : `Límite: ${simMax} corridas`}</span>
+        </div>
+      </div>
+
+      <div class="space-y-1.5 pt-1">
+        <span class="text-[10px] font-black uppercase text-slate-400 block">Historial Reciente de Conexiones de @${lic.username}:</span>
+        ${clientLogs.length === 0 ? `
+          <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 text-center">
+            No se registran entradas recientes en la bitácora para este usuario.
+          </div>
+        ` : `
+          <div class="max-h-36 overflow-y-auto rounded-lg border border-slate-800 divide-y divide-slate-800 bg-slate-950/60 text-[11px]">
+            ${clientLogs.map(log => `
+              <div class="px-3 py-2 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">● Acceso Exitoso</span>
+                  <span class="text-slate-300 font-mono">@${log.username}</span>
+                </div>
+                <div class="text-slate-400 font-mono text-[10px]">
+                  ${log.timestamp ? new Date(log.timestamp).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : ''} • IP: ${log.ip || 'Local'}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- 3. BOTONES DE ACCIÓN DEL EXPEDIENTE (GUARDAR Y ELIMINAR CON CONFIRMACIÓN) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
+      <button type="button" onclick="confirmDeleteClientFromDetail('${lic.id}')"
+        class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+        <span>🗑️ Eliminar Usuario</span>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="closeClientProfileDetail()"
+          class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition-all cursor-pointer">
+          ← Volver a la Lista
+        </button>
+        <button type="button" onclick="saveClientProfileDetail('${lic.id}')"
+          class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center gap-1.5">
+          <span>💾 Guardar Cambios del Perfil</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  renderDetailMunicipalitiesCheckboxes(selectedMunis);
+}
+
+function renderDetailMunicipalitiesCheckboxes(selectedList = ['Ecatepec de Morelos']) {
+  const container = document.getElementById('detail-municipios-list');
+  if (!container) return;
+
+  const allStatesChecked = document.getElementById('detail-todos-estados')?.checked;
+  const checkedStates = Array.from(document.querySelectorAll('input[name="detail_estado_cb"]:checked')).map(cb => cb.value);
+  const statesToLoad = allStatesChecked ? ['Estado de México'] : (checkedStates.length > 0 ? checkedStates : ['Estado de México']);
+  const multiState = statesToLoad.length > 1;
+  const isAllMunis = document.getElementById('detail-todos-municipios')?.checked || selectedList.includes('TODOS');
+
+  const items = [];
+  statesToLoad.slice(0, 6).forEach(st => {
+    const list = nationalCatalog32States[st] || (st === 'Estado de México' ? allAvailableMunicipalities : [`Capital de ${st}`]);
+    list.forEach(m => {
+      items.push({
+        nombre: m,
+        label: multiState ? `${m} (${st})` : m
+      });
+    });
+  });
+
+  container.innerHTML = items.map(it => {
+    const checked = isAllMunis || selectedList.includes(it.nombre) ? 'checked' : '';
+    return `
+      <label class="flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer hover:bg-white p-1 rounded">
+        <input type="checkbox" name="detail_muni_cb" value="${it.nombre}" ${checked} class="rounded text-indigo-600">
+        <span class="truncate" title="${it.label}">${it.label}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+window.onDetailAllStatesToggle = function(checked) {
+  document.querySelectorAll('input[name="detail_estado_cb"]').forEach(cb => {
+    cb.checked = checked;
+  });
+  if (checked) {
+    const allMunis = document.getElementById('detail-todos-municipios');
+    if (allMunis) allMunis.checked = true;
+  }
+  renderDetailMunicipalitiesCheckboxes(checked ? ['TODOS'] : []);
+};
+
+window.onDetailStateCheckboxChange = function() {
+  const currentMunis = Array.from(document.querySelectorAll('input[name="detail_muni_cb"]:checked')).map(cb => cb.value);
+  renderDetailMunicipalitiesCheckboxes(currentMunis);
+};
+
+window.onDetailAllMunisToggle = function(checked) {
+  document.querySelectorAll('input[name="detail_muni_cb"]').forEach(cb => {
+    cb.checked = checked;
+  });
+};
+
+window.onDetailAnyPartyToggle = function(checked) {
+  const wrapper = document.getElementById('detail-parties-cb-wrapper');
+  if (wrapper) {
+    if (checked) {
+      wrapper.classList.add('opacity-50', 'pointer-events-none');
+      document.querySelectorAll('input[name="detail_party_cb"]').forEach(cb => { cb.checked = true; });
+    } else {
+      wrapper.classList.remove('opacity-50', 'pointer-events-none');
+    }
+  }
+};
+
+window.onDetailRolPerfilChange = function(rol) {
+  const tierSelect = document.getElementById('detail-license-tier');
+  if (rol === 'Administrador' && tierSelect) {
+    tierSelect.value = 'ADMIN';
+    window.onDetailLicenseTierChange('ADMIN');
+  } else if (rol === 'Demo' && tierSelect) {
+    tierSelect.value = 'DEMO';
+    window.onDetailLicenseTierChange('DEMO');
+  }
+};
+
+window.onDetailLicenseTierChange = function(tier) {
+  const maxInput = document.getElementById('detail-sim-max');
+  const rolSelect = document.getElementById('detail-rol-perfil');
+  const allStatesChk = document.getElementById('detail-todos-estados');
+  if (tier === 'DEMO') {
+    if (maxInput) maxInput.value = '3';
+    if (rolSelect) rolSelect.value = 'Demo';
+    const expInput = document.getElementById('detail-fecha-expiracion');
+    if (expInput) {
+      const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      expInput.value = d.toISOString().split('T')[0];
+    }
+  } else {
+    if (maxInput && parseInt(maxInput.value, 10) <= 3) {
+      maxInput.value = '999999';
+    }
+    if (tier === 'ADMIN') {
+      if (rolSelect) rolSelect.value = 'Administrador';
+      if (allStatesChk) {
+        allStatesChk.checked = true;
+        window.onDetailAllStatesToggle(true);
+      }
+    } else if (tier === 'COMITE_NACIONAL') {
+      if (allStatesChk) {
+        allStatesChk.checked = true;
+        window.onDetailAllStatesToggle(true);
+      }
+    }
+  }
+};
+
+window.adjustDetailExpDays = function(days) {
+  const expInput = document.getElementById('detail-fecha-expiracion');
+  if (!expInput) return;
+  const base = expInput.value ? new Date(`${expInput.value}T12:00:00`) : new Date();
+  base.setDate(base.getDate() + (parseInt(days, 10) || 0));
+  expInput.value = base.toISOString().split('T')[0];
+};
+
+window.adjustDetailSimUsed = function(delta) {
+  const usedInput = document.getElementById('detail-sim-used');
+  if (!usedInput) return;
+  const current = parseInt(usedInput.value, 10) || 0;
+  usedInput.value = String(Math.max(0, current + delta));
+};
+
+window.adjustDetailSimLimit = function(delta) {
+  const maxInput = document.getElementById('detail-sim-max');
+  if (!maxInput) return;
+  let current = parseInt(maxInput.value, 10) || 3;
+  if (current >= 999999 && delta < 0) current = 10;
+  maxInput.value = String(Math.max(1, current + delta));
+};
+
+window.setDetailSimUnlimited = function() {
+  const maxInput = document.getElementById('detail-sim-max');
+  if (maxInput) maxInput.value = '999999';
+  const summary = document.getElementById('detail-sim-summary-label');
+  const used = document.getElementById('detail-sim-used')?.value || '0';
+  if (summary) summary.innerHTML = `Usadas: <b class="text-slate-900">${used}</b> de <b class="text-emerald-700">Ilimitadas (∞)</b>`;
+};
+
+window.resetDetailSimCount = async function(id) {
+  const usedInput = document.getElementById('detail-sim-used');
+  if (usedInput) usedInput.value = '0';
+  if (id) {
+    await window.resetLicenseSimulations(id);
+  }
+};
+
+window.saveClientProfileDetail = async function(id) {
+  const lic = masterLicensesCache.find(l => String(l.id) === String(id));
+  if (!lic) return;
+
+  const clienteNombre = document.getElementById('detail-cliente-nombre')?.value?.trim() || lic.clienteNombre;
+  const username = document.getElementById('detail-username')?.value?.trim() || lic.username;
+  const rawPass = document.getElementById('detail-password')?.value;
+  const password = sanitizeUserPasswordValue(rawPass, lic.password, username);
+
+  const rolPerfil = document.getElementById('detail-rol-perfil')?.value || 'Operador';
+  const licenseTier = document.getElementById('detail-license-tier')?.value || 'ALCALDIA_A';
+  const fechaExpiracion = document.getElementById('detail-fecha-expiracion')?.value || lic.fechaExpiracion;
+  const simulations_count = Math.max(0, parseInt(document.getElementById('detail-sim-used')?.value, 10) || 0);
+  const max_simulations = Math.max(1, parseInt(document.getElementById('detail-sim-max')?.value, 10) || 999999);
+  const activo = Boolean(document.getElementById('detail-activo-switch')?.checked);
+
+  const esAdministradorTotal = licenseTier === 'ADMIN' || rolPerfil === 'Administrador';
+  const isDemo = !esAdministradorTotal && (licenseTier === 'DEMO' || rolPerfil === 'Demo');
+  const tipoUsuario = esAdministradorTotal ? 'MASTER' : 'SOCIO';
+
+  const allStates = Boolean(document.getElementById('detail-todos-estados')?.checked) || esAdministradorTotal || licenseTier === 'COMITE_NACIONAL';
+  let estadosAutorizados = ['TODOS'];
+  if (!allStates) {
+    estadosAutorizados = Array.from(document.querySelectorAll('input[name="detail_estado_cb"]:checked')).map(cb => cb.value);
+    if (estadosAutorizados.length === 0) estadosAutorizados = lic.estadosAutorizados || ['Estado de México'];
+  }
+
+  const allMunis = Boolean(document.getElementById('detail-todos-municipios')?.checked) || allStates;
+  let municipiosAutorizados = ['TODOS'];
+  if (!allMunis) {
+    municipiosAutorizados = Array.from(document.querySelectorAll('input[name="detail_muni_cb"]:checked')).map(cb => cb.value);
+    if (municipiosAutorizados.length === 0) municipiosAutorizados = lic.municipiosAutorizados || ['TODOS'];
+  }
+
+  const partido = document.getElementById('detail-partido-principal')?.value || lic.partido || 'PVEM';
+  const can_select_any_party = Boolean(document.getElementById('detail-can-select-any-party')?.checked) || esAdministradorTotal;
+  let allowed_parties = Array.from(document.querySelectorAll('input[name="detail_party_cb"]:checked')).map(cb => cb.value);
+  if (can_select_any_party) {
+    allowed_parties = ['PVEM', 'MORENA', 'PAN', 'PRI', 'MC', 'PT', 'CANDIDATURA INDEPENDIENTE', 'COALICIÓN / ALIANZA'];
+  } else if (allowed_parties.length === 0) {
+    allowed_parties = [partido];
+  }
+  if (!allowed_parties.includes(partido)) allowed_parties.unshift(partido);
+
+  let nivelGeografico = lic.nivelGeografico || 'Municipal / Alcaldía';
+  if (licenseTier === 'COMITE_NACIONAL' || licenseTier === 'ADMIN') nivelGeografico = 'Federal / Nacional';
+  else if (licenseTier === 'GUBERNATURA' || licenseTier === 'SENADURIA') nivelGeografico = 'Estatal';
+  else if (licenseTier === 'DIPUTACION') nivelGeografico = 'Distrital (Federal o Local)';
+
+  const payload = {
+    ...lic,
+    id: lic.id,
+    clienteNombre,
+    username,
+    password,
+    rolPerfil,
+    licenseTier,
+    tipoUsuario,
+    esAdministradorTotal,
+    isDemo,
+    fechaExpiracion,
+    simulations_count,
+    max_simulations: isDemo && max_simulations >= 999999 ? 3 : max_simulations,
+    activo,
+    partido,
+    allowed_parties,
+    can_select_any_party,
+    can_select_all_states: allStates,
+    estadosAutorizados,
+    municipiosAutorizados,
+    nivelGeografico
+  };
+
+  try {
+    removeDeletedLicenseId(lic.id);
+    const res = await fetch('/api/licenses', {
+      method: 'POST',
+      headers: getAdminHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.licenses)) {
+      masterLicensesCache = savePersistentUsersVault(data.licenses);
+      renderMasterLicensesList();
+      showToast(`✅ Expediente de ${clienteNombre} (@${username}) guardado y persistido correctamente.`);
+    } else {
+      alert(data.error || 'Error al guardar cambios del perfil.');
+    }
+  } catch (err) {
+    alert('Error de conexión al guardar perfil: ' + err.message);
+  }
+};
+
+window.confirmDeleteClientFromDetail = async function(id) {
+  const lic = masterLicensesCache.find(l => String(l.id) === String(id));
+  const label = lic ? `${lic.clienteNombre} (@${lic.username})` : id;
+  const confirmed = window.confirm(`⚠️ CONFIRMACIÓN DE SEGURIDAD:\n\n¿Estás seguro de que deseas ELIMINAR PERMANENTEMENTE al usuario "${label}"?\n\nEsta acción borrará su licencia y credenciales de forma definitiva.`);
+  if (!confirmed) return;
+
+  selectedMasterClientId = null;
+  await window.deleteClientLicense(id);
+};
 
 window.openDemoLimitBlockedModal = function() {
   const modal = document.getElementById('modal-demo-limit-blocked');

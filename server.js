@@ -419,7 +419,10 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
   }
 
   const isDemo = Boolean(matchedLic.isDemo);
-  const maxSimulations = isDemo ? 3 : 999999999;
+  const customMax = typeof matchedLic.max_simulations === 'number' && matchedLic.max_simulations > 0
+    ? matchedLic.max_simulations
+    : (isDemo ? 3 : 999999);
+  const maxSimulations = isDemo ? (customMax < 999999 ? customMax : 3) : customMax;
 
   // Comprobar Kill Switch activo
   if (matchedLic.activo === false) {
@@ -449,16 +452,18 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
     };
   }
 
-  // Comprobar límite de simulaciones: EXCLUSIVO para modo Demostración Exprés (7 días / máximo 3 propuestas).
-  // Las licencias normales / Socio Operador / Oficiales tienen propuestas ILIMITADAS.
-  if (isDemo && matchedLic.simulations_count >= 3) {
+  // Comprobar límite de simulaciones: aplica a modo Demo (3 por defecto) o si el Admin fijó un límite numérico manual (< 999999).
+  const hasFiniteLimit = isDemo || maxSimulations < 999999;
+  if (hasFiniteLimit && matchedLic.simulations_count >= maxSimulations) {
     return {
       allowed: false,
-      isDemo: true,
+      isDemo,
       simulations_count: matchedLic.simulations_count,
-      max_simulations: 3,
+      max_simulations: maxSimulations,
       remaining: 0,
-      message: 'Has alcanzado el límite estricto de 3 propuestas de validación en tu periodo de prueba de 7 días (Licencia Demo). Para desbloquear propuestas ilimitadas y asegurar la Exclusividad Territorial de tu demarcación, contacta a la Dirección de Neural Media House para activar tu licencia oficial.'
+      message: isDemo
+        ? `Has alcanzado el límite de ${maxSimulations} propuestas de validación en tu periodo de prueba (Licencia Demo). Para desbloquear propuestas ilimitadas y asegurar la Exclusividad Territorial de tu demarcación, contacta a la Dirección de Neural Media House para activar tu licencia oficial.`
+        : `Ha alcanzado el límite máximo de ${maxSimulations} propuestas autorizadas para su cuenta.`
     };
   }
 
@@ -1723,8 +1728,14 @@ app.post('/api/licenses', requireMasterAdmin, (req, res) => {
       fechaExpiracion,
       activo: body.activo !== undefined ? Boolean(body.activo) : true,
       isDemo,
-      simulations_count: existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0,
-      max_simulations: isDemo ? 3 : 999999,
+      licenseTier: String(body.licenseTier || (isDemo ? 'DEMO' : (body.esAdministradorTotal ? 'ADMIN' : (existingLic?.licenseTier || 'ALCALDIA_A')))),
+      rolPerfil: String(body.rolPerfil || (isDemo ? 'Demo' : (body.esAdministradorTotal ? 'Administrador' : (existingLic?.rolPerfil || 'Operador')))),
+      simulations_count: body.simulations_count !== undefined
+        ? Math.max(0, parseInt(body.simulations_count, 10) || 0)
+        : (existingLic ? (typeof existingLic.simulations_count === 'number' ? existingLic.simulations_count : 0) : 0),
+      max_simulations: body.max_simulations !== undefined && parseInt(body.max_simulations, 10) > 0
+        ? parseInt(body.max_simulations, 10)
+        : (isDemo ? 3 : 999999),
       creadoEn: body.creadoEn || (existingLic ? existingLic.creadoEn : new Date().toISOString().split('T')[0]),
       updatedAt: Date.now()
     };
