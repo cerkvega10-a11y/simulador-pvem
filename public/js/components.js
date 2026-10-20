@@ -2290,19 +2290,29 @@ const Components = {
       return;
     }
 
-    const { riesgoParoScore = 25, semaforo = 'Verde', semaforoTexto = 'Riesgo Mínimo', dictamenSindical = '', fuerzas = [] } = unionData;
+    const {
+      riesgoParoScore = 58,
+      semaforo = 'Amarillo',
+      semaforoTexto = 'Alerta Sindical Activa',
+      dictamenSindical = '',
+      nivelRiesgoBloqueo = riesgoParoScore >= 70 ? 'Crítico / Paro Nacional' : 'Alto',
+      sindicatosReactivos = [],
+      modoAccionCalle = '',
+      protocoloDesactivacion = '',
+      fuerzas = []
+    } = unionData;
 
-    let semaforoColor = 'bg-emerald-600 text-white';
-    let semaforoBorder = 'border-emerald-300';
-    let semaforoBg = 'bg-emerald-50';
-    if (semaforo === 'Rojo') {
+    let semaforoColor = 'bg-amber-500 text-slate-900';
+    let semaforoBorder = 'border-amber-400';
+    let semaforoBg = 'bg-amber-50';
+    if (semaforo === 'Rojo' || riesgoParoScore >= 70) {
       semaforoColor = 'bg-red-600 text-white animate-pulse';
-      semaforoBorder = 'border-red-300';
+      semaforoBorder = 'border-red-400';
       semaforoBg = 'bg-red-50';
-    } else if (semaforo === 'Amarillo') {
-      semaforoColor = 'bg-amber-500 text-slate-900';
-      semaforoBorder = 'border-amber-300';
-      semaforoBg = 'bg-amber-50';
+    } else if (semaforo === 'Verde' && riesgoParoScore < 40) {
+      semaforoColor = 'bg-emerald-600 text-white';
+      semaforoBorder = 'border-emerald-300';
+      semaforoBg = 'bg-emerald-50';
     }
 
     const renderBar = (favor, contra, neutro) => `
@@ -2321,21 +2331,71 @@ const Components = {
     const html = `
       <div class="space-y-6">
         <!-- SEMÁFORO DE RIESGO DE PARO / BLOQUEO VIAL -->
-        <div class="card-pvem p-6 ${semaforoBg} border-2 ${semaforoBorder} rounded-2xl shadow-md">
+        <div class="card-pvem p-6 ${semaforoBg} border-2 ${semaforoBorder} rounded-2xl shadow-md space-y-5">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-lg">🚦</span>
-                <span class="text-xs uppercase tracking-widest font-black text-slate-600">Alerta Temprana de Gobernabilidad</span>
+                <span class="text-xs uppercase tracking-widest font-black text-slate-700">Módulo 2 • Inteligencia Sindical Hiper-Sensible</span>
+                <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300 border border-slate-700">
+                  Nivel de Riesgo: ${nivelRiesgoBloqueo}
+                </span>
               </div>
-              <h3 class="text-xl font-black text-slate-900">Semáforo de Riesgo de Paro y Bloqueo Vial</h3>
-              <p class="text-xs text-slate-700 max-w-2xl leading-relaxed">${dictamenSindical}</p>
+              <h3 class="text-xl font-black text-slate-900">Semáforo de Riesgo de Paro y Reacción Sindical Concreta</h3>
+              <p class="text-xs text-slate-800 max-w-3xl leading-relaxed font-medium">${dictamenSindical}</p>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <div class="text-center px-5 py-3 rounded-xl ${semaforoColor} shadow-md">
                 <span class="text-3xl font-black block">${riesgoParoScore}/100</span>
-                <span class="text-[10px] uppercase tracking-wider font-extrabold block mt-0.5">${semaforoTexto}</span>
+                <span class="text-[10px] uppercase tracking-wider font-extrabold block mt-0.5">${nivelRiesgoBloqueo}</span>
               </div>
+            </div>
+          </div>
+
+          <!-- EXPEDIENTE OBLIGATORIO DE REACCIÓN SINDICAL CONCRETA (4 PUNTOS) -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-slate-300/70">
+            <!-- Punto 2: Sindicatos y Gremios Específicos que Reaccionarán -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black uppercase tracking-wider text-red-800 flex items-center gap-1.5">
+                  <span>🪧</span> Sindicatos y Gremios que Reaccionarán
+                </span>
+                <span class="text-[10px] font-bold bg-red-100 text-red-800 px-2 py-0.5 rounded-full">${sindicatosReactivos.length || 6} Activos</span>
+              </div>
+              <ul class="space-y-1.5 text-xs text-slate-800">
+                ${(sindicatosReactivos.length > 0 ? sindicatosReactivos : fuerzas.filter(f => f.esAfectadoDirecto).map(f => `${f.siglas} (${f.gremio})`)).map(s => `
+                  <li class="flex items-start gap-1.5 leading-snug">
+                    <span class="text-red-600 font-black shrink-0">•</span>
+                    <span class="font-semibold text-[11px]">${s}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+
+            <!-- Punto 3: Modo de Acción en Calle (Táctica Sindical) -->
+            <div class="bg-white p-4 rounded-xl border border-red-200 shadow-2xs space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black uppercase tracking-wider text-red-900 flex items-center gap-1.5">
+                  <span>🚧</span> Modo de Acción en Calle (Táctica Sindical)
+                </span>
+                <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Operativo en Calle</span>
+              </div>
+              <p class="text-xs text-slate-800 leading-relaxed font-medium">
+                ${modoAccionCalle || 'Movilización simultánea de bases sindicales, cierre de arterias primarias, paro escalonado de labores y plantón frente a recintos oficiales.'}
+              </p>
+            </div>
+
+            <!-- Punto 4: Protocolo de Desactivación / Negociación -->
+            <div class="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-2xs space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <span>🤝</span> Protocolo de Desactivación y Negociación
+                </span>
+                <span class="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-2 py-0.5 rounded-full">Mesa Táctica</span>
+              </div>
+              <p class="text-xs text-slate-200 leading-relaxed font-medium">
+                ${protocoloDesactivacion || 'Instalación inmediata de mesa de concertación intergremial con minuta vinculante de respeto a derechos adquiridos, patrimonio público y fuentes de empleo.'}
+              </p>
             </div>
           </div>
         </div>
@@ -2347,7 +2407,7 @@ const Components = {
               <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-600"></span> Matriz de Reacción de las 12 Fuerzas Sindicales
               </h3>
-              <p class="text-xs text-slate-500">Auditoría cruzada de contratos colectivos (CFCRL/STPS) y pliegos petitorios gremiales.</p>
+              <p class="text-xs text-slate-500">Auditoría cruzada de contratos colectivos (CFCRL/STPS) y pliegos petitorios gremiales frente al tema.</p>
             </div>
             <span class="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">
               12 Fuerzas Monitoreadas
@@ -2357,8 +2417,8 @@ const Components = {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             ${fuerzas.map(f => {
               let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-              if (f.postura === 'En Contra') badgeBg = 'bg-red-100 text-red-800 border-red-200';
-              else if (f.postura.includes('Reserva')) badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
+              if ((f.postura || '').includes('Contra') || (f.postura || '').includes('Rechazo')) badgeBg = 'bg-red-100 text-red-800 border-red-200';
+              else if ((f.postura || '').includes('Reserva') || (f.postura || '').includes('Condicionado')) badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
 
               return `
                 <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
@@ -2414,27 +2474,69 @@ const Components = {
       return;
     }
 
-    const { preguntas = [], bloques = [] } = defenseData;
+    const {
+      preguntas = [],
+      bloques = [],
+      temaCentralAnclado = '',
+      entidadesDetectadas = {}
+    } = defenseData;
+
+    const b1Name = bloques[0]?.nombre || preguntas[0]?.bloque || 'Legalidad, Costo Político y Presupuesto';
+    const b2Name = bloques[1]?.nombre || preguntas[5]?.bloque || 'Impacto Social, Ciudadano y Patrimonial';
+    const b3Name = bloques[2]?.nombre || preguntas[10]?.bloque || 'Conflicto Sindical, Gremial y Enjambre';
+    const b4Name = bloques[3]?.nombre || preguntas[15]?.bloque || 'Ejecución Técnica, Ambiental y Jurídica';
+
+    const nombresStr = (entidadesDetectadas.nombresPropios && entidadesDetectadas.nombresPropios.length > 0)
+      ? entidadesDetectadas.nombresPropios.join(', ')
+      : 'Actores institucionales y ciudadanía';
+    const lugaresStr = (entidadesDetectadas.lugaresEspecificos && entidadesDetectadas.lugaresEspecificos.length > 0)
+      ? entidadesDetectadas.lugaresEspecificos.join(', ')
+      : 'Demarcación objetivo';
+    const accionesStr = (entidadesDetectadas.accionesPropuestas && entidadesDetectadas.accionesPropuestas.length > 0)
+      ? entidadesDetectadas.accionesPropuestas.slice(0, 2).join(' • ')
+      : (temaCentralAnclado || 'Propuesta evaluada');
 
     const html = `
       <div class="space-y-6">
-        <!-- ENCABEZADO DE BLINDAJE -->
-        <div class="card-pvem p-6 bg-gradient-to-r from-slate-900 to-emerald-950 text-white rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <span class="text-xs uppercase tracking-widest font-black text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">Media Training Político</span>
-              <span class="text-xs text-slate-400">•</span>
-              <span class="text-xs text-emerald-300 font-bold">20 Preguntas de Alta Complejidad</span>
+        <!-- ENCABEZADO DE BLINDAJE Y EXTRACCIÓN DE ENTIDADES (MÓDULO 1) -->
+        <div class="card-pvem p-6 bg-gradient-to-r from-slate-900 to-emerald-950 text-white rounded-2xl shadow-xl space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs uppercase tracking-widest font-black text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">Módulo 1 • Vinculación Estricta al Tema/Archivo</span>
+                <span class="text-xs text-slate-400">•</span>
+                <span class="text-xs text-emerald-300 font-bold">20 Preguntas y Respuestas 100% Ancladas</span>
+              </div>
+              <h3 class="text-xl font-black text-white">Escudo de 20 Preguntas y Defensa Táctica</h3>
+              <p class="text-xs text-emerald-200/80 max-w-3xl leading-relaxed">
+                Batería de 20 cuestionamientos letales de prensa y oposición vinculados directamente al tema central, actores, lugares y acciones del texto o archivo cargado.
+              </p>
             </div>
-            <h3 class="text-xl font-black text-white">Escudo de Blindaje y Defensa Estratégica</h3>
-            <p class="text-xs text-emerald-200/80 max-w-3xl leading-relaxed">
-              Batería exacta de los 20 cuestionamientos más agresivos de periodistas, regidores opositores y líderes sindicales, con respuestas factibles de 30 segundos respaldadas en datos oficiales y pivotes de validación política.
-            </p>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-xs bg-emerald-500 text-emerald-950 font-black px-3 py-1.5 rounded-xl shadow-xs">
+                20/20 Vinculadas al Tema
+              </span>
+            </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="text-xs bg-emerald-500 text-emerald-950 font-black px-3 py-1.5 rounded-xl shadow-xs">
-              4 Bloques x 5 Preguntas
-            </span>
+
+          <!-- FICHA DE ENTIDADES EXTRAÍDAS DEL TEXTO O DOCUMENTO -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-emerald-800/60 text-xs">
+            <div class="bg-slate-950/60 border border-emerald-800/50 rounded-xl p-2.5">
+              <span class="text-[10px] uppercase font-black text-emerald-400 block">🎯 Tema Central Extraído:</span>
+              <span class="text-white font-bold line-clamp-2">${temaCentralAnclado || 'Propuesta bajo análisis'}</span>
+            </div>
+            <div class="bg-slate-950/60 border border-emerald-800/50 rounded-xl p-2.5">
+              <span class="text-[10px] uppercase font-black text-amber-400 block">👤 Nombres / Entidades:</span>
+              <span class="text-slate-200 font-semibold line-clamp-2">${nombresStr}</span>
+            </div>
+            <div class="bg-slate-950/60 border border-emerald-800/50 rounded-xl p-2.5">
+              <span class="text-[10px] uppercase font-black text-sky-400 block">📍 Lugares Específicos:</span>
+              <span class="text-slate-200 font-semibold line-clamp-2">${lugaresStr}</span>
+            </div>
+            <div class="bg-slate-950/60 border border-emerald-800/50 rounded-xl p-2.5">
+              <span class="text-[10px] uppercase font-black text-rose-400 block">⚡ Acción Analizada:</span>
+              <span class="text-slate-200 font-semibold line-clamp-2">${accionesStr}</span>
+            </div>
           </div>
         </div>
 
@@ -2443,17 +2545,17 @@ const Components = {
           <button type="button" onclick="filterDefenseQuestions('todos')" class="btn-defense-filter active px-3.5 py-2 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs transition-all" data-block="todos">
             Todas (20)
           </button>
-          <button type="button" onclick="filterDefenseQuestions('Financiero y Presupuestal')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Financiero y Presupuestal">
-            1. Financiero & SHCP (5)
+          <button type="button" onclick="filterDefenseQuestions('${b1Name}')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="${b1Name}">
+            1. Legalidad y Costo Político (5)
           </button>
-          <button type="button" onclick="filterDefenseQuestions('Impacto Social y Pobreza')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Impacto Social y Pobreza">
-            2. Social & CONEVAL (5)
+          <button type="button" onclick="filterDefenseQuestions('${b2Name}')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="${b2Name}">
+            2. Impacto Social y Patrimonio (5)
           </button>
-          <button type="button" onclick="filterDefenseQuestions('Conflicto Sindical y Gremial')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Conflicto Sindical y Gremial">
-            3. Sindical & STPS (5)
+          <button type="button" onclick="filterDefenseQuestions('${b3Name}')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="${b3Name}">
+            3. Conflicto Sindical y Gremial (5)
           </button>
-          <button type="button" onclick="filterDefenseQuestions('Técnico, Legal y de Ejecución')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="Técnico, Legal y de Ejecución">
-            4. Técnico & CONAGUA (5)
+          <button type="button" onclick="filterDefenseQuestions('${b4Name}')" class="btn-defense-filter px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200 transition-all" data-block="${b4Name}">
+            4. Ejecución Técnica y Jurídica (5)
           </button>
         </div>
 

@@ -56,6 +56,7 @@ const realAiVerificationAgent = require('./src/agents/realAiVerificationAgent');
 const electoralRadarEngine = require('./src/agents/electoralRadarEngine');
 const coloniasData = require('./src/data/coloniasData');
 const freeLLMService = require('./src/services/freeLLMService');
+const semanticAnalyzer = require('./src/agents/semanticAnalyzer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -334,6 +335,16 @@ app.post('/api/upload/multimodal', upload.single('file'), async (req, res) => {
       });
     } else {
       const documentAnalysis = await multimodalAgent.parseDocument(buffer, originalname, mimetype);
+      const textoExtraido = documentAnalysis?.textoExtraido || documentAnalysis?.resumenAutomatico || '';
+      const domainCheck = semanticAnalyzer.validatePlatformDomain(textoExtraido, originalname);
+      if (!domainCheck.esValido) {
+        return res.status(422).json({
+          success: false,
+          invalidDomain: true,
+          error: domainCheck.mensajeError,
+          motivo: domainCheck.motivo
+        });
+      }
       return res.json({
         success: true,
         type: 'document',
@@ -501,6 +512,23 @@ const handleSimulationStream = async (req, res, inputData) => {
     }
   };
 
+  // MÓDULO 3: GUARDRAIL DE VALIDACIÓN TEMÁTICA (Antes de descontar corridas ni ejecutar el enjambre)
+  const combinedStreamText = `${inputData.propuestaTexto || ''} ${inputData.documentData?.textoExtraido || ''}`.trim();
+  const domainCheck = semanticAnalyzer.validatePlatformDomain(
+    combinedStreamText,
+    inputData.tituloProyecto || ''
+  );
+  if (!domainCheck.esValido) {
+    sendEvent({
+      status: 'error',
+      invalidDomain: true,
+      mensaje: domainCheck.mensajeError,
+      motivo: domainCheck.motivo
+    });
+    res.end();
+    return;
+  }
+
   // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días) y Kill Switch
   const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
   if (!simLimitCheck.allowed) {
@@ -564,6 +592,22 @@ app.get('/api/simulate/stream', async (req, res) => {
 app.post('/api/simulate', async (req, res) => {
   try {
     const inputData = req.body || {};
+
+    // MÓDULO 3: GUARDRAIL DE VALIDACIÓN TEMÁTICA (Antes de descontar corridas ni ejecutar el enjambre)
+    const combinedPostText = `${inputData.propuestaTexto || ''} ${inputData.documentData?.textoExtraido || ''}`.trim();
+    const domainCheck = semanticAnalyzer.validatePlatformDomain(
+      combinedPostText,
+      inputData.tituloProyecto || ''
+    );
+    if (!domainCheck.esValido) {
+      return res.status(422).json({
+        success: false,
+        invalidDomain: true,
+        error: domainCheck.mensajeError,
+        motivo: domainCheck.motivo
+      });
+    }
+
     // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días)
     const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
     if (!simLimitCheck.allowed) {

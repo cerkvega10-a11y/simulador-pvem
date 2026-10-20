@@ -1215,6 +1215,81 @@ function setupDocumentDropzone() {
   });
 }
 
+/**
+ * MÓDULO 3: GUARDRAIL DE VALIDACIÓN TEMÁTICA EN FRONTEND (Rechazo inmediato de consultas o archivos ajenos)
+ */
+const GUARDRAIL_DOMAIN_MESSAGE = '⚠️ Archivo o Propuesta No Válida: Esta plataforma no está diseñada para el tipo de archivo o consulta que intenta subir. GovTech War Room procesa exclusivamente propuestas políticas, proyectos sociales, de infraestructura, medio ambiente, sindicales, deportivos públicos o productivos.';
+
+window.validatePlatformDomainClient = function(textoPropuesta = '', tituloProyecto = '') {
+  const combined = `${tituloProyecto || ''} ${textoPropuesta || ''}`.trim();
+  const norm = combined.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (norm.length < 4) {
+    return { esValido: false, mensajeError: GUARDRAIL_DOMAIN_MESSAGE };
+  }
+
+  const publicSportsInfrastructure = /\b(cancha|canchas|deportivo publico|unidad deportiva|becas? deportiva|infraestructura deportiva|fomento deportivo|parque deportivo|gimnasio municipal|espacio deportivo|torneo comunitario|presupuesto deportivo|comude|conade|imdecuf)\b/i;
+
+  const offTopicPatterns = [
+    /\b(manchester\s+united|real\s+madrid|barcelona|chivas|club\s+america|cruz\s+azul|pumas\s+unam|tigres\s+uanl|rayados|liverpool|bayern|psg|chelsea|arsenal|juventus|milan|inter\s+de\s+milan|champions\s+league|liga\s+mx|premier\s+league|mundial\s+de\s+futbol|copa\s+del\s+mundo|messi|cristiano\s+ronaldo|mbappe|haaland|neymar|chicharito)\b/i,
+    /\b(quien\s+ganaria\s+entre|quien\s+gana\s+hoy|pronostico\s+del\s+partido|marcador\s+del\s+partido|apuesta\s+deportiva|momios|parlay|super\s+bowl|nba|nfl|mlb|ufc|boxeo\s+profesional|canelo\s+alvarez)\b/i,
+    /\b(receta\s+de\s+cocina|ingredientes\s+para\s+preparar|cucharadas\s+de|hornear\s+a\s+\d+\s+grados|como\s+hacer\s+un\s+pastel|como\s+preparar\s+tacos|licuar\s+los\s+ingredientes|freir\s+en\s+aceite)\b/i,
+    /\b(cuentame\s+un\s+chiste|dime\s+un\s+chiste|horoscopo\s+de\s+hoy|signo\s+zodiacal|tarot|compatibilidad\s+amorosa|amarre\s+de\s+amor)\b/i,
+    /\b(resuelve\s+esta\s+ecuacion|calcula\s+la\s+derivada|integral\s+definida|teorema\s+de\s+pitagoras|tabla\s+periodica|escribeme\s+un\s+poema|hazme\s+mi\s+tarea)\b/i,
+    /\b(fortnite|minecraft|free\s+fire|call\s+of\s+duty|warzone|league\s+of\s+legends|valorant|gta\s+v|playstation|xbox|nintendo\s+switch|pokedex|pokemon|dragon\s+ball|naruto)\b/i
+  ];
+
+  if (!publicSportsInfrastructure.test(norm)) {
+    for (const pattern of offTopicPatterns) {
+      if (pattern.test(norm)) {
+        return { esValido: false, mensajeError: GUARDRAIL_DOMAIN_MESSAGE };
+      }
+    }
+  }
+
+  return { esValido: true, mensajeError: null };
+};
+
+window.showInvalidDomainModal = function(mensajeError = GUARDRAIL_DOMAIN_MESSAGE) {
+  let modal = document.getElementById('modal-invalid-domain-guardrail');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-invalid-domain-guardrail';
+    modal.className = 'fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl max-w-lg w-full border-2 border-red-500 shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="bg-gradient-to-r from-red-700 via-red-600 to-amber-600 px-6 py-4 flex items-center justify-between text-white">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🛡️</span>
+          <div>
+            <h3 class="text-sm font-black uppercase tracking-wider">Guardrail de Validación Temática Activo</h3>
+            <p class="text-[11px] text-red-100 font-semibold">GovTech War Room — Filtro de Dominio Institucional</p>
+          </div>
+        </div>
+        <button type="button" onclick="document.getElementById('modal-invalid-domain-guardrail').classList.add('hidden')" class="text-white/80 hover:text-white text-xl font-black leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-xl text-sm text-red-950 font-bold leading-relaxed">
+          ${mensajeError}
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 space-y-1.5">
+          <div class="font-black text-slate-900 uppercase tracking-wide text-[11px]">✅ Dominios autorizados por el motor:</div>
+          <p>Política, Gobierno, Reformas de Ley/Constitución, Proyectos Sociales, Cultura y Patrimonio Público (INAH/Museos), Medio Ambiente y Arbolado, Obra Pública, Sindicatos, Economía/Proyectos Productivos y Fomento Deportivo Público.</p>
+          <p class="text-[11px] text-emerald-700 font-bold pt-1">🔒 Su contador de propuestas NO fue afectado por este bloqueo preventivo.</p>
+        </div>
+        <div class="flex justify-end pt-1">
+          <button type="button" onclick="document.getElementById('modal-invalid-domain-guardrail').classList.add('hidden')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer">
+            Entendido, corregir propuesta
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.classList.remove('hidden');
+};
+
 async function handleDocumentUpload(file) {
   const docStatus = document.getElementById('doc-status-box');
   docStatus.classList.remove('hidden');
@@ -1229,6 +1304,19 @@ async function handleDocumentUpload(file) {
       body: formData
     });
     const data = await res.json();
+
+    if (data.invalidDomain) {
+      appState.documentData = null;
+      const fileInput = document.getElementById('input-file-doc');
+      if (fileInput) fileInput.value = '';
+      docStatus.innerHTML = `
+        <div class="text-xs text-red-900 bg-red-50 p-3 rounded-lg border-2 border-red-400 font-bold">
+          ${data.error || GUARDRAIL_DOMAIN_MESSAGE}
+        </div>
+      `;
+      window.showInvalidDomainModal(data.error || GUARDRAIL_DOMAIN_MESSAGE);
+      return;
+    }
 
     if (data.success && data.documentAnalysis) {
       appState.documentData = data.documentAnalysis;
@@ -1383,6 +1471,14 @@ async function startSimulation() {
     return;
   }
 
+  // MÓDULO 3: GUARDRAIL DE VALIDACIÓN TEMÁTICA PREVENTIVA (No consume corridas ni ejecuta el enjambre)
+  const combinedDomainText = `${propuesta || ''} ${appState.documentData?.textoExtraido || ''}`.trim();
+  const domainValidation = window.validatePlatformDomainClient(combinedDomainText, titulo);
+  if (!domainValidation.esValido) {
+    window.showInvalidDomainModal(domainValidation.mensajeError);
+    return;
+  }
+
   appState.tituloProyecto = titulo || 'Iniciativa Comunitaria Ciudadana';
   appState.propuestaTexto = propuesta;
   appState.estado = estado;
@@ -1497,6 +1593,15 @@ async function startSimulation() {
             if (jsonStr) {
               try {
                 const step = JSON.parse(jsonStr);
+                if (step.invalidDomain) {
+                  simulationCompleted = true;
+                  lockSimulationControls(false);
+                  restoreSimulateButton();
+                  const cSec = document.getElementById('progress-console-section');
+                  if (cSec) cSec.classList.add('hidden');
+                  window.showInvalidDomainModal(step.mensaje || GUARDRAIL_DOMAIN_MESSAGE);
+                  return;
+                }
                 if (step.blockedByLimit) {
                   simulationCompleted = true;
                   lockSimulationControls(false);
@@ -1556,6 +1661,16 @@ async function startSimulation() {
       });
       const postData = await postRes.json();
       clearInterval(progressTimer);
+
+      if (postData.invalidDomain) {
+        simulationCompleted = true;
+        lockSimulationControls(false);
+        restoreSimulateButton();
+        const cSec = document.getElementById('progress-console-section');
+        if (cSec) cSec.classList.add('hidden');
+        window.showInvalidDomainModal(postData.error || GUARDRAIL_DOMAIN_MESSAGE);
+        return;
+      }
 
       if (postData.blockedByLimit) {
         simulationCompleted = true;
