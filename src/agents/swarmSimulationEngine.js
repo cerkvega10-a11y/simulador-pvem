@@ -84,12 +84,17 @@ class SwarmSimulationEngine {
     let scoreFavor = 50; // Línea base neutra
     let razon = '';
 
-    const isTransportWorker = persona.ocupacion.includes('transporte');
-    const isMerchant = persona.ocupacion.includes('tianguis') || persona.ocupacion.includes('abarrotes') || persona.ocupacion.includes('Comerciante');
-    const isStudent = persona.ocupacion.includes('Estudiante');
-    const isHomemaker = persona.ocupacion.includes('Ama de casa');
-    const isWorker = persona.ocupacion.includes('obrero') || persona.ocupacion.includes('manufactura') || persona.ocupacion.includes('viaja a CDMX');
-    const isSenior = persona.edad >= 60;
+    const isTransportWorker = (persona.sectorSocial === 'Transportistas y Choferes (Taxis, Colectivos, Carga)') || persona.ocupacion.includes('transporte') || persona.ocupacion.includes('Chofer');
+    const isMerchant = (persona.sectorSocial === 'Comerciantes y Tianguistas / MiPyMEs') || persona.ocupacion.includes('tianguis') || persona.ocupacion.includes('abarrotes') || persona.ocupacion.includes('Comerciante');
+    const isStudent = (persona.sectorSocial === 'Estudiantes y Jóvenes Universitarios') || persona.ocupacion.includes('Estudiante');
+    const isHomemaker = (persona.sectorSocial === 'Madres de Familia y Hogares') || persona.ocupacion.includes('Ama de casa') || persona.ocupacion.includes('Madre');
+    const isHealthWorker = (persona.sectorSocial === 'Trabajadores del Sector Salud (Médicos, Enfermeras)') || persona.ocupacion.includes('salud') || persona.ocupacion.includes('Enfermera') || persona.ocupacion.includes('Médico');
+    const isTeacher = (persona.sectorSocial === 'Maestros y Sector Educativo (SNTE / CNTE)') || persona.ocupacion.includes('Docente') || persona.ocupacion.includes('Profesor');
+    const isBureaucrat = (persona.sectorSocial === 'Burocracia y Empleados de Gobierno') || persona.ocupacion.includes('gobierno') || persona.ocupacion.includes('administrativo');
+    const isBusinessOwner = (persona.sectorSocial === 'Empresarios y Directivos de la Industria') || persona.ocupacion.includes('Empresario') || persona.ocupacion.includes('Gerente');
+    const isFarmer = (persona.sectorSocial === 'Sector Primario (Campesinos, Ejidatarios y Pescadores)') || persona.ocupacion.includes('agrícola') || persona.ocupacion.includes('Campesino');
+    const isConstructionWorker = (persona.sectorSocial === 'Trabajadores de la Construcción y Obreros') || persona.ocupacion.includes('Albañil') || persona.ocupacion.includes('obrero') || persona.ocupacion.includes('manufactura');
+    const isSenior = (persona.sectorSocial === 'Adultos Mayores y Pensionados') || persona.edad >= 60;
     const isLowNSE = persona.nse === 'D+' || persona.nse === 'D/E';
 
     // 1. IMPACTO CRÍTICO: Si la propuesta incluye aumento de tarifas, impuestos o cobros

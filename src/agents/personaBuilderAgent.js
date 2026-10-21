@@ -154,7 +154,9 @@ class PersonaBuilderAgent {
       return 'Estudiante universitario (UAEMex / FES UNAM / Politécnico)';
     }
     if (edad >= 65) {
-      return 'Jubilado / pensionado (ISSEMYM / IMSS)';
+      return Math.random() < 0.6 
+        ? 'Jubilado / pensionado de gobierno (ISSEMYM / ISSSTE)' 
+        : 'Adulto mayor sin pensión formal / vendedor de barrio';
     }
 
     const opciones = OCUPACIONES_FRECUENTES;
@@ -164,7 +166,7 @@ class PersonaBuilderAgent {
       acumulado += item.peso;
       if (rand <= acumulado) return item.puesto;
     }
-    return 'Empleado administrativo corporativo (viaja a CDMX)';
+    return 'Comerciante en tianguis / mercado municipal';
   }
 
   pickCivicPosture() {
@@ -178,11 +180,13 @@ class PersonaBuilderAgent {
   }
 
   pickTransportMode(colonia, ocupacion) {
-    if (ocupacion.includes('Operador de transporte')) return 'Unidad de transporte propia / microbús';
-    if (ocupacion.includes('Estudiante')) return 'Combi + Mexibús / Metro';
-    if (ocupacion.includes('viaja a CDMX')) return 'Mexibús / Suburbano / Camión directo';
-    if (ocupacion.includes('tianguis') || ocupacion.includes('abarrotes')) return 'Camioneta de carga ligera / a pie';
-    return Math.random() < 0.5 ? 'Combi o microbús colectivo' : 'Automóvil particular';
+    if (ocupacion.includes('transporte') || ocupacion.includes('Chofer') || ocupacion.includes('taxi')) return 'Unidad de transporte propia / microbús / taxi';
+    if (ocupacion.includes('Estudiante')) return 'Combi + Mexibús / Metro / Tren Suburbano';
+    if (ocupacion.includes('viaja a CDMX') || ocupacion.includes('Burocracia') || ocupacion.includes('gobierno')) return 'Mexibús / Suburbano / Camión directo';
+    if (ocupacion.includes('tianguis') || ocupacion.includes('abarrotes') || ocupacion.includes('comercio')) return 'Camioneta de carga ligera / a pie';
+    if (ocupacion.includes('Empresario') || ocupacion.includes('Directivo') || ocupacion.includes('Médico')) return 'Automóvil particular propio';
+    if (ocupacion.includes('Campesino') || ocupacion.includes('agrícola')) return 'Camioneta de trabajo / a pie / bicicleta';
+    return Math.random() < 0.5 ? 'Combi o microbús colectivo' : 'Automóvil particular / a pie';
   }
 
   pickFamilyConcern(problematicas) {
@@ -200,27 +204,47 @@ class PersonaBuilderAgent {
 
   formatSectorName(ocupacion, nse, edad) {
     const o = (ocupacion || '').toLowerCase();
-    const n = String(nse || '').toUpperCase();
     const e = Number(edad || 35);
-    if (o.includes('obrero') || o.includes('transporte') || o.includes('combi') || o.includes('viaja a cdmx') || n === 'D+' || n === 'D/E') {
-      return 'Usuarios de Transporte y Obreros';
-    }
-    if (o.includes('tianguis') || o.includes('mercado') || o.includes('abarrotes') || o.includes('comerciante')) {
-      return 'Comerciantes y Tianguistas';
-    }
-    if (n === 'A/B' || n === 'C+' || o.includes('profesionista') || o.includes('corporativo') || o.includes('contador')) {
-      return 'Clase Media y Automovilistas';
-    }
-    if (e <= 29 || o.includes('estudiante')) {
-      return 'Jóvenes y Estudiantes';
-    }
-    if (o.includes('campo') || o.includes('agrícola') || o.includes('turismo') || o.includes('artesano')) {
-      return 'Sector Rural y Turismo';
-    }
-    if (e >= 60 || o.includes('pensionado') || o.includes('jubilado')) {
+
+    // Mapeo exhaustivo a los 11 Perfiles Sectoriales
+    if (e >= 65 || o.includes('pensionado') || o.includes('jubilado') || o.includes('adulto mayor')) {
       return 'Adultos Mayores y Pensionados';
     }
-    return 'Comunidad General';
+    if (e <= 25 || o.includes('estudiante') || o.includes('universitario') || o.includes('joven profesionista')) {
+      return 'Estudiantes y Jóvenes Universitarios';
+    }
+    if (o.includes('tianguis') || o.includes('mercado municipal') || o.includes('abarrotes') || o.includes('miscelánea') || o.includes('mipyme')) {
+      return 'Comerciantes y Tianguistas / MiPyMEs';
+    }
+    if (o.includes('transporte público') || o.includes('combi') || o.includes('microbús') || o.includes('chofer') || o.includes('taxi')) {
+      return 'Transportistas y Choferes (Taxis, Colectivos, Carga)';
+    }
+    if (o.includes('salud') || o.includes('enfermera') || o.includes('médico') || o.includes('doctor') || o.includes('clínica') || o.includes('hospital')) {
+      return 'Trabajadores del Sector Salud (Médicos, Enfermeras)';
+    }
+    if (o.includes('docente') || o.includes('maestro') || o.includes('profesor') || o.includes('escuela') || o.includes('educativo') || o.includes('snte')) {
+      return 'Maestros y Sector Educativo (SNTE / CNTE)';
+    }
+    if (o.includes('gobierno') || o.includes('administrativo') || o.includes('palacio municipal') || o.includes('servidor público') || o.includes('burocracia')) {
+      return 'Burocracia y Empleados de Gobierno';
+    }
+    if (o.includes('empresario') || o.includes('gerente') || o.includes('directivo') || o.includes('dueño de taller') || o.includes('corporativo')) {
+      return 'Empresarios y Directivos de la Industria';
+    }
+    if (o.includes('ama de casa') || o.includes('madre') || o.includes('cuidadora') || o.includes('hogar')) {
+      return 'Madres de Familia y Hogares';
+    }
+    if (o.includes('agrícola') || o.includes('campesino') || o.includes('ejidatario') || o.includes('pescador') || o.includes('pecuario') || o.includes('maíz')) {
+      return 'Sector Primario (Campesinos, Ejidatarios y Pescadores)';
+    }
+    if (o.includes('albañil') || o.includes('construcción') || o.includes('obrero') || o.includes('manufactura') || o.includes('fábrica')) {
+      return 'Trabajadores de la Construcción y Obreros';
+    }
+
+    // Fallback demográfico coherente
+    if (e < 30) return 'Estudiantes y Jóvenes Universitarios';
+    if (e > 55) return 'Adultos Mayores y Pensionados';
+    return 'Comerciantes y Tianguistas / MiPyMEs';
   }
 }
 

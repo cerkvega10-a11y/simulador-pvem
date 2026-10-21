@@ -3,6 +3,7 @@
 // Garantiza variación matemática estricta y verídica por Estado y Municipio
 
 const { getMunicipalityVector } = require('../data/municipalityVectors');
+const { CATALOGO_11_SECTORES_DEMOGRAFICOS } = require('../data/edomexDemographics');
 
 class MunicipalEngine {
   constructor() {
@@ -162,45 +163,47 @@ class MunicipalEngine {
     evolucionData.contra = contras;
     evolucionData.neutro = evolucionData.map(e => e.neutro);
 
-    // 5. Desglose de 6 Sectores Demográficos para Barras Apiladas (<canvas id="chartDemografico">)
-    const porSector = [
-      {
-        sector: 'Usuarios de Transporte y Obreros',
-        favor: Math.min(Math.max(Math.round(favorPct - (impactoTransporte < 0 ? 14 : -8)), 4), 92),
-        contra: Math.min(Math.max(Math.round(contraPct + (impactoTransporte < 0 ? 16 : -8)), 5), 94),
-        neutro: 0
-      },
-      {
-        sector: 'Comerciantes y Tianguistas',
-        favor: Math.min(Math.max(Math.round(favorPct - (impactoTianguis < 0 ? 18 : -6)), 4), 90),
-        contra: Math.min(Math.max(Math.round(contraPct + (impactoTianguis < 0 ? 20 : -6)), 5), 94),
-        neutro: 0
-      },
-      {
-        sector: 'Clase Media y Automovilistas',
-        favor: Math.min(Math.max(Math.round(favorPct - (impactoImpuestos < 0 ? 15 : -4)), 6), 92),
-        contra: Math.min(Math.max(Math.round(contraPct + (impactoImpuestos < 0 ? 18 : -4)), 6), 92),
-        neutro: 0
-      },
-      {
-        sector: 'Jóvenes y Estudiantes',
-        favor: Math.min(Math.max(Math.round(favorPct + (impactoMedioAmbiente > 0 ? 8 : -6)), 8), 94),
-        contra: Math.min(Math.max(Math.round(contraPct - (impactoMedioAmbiente > 0 ? 6 : -6)), 4), 90),
-        neutro: 0
-      },
-      {
-        sector: 'Sector Rural y Turismo',
-        favor: Math.min(Math.max(Math.round(favorPct + (impactoTurismoCampo > 0 ? 12 : -10)), 5), 92),
-        contra: Math.min(Math.max(Math.round(contraPct - (impactoTurismoCampo > 0 ? 10 : -10)), 5), 92),
-        neutro: 0
-      },
-      {
-        sector: 'Adultos Mayores y Pensionados',
-        favor: Math.min(Math.max(Math.round(favorPct + (impactoAgua > 0 ? 6 : -8)), 5), 90),
-        contra: Math.min(Math.max(Math.round(contraPct - (impactoAgua > 0 ? 6 : -8)), 5), 92),
-        neutro: 0
-      }
-    ];
+    // 5. Desglose de los 11 Sectores Demográficos Oficiales (<canvas id="chartDemografico">)
+    const mapaImpactos = {
+      sec_estudiantes: (impactoMedioAmbiente * 0.6) + (impactoTransporte * 0.4),
+      sec_comerciantes: (impactoTianguis * 0.6) + (impactoImpuestos * 0.4),
+      sec_transportistas: (impactoTransporte * 0.7) + (impactoImpuestos * 0.3),
+      sec_salud: (impactoAgua * 0.5) + (impactoSeguridad * 0.5),
+      sec_educacion: (impactoSeguridad * 0.5) + (impactoImpuestos * 0.5),
+      sec_burocracia: (impactoImpuestos * 0.5) + (impactoSeguridad * 0.3),
+      sec_empresarios: (impactoImpuestos * 0.7) + (impactoMedioAmbiente * 0.3),
+      sec_madres: (impactoAgua * 0.5) + (impactoSeguridad * 0.5),
+      sec_primario: (impactoTurismoCampo * 0.6) + (impactoAgua * 0.4),
+      sec_mayores: (impactoAgua * 0.5) + (impactoSeguridad * 0.5),
+      sec_construccion: (impactoTransporte * 0.6) + (impactoImpuestos * 0.4)
+    };
+
+    const porSector = CATALOGO_11_SECTORES_DEMOGRAFICOS.map(sec => {
+      const imp = mapaImpactos[sec.id] || 0;
+      let f = Math.min(Math.max(Math.round(favorPct + imp * 18), 5), 92);
+      let c = Math.min(Math.max(Math.round(contraPct - imp * 16), 5), 94);
+      let n = Math.max(100 - f - c, 0);
+
+      // Calcular fricción social sectorial (0-100)
+      const friccionSocial = Math.min(Math.max(Math.round(c * 0.95 + (sec.pesoElectoral > 10 ? 5 : 0)), 5), 98);
+
+      return {
+        id: sec.id,
+        sector: sec.nombre,
+        icono: sec.icono || '👥',
+        pesoElectoral: sec.pesoElectoral,
+        favor: f,
+        contra: c,
+        neutro: n,
+        friccionSocial,
+        sensibilidad: sec.sensibilidad,
+        observacion: imp < -0.1
+          ? `Alerta de resistencia en ${sec.nombre}: sensibilidad alta a ${sec.sensibilidad}`
+          : imp > 0.1
+            ? `Respaldo prioritario de ${sec.nombre}: alta afinidad con la propuesta`
+            : `Postura expectante en ${sec.nombre}: se requiere socialización territorial directa`
+      };
+    });
 
     // Ajustar neutro para que cada sector sume exactamente 100%
     porSector.forEach(sec => {

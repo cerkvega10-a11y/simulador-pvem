@@ -293,11 +293,17 @@ Devuelve EXCLUSIVAMENTE un JSON con:
   "argumentoPrincipalOposicion": string,
   "argumentoPrincipalFavor": string,
   "reaccionPorSector": {
-    "obreros": { "favor": number, "contra": number, "neutro": number, "motivo": string },
-    "comerciantes": { "favor": number, "contra": number, "neutro": number, "motivo": string },
-    "claseMedia": { "favor": number, "contra": number, "neutro": number, "motivo": string },
-    "jovenes": { "favor": number, "contra": number, "neutro": number, "motivo": string },
-    "adultosMayores": { "favor": number, "contra": number, "neutro": number, "motivo": string }
+    "estudiantes": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "comerciantes": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "transportistas": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "salud": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "maestros": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "burocracia": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "empresarios": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "madresHogar": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "sectorPrimario": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "adultosMayores": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string },
+    "construccion": { "favor": number, "contra": number, "neutro": number, "friccionSocial": number, "motivo": string }
   }
 }`;
 

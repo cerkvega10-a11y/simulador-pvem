@@ -1920,7 +1920,7 @@ function onSimulationFinished(report) {
   // ========================================================
   try {
     if (report.mapaCalorDemografico) {
-      Components.renderHeatmap('demographic-heatmap-container', report.mapaCalorDemografico);
+      Components.renderHeatmap('demographic-heatmap-container', report.mapaCalorDemografico, report);
     }
   } catch (e) {
     console.warn('Advertencia en Segmentación Demográfica:', e);
@@ -1935,7 +1935,8 @@ function onSimulationFinished(report) {
       report.microTargetingColonias || appState.radarAnalysis?.microTargetingColonias,
       report.manualCampanaEstrategico || appState.radarAnalysis?.manualCampanaEstrategico,
       report.indicadoresClaveElectorales || appState.radarAnalysis?.indicadoresClaveElectorales,
-      appState.activeParty
+      appState.activeParty,
+      report
     );
 
     // Cargar en background el radar completo si no estaba pre-cargado
@@ -1960,7 +1961,8 @@ function onSimulationFinished(report) {
             d.radar.microTargetingColonias,
             d.radar.manualCampanaEstrategico,
             d.radar.indicadoresClaveElectorales,
-            appState.activeParty
+            appState.activeParty,
+            report
           );
         }
       })
@@ -2019,7 +2021,7 @@ function onSimulationFinished(report) {
   // ========================================================
   try {
     if (report.blindajeDefensa) {
-      Components.renderTab4BlindajeDefensa('strategic-defense-container', report.blindajeDefensa);
+      Components.renderTab4BlindajeDefensa('strategic-defense-container', report.blindajeDefensa, report);
     }
   } catch (e) {
     console.warn('Advertencia en Blindaje y Defensa:', e);
@@ -5912,5 +5914,131 @@ window.exportAccessAuditLogs = function() {
   URL.revokeObjectURL(url);
   showToast('📥 Bitácora de accesos exportada con éxito en JSON.');
 };
+
+// ========================================================
+// MÓDULOS DE INTERACCIÓN: WHATSAPP 1-CLIC & CRISIS SIMULATOR EN VIVO
+// ========================================================
+window.copyWhatsAppMicroMessage = function(cohortId) {
+  const el = document.getElementById(`msg-text-${cohortId}`);
+  const btn = document.getElementById(`btn-copy-${cohortId}`);
+  if (!el) return;
+
+  const text = el.innerText || el.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> ¡Copiado para WhatsApp!';
+        btn.className = btn.className.replace('bg-emerald-600', 'bg-emerald-700');
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+          btn.className = btn.className.replace('bg-emerald-700', 'bg-emerald-600');
+        }, 2500);
+      }
+      if (typeof showToast === 'function') {
+        showToast('📲 Micro-mensaje de WhatsApp copiado al portapapeles.');
+      }
+    }).catch(err => {
+      console.warn('Clipboard writeText failed, trying fallback:', err);
+      copyFallback(text, btn);
+    });
+  } else {
+    copyFallback(text, btn);
+  }
+
+  function copyFallback(str, button) {
+    const ta = document.createElement('textarea');
+    ta.value = str;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      if (button) {
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<span>✅</span> ¡Copiado para WhatsApp!';
+        button.className = button.className.replace('bg-emerald-600', 'bg-emerald-700');
+        setTimeout(() => {
+          button.innerHTML = originalHtml;
+          button.className = button.className.replace('bg-emerald-700', 'bg-emerald-600');
+        }, 2500);
+      }
+      if (typeof showToast === 'function') {
+        showToast('📲 Micro-mensaje de WhatsApp copiado al portapapeles.');
+      }
+    } catch (e) {
+      if (typeof showToast === 'function') {
+        showToast('⚠️ Seleccione y copie el texto manualmente.');
+      }
+    }
+    document.body.removeChild(ta);
+  }
+};
+
+window.runInteractiveCrisisTest = async function() {
+  const inputScenario = document.getElementById('input-custom-crisis');
+  const selectSeverity = document.getElementById('select-crisis-severity');
+  const feedback = document.getElementById('crisis-test-feedback');
+
+  const customScenario = (inputScenario?.value || '').trim();
+  const severity = selectSeverity?.value || 'media';
+
+  if (!customScenario) {
+    if (feedback) {
+      feedback.classList.remove('hidden');
+      feedback.className = 'text-[11px] text-amber-400 font-bold block pt-1';
+      feedback.innerText = '⚠️ Por favor escriba un rumor o ataque opositor a simular.';
+    }
+    return;
+  }
+
+  if (feedback) {
+    feedback.classList.remove('hidden');
+    feedback.className = 'text-[11px] text-emerald-400 font-bold block pt-1 animate-pulse';
+    feedback.innerText = '⏳ Ejecutando simulación de propagación y estrés en el War Room...';
+  }
+
+  try {
+    const report = appState?.currentReport || {};
+    const muni = report?.resumenEjecutivo?.municipio || appState?.municipio || 'Ecatepec de Morelos';
+    const edo = report?.resumenEjecutivo?.estado || appState?.estado || 'Estado de México';
+
+    const resp = await fetch('/api/crisis-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        propuestaTexto: appState?.lastProposalText || '',
+        municipio: muni,
+        estado: edo,
+        escenarioPersonalizado: customScenario,
+        severidad: severity
+      })
+    });
+
+    const data = await resp.json();
+    if (data.success && data.crisis) {
+      if (!appState.currentReport) appState.currentReport = {};
+      appState.currentReport.testResilienciaCrisis = data.crisis;
+
+      // Re-renderizar la pestaña de blindaje
+      Components.renderTab4BlindajeDefensa('strategic-defense-container', appState.currentReport.blindajeDefensa, appState.currentReport);
+
+      if (typeof showToast === 'function') {
+        showToast(`🚨 Simulación de Crisis actualizada: Vulnerabilidad ${data.crisis.nivelVulnerabilidad}`);
+      }
+    } else {
+      throw new Error(data.error || 'Error al simular crisis');
+    }
+  } catch (err) {
+    console.error('Error en test de crisis interactivo:', err);
+    if (feedback) {
+      feedback.classList.remove('hidden');
+      feedback.className = 'text-[11px] text-red-400 font-bold block pt-1';
+      feedback.innerText = `Error: ${err.message}`;
+    }
+  }
+};
+
 
 

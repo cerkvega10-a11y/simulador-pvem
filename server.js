@@ -1007,6 +1007,68 @@ app.post('/api/electoral-radar/diagnostico', (req, res) => {
   }
 });
 
+// 8.4. Test de Resiliencia ante Crisis Interactivo (Escenarios de Alto Riesgo, Curva 72h y Minutario)
+app.post('/api/crisis-test', async (req, res) => {
+  try {
+    const {
+      propuestaTexto = '',
+      municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
+      escenarioPersonalizado = '',
+      tipoCrisis = 'campana_negra_whatsapp',
+      severidad = 'media'
+    } = req.body || {};
+
+    const politicalStrategistAgent = require('./src/agents/politicalStrategistAgent');
+    const webResearchAgent = require('./src/agents/webResearchAgent');
+    const research = await webResearchAgent.conductResearch(estado, municipio, '', propuestaTexto, false);
+
+    const sevFactors = {
+      baja: { caida: 4, polarizacion: 35 },
+      media: { caida: 9, polarizacion: 55 },
+      alta: { caida: 16, polarizacion: 75 },
+      extrema: { caida: 24, polarizacion: 90 }
+    };
+    const factor = sevFactors[severidad] || sevFactors.media;
+
+    const baseFavor = Math.max(58 - factor.caida, 15);
+    const baseContra = Math.min(30 + factor.caida, 80);
+    const baseNeutro = Math.max(100 - baseFavor - baseContra, 5);
+
+    const votosRef = {
+      porcentajeFavor: baseFavor,
+      porcentajeContra: baseContra,
+      porcentajeNeutro: baseNeutro,
+      indicePolarizacion: factor.polarizacion
+    };
+
+    const crisisData = politicalStrategistAgent.generateCrisisResilienceTest(
+      votosRef,
+      research,
+      escenarioPersonalizado || propuestaTexto || 'Campaña de Gestión Pública'
+    );
+
+    if (escenarioPersonalizado) {
+      crisisData.escenarioRiesgo = escenarioPersonalizado;
+    }
+
+    res.json({
+      success: true,
+      crisis: crisisData,
+      metadatos: {
+        municipio,
+        estado,
+        severidad,
+        tipoCrisis,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error en POST /api/crisis-test:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // =========================================================================
 // WATERMARK CRIPTOGRÁFICO DE AUTORÍA — NEURAL MEDIA HOUSE / ERICK VEGA
 // Base64: RXJpY2sgZGUgSmVzw7pzIFZlZ2EgQ2FybW9uYSB8IE5ldXJhbCBNZWRpYSBIb3VzZQ==

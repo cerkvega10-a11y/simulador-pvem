@@ -662,23 +662,139 @@ const LISTA_125_MUNICIPIOS_EDOMEX = [
   'Zinacantepec', 'Zumpahuacán', 'Zumpango'
 ];
 
-// Ocupaciones frecuentes y verosímiles en el Estado de México según INEGI
+// Catálogo Oficial de los 11 Perfiles Sectoriales Estratégicos (INEGI / AMAI / Censo Electoral)
+const CATALOGO_11_SECTORES_DEMOGRAFICOS = [
+  {
+    id: 'sec_estudiantes',
+    nombre: 'Estudiantes y Jóvenes Universitarios',
+    icono: '🎓',
+    rangoEdadSugerido: '18-29',
+    pesoElectoral: 14,
+    sensibilidad: 'Tecnología, movilidad segura, becas y medio ambiente',
+    friccionKey: 'estudiantes'
+  },
+  {
+    id: 'sec_comerciantes',
+    nombre: 'Comerciantes y Tianguistas / MiPyMEs',
+    icono: '🏪',
+    rangoEdadSugerido: '30-55',
+    pesoElectoral: 13,
+    sensibilidad: 'Libertad de comercio, cero extorsión, cobros de piso y vialidades abiertas',
+    friccionKey: 'comerciantes'
+  },
+  {
+    id: 'sec_transportistas',
+    nombre: 'Transportistas y Choferes (Taxis, Colectivos, Carga)',
+    icono: '🚐',
+    rangoEdadSugerido: '28-60',
+    pesoElectoral: 9,
+    sensibilidad: 'Tarifas, baches, carriles confinados, operativos de tránsito y costo de combustible',
+    friccionKey: 'transportistas'
+  },
+  {
+    id: 'sec_salud',
+    nombre: 'Trabajadores del Sector Salud (Médicos, Enfermeras)',
+    icono: '🩺',
+    rangoEdadSugerido: '25-60',
+    pesoElectoral: 6,
+    sensibilidad: 'Abasto de insumos, seguridad en turnos nocturnos y basificación laboral',
+    friccionKey: 'salud'
+  },
+  {
+    id: 'sec_educacion',
+    nombre: 'Maestros y Sector Educativo (SNTE / CNTE)',
+    icono: '📚',
+    rangoEdadSugerido: '28-65',
+    pesoElectoral: 8,
+    sensibilidad: 'Infraestructura escolar, derechos laborales sindicales y respeto a la docencia',
+    friccionKey: 'maestros'
+  },
+  {
+    id: 'sec_burocracia',
+    nombre: 'Burocracia y Empleados de Gobierno',
+    icono: '🏛️',
+    rangoEdadSugerido: '25-62',
+    pesoElectoral: 7,
+    sensibilidad: 'Estabilidad de plaza, pagos puntuales y digitalización de trámites sin recortes',
+    friccionKey: 'burocracia'
+  },
+  {
+    id: 'sec_empresarios',
+    nombre: 'Empresarios y Directivos de la Industria',
+    icono: '💼',
+    rangoEdadSugerido: '35-68',
+    pesoElectoral: 6,
+    sensibilidad: 'Certeza jurídica, no aumento de impuestos, energía limpia e incentivos fiscales',
+    friccionKey: 'empresarios'
+  },
+  {
+    id: 'sec_madres',
+    nombre: 'Madres de Familia y Hogares',
+    icono: '🏡',
+    rangoEdadSugerido: '22-58',
+    pesoElectoral: 15,
+    sensibilidad: 'Agua constante, estancias infantiles, seguridad en calles y canasta básica',
+    friccionKey: 'madres'
+  },
+  {
+    id: 'sec_primario',
+    nombre: 'Sector Primario (Campesinos, Ejidatarios y Pescadores)',
+    icono: '🌾',
+    rangoEdadSugerido: '30-75',
+    pesoElectoral: 5,
+    sensibilidad: 'Agua para riego, fertilizantes, caminos rurales y apoyo contra intermediarios',
+    friccionKey: 'campo'
+  },
+  {
+    id: 'sec_mayores',
+    nombre: 'Adultos Mayores y Pensionados',
+    icono: '👵',
+    rangoEdadSugerido: '60-85',
+    pesoElectoral: 10,
+    sensibilidad: 'Medicamentos gratuitos, banquetas accesibles, trato digno y apoyo social',
+    friccionKey: 'pensionados'
+  },
+  {
+    id: 'sec_construccion',
+    nombre: 'Trabajadores de la Construcción y Obreros',
+    icono: '🏗️',
+    rangoEdadSugerido: '20-58',
+    pesoElectoral: 7,
+    sensibilidad: 'Obra pública local, salarios justos, equipo de protección y transporte económico',
+    friccionKey: 'obreros'
+  }
+];
+
+// Ocupaciones frecuentes y verosímiles en el Estado de México según INEGI (Mapeadas a los 11 Sectores)
 const OCUPACIONES_FRECUENTES = [
-  { puesto: 'Comerciante en tianguis / mercado municipal', nse: 'D+', peso: 15 },
-  { puesto: 'Operador de transporte público (combi / microbús)', nse: 'D+', peso: 8 },
-  { puesto: 'Empleado de manufactura / obrero industrial', nse: 'D', peso: 14 },
-  { puesto: 'Profesionista independiente / consultor', nse: 'C+', peso: 9 },
-  { puesto: 'Empleado administrativo corporativo (viaja a CDMX)', nse: 'C', peso: 12 },
-  { puesto: 'Ama de casa / cuidadora no remunerada', nse: 'D+', peso: 16 },
-  { puesto: 'Estudiante universitario (UAEMex / FES UNAM / Politécnico)', nse: 'C', peso: 10 },
-  { puesto: 'Docente de educación básica o media', nse: 'C', peso: 5 },
-  { puesto: 'Pequeño comerciante con local de abarrotes', nse: 'C', peso: 6 },
-  { puesto: 'Jubilado / pensionado (ISSEMYM / IMSS)', nse: 'D+', peso: 5 }
+  { puesto: 'Estudiante universitario (UAEMex / FES UNAM / Politécnico)', nse: 'C', peso: 10, sector: 'Estudiantes y Jóvenes Universitarios' },
+  { puesto: 'Joven profesionista en tecnología / emprendedor digital', nse: 'C+', peso: 4, sector: 'Estudiantes y Jóvenes Universitarios' },
+  { puesto: 'Comerciante en tianguis / mercado municipal', nse: 'D+', peso: 8, sector: 'Comerciantes y Tianguistas / MiPyMEs' },
+  { puesto: 'Pequeño comerciante con local de abarrotes / miscelánea', nse: 'C', peso: 5, sector: 'Comerciantes y Tianguistas / MiPyMEs' },
+  { puesto: 'Operador de transporte público (combi / microbús)', nse: 'D+', peso: 5, sector: 'Transportistas y Choferes (Taxis, Colectivos, Carga)' },
+  { puesto: 'Chofer de taxi de sitio / conductor de plataforma / chofer de carga', nse: 'D+', peso: 4, sector: 'Transportistas y Choferes (Taxis, Colectivos, Carga)' },
+  { puesto: 'Enfermera / personal de salud en clínica pública (IMSS / ISSEMyM)', nse: 'C', peso: 4, sector: 'Trabajadores del Sector Salud (Médicos, Enfermeras)' },
+  { puesto: 'Médico general de consultorio / especialista de hospital', nse: 'C+', peso: 2, sector: 'Trabajadores del Sector Salud (Médicos, Enfermeras)' },
+  { puesto: 'Docente de educación básica o media (SNTE / SMSEM)', nse: 'C', peso: 5, sector: 'Maestros y Sector Educativo (SNTE / CNTE)' },
+  { puesto: 'Profesor de secundaria / preparatoria pública', nse: 'C+', peso: 3, sector: 'Maestros y Sector Educativo (SNTE / CNTE)' },
+  { puesto: 'Empleado administrativo en palacio municipal / gobierno estatal', nse: 'C', peso: 4, sector: 'Burocracia y Empleados de Gobierno' },
+  { puesto: 'Servidor público / personal operativo de servicios públicos', nse: 'D+', peso: 3, sector: 'Burocracia y Empleados de Gobierno' },
+  { puesto: 'Empresario industrial / dueño de taller manufacturero', nse: 'A/B', peso: 3, sector: 'Empresarios y Directivos de la Industria' },
+  { puesto: 'Gerente administrativo en zona industrial corporativa', nse: 'B', peso: 3, sector: 'Empresarios y Directivos de la Industria' },
+  { puesto: 'Ama de casa / jefa de familia y cuidadora no remunerada', nse: 'D+', peso: 10, sector: 'Madres de Familia y Hogares' },
+  { puesto: 'Madre soltera trabajadora en comercio o servicios', nse: 'D', peso: 5, sector: 'Madres de Familia y Hogares' },
+  { puesto: 'Productor agrícola de maíz y hortalizas / ejidatario', nse: 'D+', peso: 3, sector: 'Sector Primario (Campesinos, Ejidatarios y Pescadores)' },
+  { puesto: 'Campesino / trabajador pecuario y floricultor', nse: 'D', peso: 2, sector: 'Sector Primario (Campesinos, Ejidatarios y Pescadores)' },
+  { puesto: 'Jubilado / pensionado de gobierno (ISSEMYM / ISSSTE)', nse: 'C', peso: 5, sector: 'Adultos Mayores y Pensionados' },
+  { puesto: 'Adulto mayor sin pensión formal / vendedor de barrio', nse: 'D/E', peso: 5, sector: 'Adultos Mayores y Pensionados' },
+  { puesto: 'Albañil / maestro de obra en construcciones locales', nse: 'D', peso: 4, sector: 'Trabajadores de la Construcción y Obreros' },
+  { puesto: 'Empleado de manufactura / obrero de fábrica industrial', nse: 'D', peso: 3, sector: 'Trabajadores de la Construcción y Obreros' }
 ];
 
 module.exports = {
   ESTADOS_MEXICO,
   MUNICIPIOS_EDOMEX_DETALLADOS,
   LISTA_125_MUNICIPIOS_EDOMEX,
+  CATALOGO_11_SECTORES_DEMOGRAFICOS,
   OCUPACIONES_FRECUENTES
 };

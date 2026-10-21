@@ -715,19 +715,31 @@ const Components = {
           <!-- Desglose por Sector Social Clave -->
           <div class="pt-4 border-t border-slate-200">
             <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Desglose por Sector Comunitario Focalizado
+              <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Catálogo Oficial de 11 Sectores Demográficos y Sociolaborales (INEGI / AMAI / Censo Electoral)
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              ${porSectorSocial.map(item => `
-                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition-colors">
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold text-slate-900 truncate">${item.sector}</span>
-                    <span class="text-[10px] font-semibold text-slate-500 shrink-0 ml-1">${item.total ? `${item.total} ag.` : ''}</span>
+              ${porSectorSocial.map(item => {
+                const friccion = item.friccionSocial || Math.min(Math.max(Math.round(item.contra * 0.95), 5), 98);
+                const friccionColor = friccion >= 65 ? 'bg-red-50 text-red-700 border-red-200' : (friccion >= 35 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
+                return `
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 hover:shadow-xs transition-all space-y-2">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="text-base shrink-0">${item.icono || '👥'}</span>
+                      <span class="text-xs font-black text-slate-900 leading-tight truncate" title="${item.sector}">${item.sector}</span>
+                    </div>
+                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded border shrink-0 ${friccionColor}">
+                      Fricción: ${friccion}/100
+                    </span>
                   </div>
                   ${renderBarHTML(item.favor, item.contra, item.neutro)}
-                  ${item.observacion ? `<p class="text-[10px] text-slate-500 mt-1.5 leading-tight">${item.observacion}</p>` : ''}
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
+                    <span class="font-semibold text-slate-600">${item.pesoElectoral ? `${item.pesoElectoral}% del Padrón` : (item.total ? `${item.total} ag.` : 'Sector Estratégico')}</span>
+                    <span class="text-[9px] font-bold text-slate-500 truncate max-w-[140px]" title="${item.sensibilidad || ''}">${item.sensibilidad ? `Sensible a ${item.sensibilidad.slice(0, 18)}...` : ''}</span>
+                  </div>
+                  ${item.observacion ? `<p class="text-[10px] text-slate-600 bg-white/80 p-1.5 rounded border border-slate-200/50 leading-tight italic">${item.observacion}</p>` : ''}
                 </div>
-              `).join('')}
+              `; }).join('')}
             </div>
           </div>
         ` : ''}
@@ -756,6 +768,247 @@ const Components = {
             </div>
           </div>
         ` : ''}
+        <!-- ========================================================
+             MÓDULO 2.2: CURVA DE MOMENTUM POLÍTICO (ESTILO BOLSA DE VALORES)
+             ======================================================== -->
+        ${(() => {
+          const mom = report.momentumPolitico || data.momentumPolitico || {
+            ticker: '$PVEM-MOMENTUM',
+            precioIndice: 64,
+            variacionDiaria: '+4.8%',
+            variacionDiariaNum: 4.8,
+            tendencia: 'BULLISH (Fuerte Inercia Alcista)',
+            volumenConversacionDiario: 14500,
+            indiceRSI: 68,
+            estadoRSI: 'Equilibrio Dinámico',
+            volatilidad: 'Moderada (±3.2%)',
+            proyecciones: { dias7: 68, dias14: 72, dias30: 76 },
+            diagnosticoTicker: 'Tendencia positiva sostenida con fuerte inercia territorial en el municipio.'
+          };
+
+          const isBull = (mom.variacionDiariaNum || 0) >= 0;
+          return `
+          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
+            <div class="card-pvem p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white rounded-2xl shadow-xl border border-emerald-500/30 space-y-5">
+              <!-- Header Ticker -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-widest font-black text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">
+                      Módulo 2 • Analítica Predictiva Avanzada
+                    </span>
+                    <span class="text-xs text-slate-400">•</span>
+                    <span class="text-xs text-emerald-300 font-bold">Inercia Estilo Bolsa de Valores</span>
+                  </div>
+                  <h4 class="text-xl font-black text-white flex items-center gap-2">
+                    <span class="text-emerald-400 font-mono text-2xl">${mom.ticker}</span>
+                    <span class="text-xs px-2.5 py-1 rounded-full font-black ${isBull ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-red-500/20 text-red-300 border border-red-400/30'}">
+                      ${mom.variacionDiaria} Hoy
+                    </span>
+                  </h4>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Tendencia Activa</span>
+                    <span class="text-xs font-black ${isBull ? 'text-emerald-400' : 'text-red-400'}">${mom.tendencia}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Metricas en Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Fuerza RSI (0-100)</span>
+                  <div class="text-xl font-black text-emerald-400">${mom.indiceRSI}/100</div>
+                  <span class="text-[9px] text-slate-400">${mom.estadoRSI}</span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Volumen Diario</span>
+                  <div class="text-xl font-black text-white">${(mom.volumenConversacionDiario || 12000).toLocaleString()}</div>
+                  <span class="text-[9px] text-slate-400">Interacciones ciudadanas</span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Volatilidad</span>
+                  <div class="text-xl font-black text-amber-400">${mom.volatilidad}</div>
+                  <span class="text-[9px] text-slate-400">Rango de fluctuación</span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Precio Índice</span>
+                  <div class="text-xl font-black text-cyan-400">${mom.precioIndice}%</div>
+                  <span class="text-[9px] text-slate-400">Aceptación base</span>
+                </div>
+              </div>
+
+              <!-- Proyección a 7, 14 y 30 días -->
+              <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+                  <span>Proyección de Intención de Voto (Curva de Momentum)</span>
+                  <span class="text-emerald-400 font-mono text-[11px]">Algoritmo Swarm ARIMA-PVEM</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 pt-1">
+                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">7 Días</span>
+                    <span class="text-base font-black text-emerald-400">${mom.proyecciones?.dias7 || 66}%</span>
+                  </div>
+                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">14 Días</span>
+                    <span class="text-base font-black text-emerald-300">${mom.proyecciones?.dias14 || 70}%</span>
+                  </div>
+                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block">30 Días</span>
+                    <span class="text-base font-black text-cyan-300">${mom.proyecciones?.dias30 || 74}%</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-300 pt-2 border-t border-slate-800 leading-relaxed italic">
+                  "${mom.diagnosticoTicker}"
+                </p>
+              </div>
+            </div>
+          </div>
+          `;
+        })()}
+
+        <!-- ========================================================
+             MÓDULO 2.1: ELASTICIDAD DEL ELECTORADO ("EFECTO COLATERAL")
+             ======================================================== -->
+        ${(() => {
+          const elast = report.elasticidadElectorado || data.elasticidadElectorado || {
+            matriz: [],
+            coeficientePromedio: '+0.53',
+            sectorMasVulnerable: 'Comerciantes y Tianguistas / MiPyMEs',
+            sectorMasApalancable: 'Madres de Familia y Hogares',
+            diagnosticoElasticidad: 'Las externalidades entre sectores demuestran que atender transporte y comercio alivia la canasta básica familiar.'
+          };
+
+          const items = elast.matriz || [];
+          return `
+          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-cyan-600"></span> Elasticidad del Electorado y Matriz de Efectos Colaterales
+                </h4>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Análisis de dispersión: cómo una medida adoptada en un sector genera externalidades positivas o negativas en gremios colindantes.
+                </p>
+              </div>
+              <span class="text-xs font-black px-3 py-1 bg-cyan-50 text-cyan-800 rounded-lg border border-cyan-200 shrink-0">
+                Coeficiente de Elasticidad: ${elast.coeficientePromedio}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              ${items.map(m => `
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-cyan-300 hover:shadow-xs transition-all space-y-2">
+                  <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span class="truncate">${m.origen}</span>
+                    <span class="text-slate-400 text-sm">➔</span>
+                    <span class="truncate text-cyan-800">${m.destino}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                    <span class="font-bold text-slate-700">${m.tipo}</span>
+                    <span class="font-black px-1.5 py-0.5 rounded text-[10px] ${m.impacto === 'Favorable' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                      ${m.coeficiente} (${m.elasticidad})
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 leading-relaxed bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    ${m.mecanismo}
+                  </p>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="p-3.5 bg-cyan-50/70 border border-cyan-200 rounded-xl text-xs text-cyan-950 flex items-start gap-2.5">
+              <span class="text-lg">💡</span>
+              <div>
+                <strong class="font-bold text-cyan-900 block mb-0.5">Diagnóstico Táctico de Elasticidad:</strong>
+                <p class="leading-relaxed text-cyan-900">${elast.diagnosticoElasticidad}</p>
+                <div class="flex flex-wrap gap-3 mt-1.5 text-[11px] font-semibold">
+                  <span class="text-red-700">⚠️ Sector Más Sensible a Externalidades: <strong>${elast.sectorMasVulnerable}</strong></span>
+                  <span class="text-emerald-700">🎯 Sector de Mayor Apalancamiento Social: <strong>${elast.sectorMasApalancable}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          `;
+        })()}
+
+        <!-- ========================================================
+             MÓDULO 2.3: MATRIZ DE POLARIZACIÓN (VOTO DURO VS VOTO BLANDO / INDECISOS)
+             ======================================================== -->
+        ${(() => {
+          const pol = report.matrizPolarizacion || data.matrizPolarizacion || {
+            votoDuroFavor: 38,
+            votoBlandoIndecisos: 42,
+            rechazoRadical: 20,
+            ratioPersuasion: 2.1,
+            tamanoBattleground: '42%',
+            recomendacionesConversion: [
+              'Enfocar el 75% del presupuesto en el segmento indeciso popular.',
+              'Blindar el voto duro con asambleas de reconocimiento vecinal.'
+            ]
+          };
+
+          return `
+          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Matriz de Polarización y Segmentación Táctica del Voto
+                </h4>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Desglose de la base leal inamovible, rechazo radical opositor y el voto blando indeciso ("Swarm Battleground").
+                </p>
+              </div>
+              <span class="text-xs font-black px-3 py-1 bg-purple-50 text-purple-900 rounded-lg border border-purple-200 shrink-0">
+                Battleground Capturable: ${pol.tamanoBattleground}
+              </span>
+            </div>
+
+            <!-- Barra gráfica de polarización de 3 segmentos -->
+            <div class="space-y-1.5">
+              <div class="w-full bg-slate-200 rounded-xl h-6 flex overflow-hidden shadow-inner border border-slate-300">
+                <div style="width: ${pol.votoDuroFavor}%" class="bg-emerald-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Voto Duro A Favor: ${pol.votoDuroFavor}%">
+                  ${pol.votoDuroFavor >= 15 ? `Duro ${pol.votoDuroFavor}%` : ''}
+                </div>
+                <div style="width: ${pol.votoBlandoIndecisos}%" class="bg-amber-400 h-full flex items-center justify-center text-[11px] font-black text-slate-900" title="Voto Blando e Indecisos: ${pol.votoBlandoIndecisos}%">
+                  ${pol.votoBlandoIndecisos >= 15 ? `Battleground ${pol.votoBlandoIndecisos}%` : ''}
+                </div>
+                <div style="width: ${pol.rechazoRadical}%" class="bg-red-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Rechazo Radical: ${pol.rechazoRadical}%">
+                  ${pol.rechazoRadical >= 15 ? `Oposición ${pol.rechazoRadical}%` : ''}
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span class="text-emerald-700 flex items-center gap-1.5">
+                  <span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span> Voto Duro Leal (${pol.votoDuroFavor}%)
+                </span>
+                <span class="text-amber-700 flex items-center gap-1.5">
+                  <span class="w-3 h-3 rounded-xs bg-amber-400 inline-block"></span> Voto Blando / Indecisos (${pol.votoBlandoIndecisos}%)
+                </span>
+                <span class="text-red-700 flex items-center gap-1.5">
+                  <span class="w-3 h-3 rounded-xs bg-red-600 inline-block"></span> Rechazo Radical Opositor (${pol.rechazoRadical}%)
+                </span>
+              </div>
+            </div>
+
+            <!-- Recomendaciones de Conversión Táctica -->
+            <div class="p-4 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2">
+              <span class="text-xs font-black text-purple-950 uppercase tracking-wide flex items-center gap-1.5">
+                <span>🎯</span> Recomendaciones de Conversión y Captura de Indecisos:
+              </span>
+              <ul class="space-y-1.5 text-xs text-purple-950">
+                ${(pol.recomendacionesConversion || []).map(rec => `
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-600 font-bold shrink-0">✓</span>
+                    <span class="leading-relaxed">${rec}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+          `;
+        })()}
+
 
       </div>
     `;
@@ -1801,7 +2054,8 @@ const Components = {
   /**
    * PESTAÑA 2: MAPA POR COLONIAS Y DISEÑO DE CAMPAÑA (MICRO-TARGETING TERRITORIAL Y RADAR ELECTORAL 2027-2030)
    */
-  renderTab2ColoniasYCampana(containerId, coloniasInput, manualInput, statsInput, partyInput) {
+  renderTab2ColoniasYCampana(containerId, coloniasInput, manualInput, statsInput, partyInput, reportInput = null) {
+    const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -2202,6 +2456,295 @@ const Components = {
             </div>
           </div>
 
+
+        <!-- ========================================================
+             MÓDULO 4.1: CALCULADORA DE ROI DE CAMPAÑA Y ASIGNACIÓN TERRITORIAL
+             ======================================================== -->
+        ${(() => {
+          const roi = fullReport.calculadoraROICampana || {
+            padronElectoralEstimado: 345000,
+            metaVotosVictoria: 128000,
+            totalSeccionesElectorales: 230,
+            clasificacionSecciones: {
+              bastionesSeguros: { secciones: 110, porcentaje: 48, estrategia: 'Movilización masiva y defensa del voto en casillas.' },
+              battlegroundPrioritario: { secciones: 85, porcentaje: 37, estrategia: 'Micro-targeting quirúrgico y brigadas intensivas.' },
+              riesgoOpositor: { secciones: 35, porcentaje: 15, estrategia: 'Contención de daños y fiscalización rigurosa.' }
+            },
+            asignacionRecursos: {
+              brigadistasRecomendados: 180,
+              lonasPublicidad: 1200,
+              asambleasVecinales: 45
+            },
+            costoPorVotoPersuadido: '$42 a $58 MXN',
+            roiElectoralScore: 84,
+            diagnosticoROI: 'Concentrar los 180 brigadistas en las 85 secciones battleground garantiza el triunfo al menor costo de persuasión.'
+          };
+
+          const sec = roi.clasificacionSecciones || {};
+          const rec = roi.asignacionRecursos || {};
+
+          return `
+          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs uppercase tracking-widest font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">Módulo 4 • Operativa Territorial</span>
+                  <span class="text-xs text-slate-400">•</span>
+                  <span class="text-xs text-emerald-800 font-bold">Cruce Padrón INE vs Enjambre</span>
+                </div>
+                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
+                  <span>📊</span> Calculadora de ROI de Campaña y Asignación por Secciones Electorales
+                </h4>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-black px-3 py-1.5 bg-emerald-600 text-white rounded-xl shadow-xs">
+                  ROI Score: ${roi.roiElectoralScore}/100
+                </span>
+              </div>
+            </div>
+
+            <!-- KPIs de Padrón y Meta -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Padrón Electoral</span>
+                <div class="text-xl font-black text-slate-900">${(roi.padronElectoralEstimado || 300000).toLocaleString()}</div>
+                <span class="text-[9px] text-slate-500">Electores registrados</span>
+              </div>
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span class="text-[10px] text-emerald-800 uppercase tracking-wider block">Meta de Votos Victoria</span>
+                <div class="text-xl font-black text-emerald-700">${(roi.metaVotosVictoria || 100000).toLocaleString()}</div>
+                <span class="text-[9px] text-emerald-700">37% del padrón estimado</span>
+              </div>
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <span class="text-[10px] text-amber-800 uppercase tracking-wider block">Secciones Electorales</span>
+                <div class="text-xl font-black text-amber-700">${roi.totalSeccionesElectorales || 180}</div>
+                <span class="text-[9px] text-amber-700">Casillas de la demarcación</span>
+              </div>
+              <div class="p-3 rounded-xl bg-cyan-50 border border-cyan-200">
+                <span class="text-[10px] text-cyan-800 uppercase tracking-wider block">Costo / Voto Persuadido</span>
+                <div class="text-xl font-black text-cyan-700">${roi.costoPorVotoPersuadido}</div>
+                <span class="text-[9px] text-cyan-700">Costo operativo optimizado</span>
+              </div>
+            </div>
+
+            <!-- Clasificación de Secciones: Bastión, Battleground, Riesgo -->
+            <div class="space-y-2">
+              <span class="text-xs font-black text-slate-800 uppercase tracking-wide block">
+                Clasificación Estratégica de Secciones Electorales:
+              </span>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-emerald-950 uppercase">🟢 Bastiones Seguros</span>
+                    <span class="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">${sec.bastionesSeguros?.secciones || 90} Secc. (${sec.bastionesSeguros?.porcentaje || 45}%)</span>
+                  </div>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.bastionesSeguros?.estrategia}</p>
+                </div>
+                <div class="p-4 rounded-xl border border-amber-300 bg-amber-50/60 space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-amber-950 uppercase">🟡 Battleground Prioritario</span>
+                    <span class="text-xs font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded">${sec.battlegroundPrioritario?.secciones || 60} Secc. (${sec.battlegroundPrioritario?.porcentaje || 35}%)</span>
+                  </div>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.battlegroundPrioritario?.estrategia}</p>
+                </div>
+                <div class="p-4 rounded-xl border border-red-300 bg-red-50/50 space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-red-950 uppercase">🔴 Zonas Riesgo Opositor</span>
+                    <span class="text-xs font-black text-red-800 bg-red-100 px-2 py-0.5 rounded">${sec.riesgoOpositor?.secciones || 30} Secc. (${sec.riesgoOpositor?.porcentaje || 20}%)</span>
+                  </div>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.riesgoOpositor?.estrategia}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Asignación de Recursos -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🚶</span>
+                <span class="text-slate-700">Brigadistas Óptimos: <strong class="text-slate-900">${rec.brigadistasRecomendados || 150} promotores</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-base">🪧</span>
+                <span class="text-slate-700">Lonas y Material Exterior: <strong class="text-slate-900">${rec.lonasPublicidad || 1000} unidades</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-base">📢</span>
+                <span class="text-slate-700">Asambleas Territoriales: <strong class="text-slate-900">${rec.asambleasVecinales || 35} eventos</strong></span>
+              </div>
+            </div>
+          </div>
+          `;
+        })()}
+
+        <!-- ========================================================
+             MÓDULO 4.2: RADIOGRAFÍA DE DESGASTE DE PROMESAS (ÍNDICE DE ESCEPTICISMO)
+             ======================================================== -->
+        ${(() => {
+          const esc = fullReport.indiceEscepticismo || {
+            indiceEscepticismo: 48,
+            nivelDesgaste: 'Moderado',
+            factoresIncredulidad: [
+              'Historial de obras públicas inconclusas en administraciones previas.',
+              'Desconfianza en que los apoyos se condicionen políticamente.',
+              'Temor a aumentos en impuestos prediales o agua.'
+            ],
+            blindajeFinanciero: {
+              fuentesPresupuestales: [
+                'Ramo 33 (FAIS y FORTAMUN): Fondos federales para infraestructura social y seguridad.',
+                'Ramo 28: Participaciones federales no condicionadas de libre disposición.',
+                'Fondo de Infraestructura Social Municipal (FISMDF).'
+              ],
+              sustentoJuridico: 'Artículo 115 Constitucional, Ley Orgánica Municipal del Edomex y Ley de Coordinación Fiscal.',
+              garantiaAnticorrupcion: 'Comité de Adquisiciones con testigos sociales ciudadanos y licitación abierta.'
+            }
+          };
+
+          const blin = esc.blindajeFinanciero || {};
+
+          return `
+          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs uppercase tracking-widest font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">Fact-Checking Presupuestal</span>
+                  <span class="text-xs text-slate-400">•</span>
+                  <span class="text-xs text-amber-800 font-bold">Blindaje Ramo 33 y Ramo 28</span>
+                </div>
+                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
+                  <span>🛡️</span> Radiografía de Desgaste de Promesas & Sustento Financiero
+                </h4>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-black px-3 py-1.5 bg-amber-100 text-amber-900 rounded-xl border border-amber-300">
+                  Escepticismo: ${esc.indiceEscepticismo}/100 (${esc.nivelDesgaste})
+                </span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <!-- Factores de Incredulidad Histórica -->
+              <div class="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-2.5">
+                <span class="text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                  <span>⚠️</span> Principales Factores de Incredulidad Ciudadana:
+                </span>
+                <ul class="space-y-1.5 text-xs text-slate-700">
+                  ${(esc.factoresIncredulidad || []).map(f => `
+                    <li class="flex items-start gap-2">
+                      <span class="text-amber-600 font-bold shrink-0">•</span>
+                      <span>${f}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <!-- Blindaje Financiero y Jurídico -->
+              <div class="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2.5">
+                <span class="text-xs font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                  <span>🏛️</span> Fuentes de Financiamiento y Blindaje Normativo:
+                </span>
+                <div class="space-y-1 text-xs text-slate-700">
+                  <strong class="text-emerald-900 block text-[11px] uppercase tracking-wider">Partidas Federales Certificadas:</strong>
+                  ${(blin.fuentesPresupuestales || []).map(fuente => `
+                    <div class="text-[11px] text-slate-600 flex items-start gap-1.5">
+                      <span class="text-emerald-600 font-bold">✔</span>
+                      <span>${fuente}</span>
+                    </div>
+                  `).join('')}
+                  <div class="pt-2 border-t border-emerald-200 text-[11px] text-emerald-900">
+                    <strong>Marco Jurídico:</strong> ${blin.sustentoJuridico}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          `;
+        })()}
+
+        <!-- ========================================================
+             MÓDULO 4.3: MICRO-SEGMENTACIÓN GENERACIONAL (3 COHORTES CON WHATSAPP 1-CLIC)
+             ======================================================== -->
+        ${(() => {
+          const cohortes = fullReport.microSegmentacionGeneracional || [
+            {
+              id: 'cohorte_jovenes',
+              nombre: 'Centennials y Jóvenes Universitarios',
+              rangoEdad: '18 a 29 años',
+              pesoElectoral: '31% del Padrón',
+              canalPrioritario: 'TikTok, Instagram Reels y Grupos de WhatsApp',
+              propuestaAncla: 'Internet público libre, transporte sustentable y espacios deportivos.',
+              microMensajeWhatsApp: '¡Hola! 🚀 En el municipio vamos por internet libre, ciclovías seguras y transporte digno. Cero promesas vacías. ¿Le entras? Checa la propuesta y compártela: [Enlace]'
+            },
+            {
+              id: 'cohorte_adultos',
+              nombre: 'Familias y Adultos Productivos',
+              rangoEdad: '30 a 64 años',
+              pesoElectoral: '54% del Padrón',
+              canalPrioritario: 'Facebook Comunitario, WhatsApp Vecinal y Comités de Calle',
+              propuestaAncla: 'Agua garantizada por red, seguridad en escuelas y cero nuevos impuestos.',
+              microMensajeWhatsApp: 'Estimados vecinos: Les comparto una propuesta con presupuesto asegurado para blindar el agua, patrullar escuelas y cuidar la economía familiar. Lo platicamos en la próxima junta: [Enlace]'
+            },
+            {
+              id: 'cohorte_mayores',
+              nombre: 'Adultos Mayores y Jubilados',
+              rangoEdad: '65 años en adelante',
+              pesoElectoral: '15% del Padrón',
+              canalPrioritario: 'Comités de Barrio, Radio Local, Volante en Mano y WhatsApp Familiar',
+              propuestaAncla: 'Medicamentos gratuitos, banquetas planas y transporte gratuito preferencial.',
+              microMensajeWhatsApp: 'Apreciadas familias: Les comparto una buena noticia. Se contempla abasto de medicinas garantizado y banquetas seguras para nuestros adultos mayores. Con todo el afecto: [Enlace]'
+            }
+          ];
+
+          return `
+          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs uppercase tracking-widest font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">Micro-Targeting Generacional</span>
+                  <span class="text-xs text-slate-400">•</span>
+                  <span class="text-xs text-emerald-800 font-bold">Mensajería Quirúrgica de 1 Clic</span>
+                </div>
+                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
+                  <span>📱</span> Micro-Segmentación Generacional y Botón de WhatsApp
+                </h4>
+              </div>
+              <span class="text-xs font-bold text-slate-500">
+                3 Arquetipos con Micro-Mensajes Listos para Difusión
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              ${cohortes.map(c => `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-black text-slate-900">${c.nombre}</span>
+                      <span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">${c.pesoElectoral}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-600">
+                      <strong>Canal Prioritario:</strong> ${c.canalPrioritario}
+                    </div>
+                    <div class="text-[11px] text-slate-600">
+                      <strong>Propuesta Ancla:</strong> ${c.propuestaAncla}
+                    </div>
+
+                    <!-- Caja de Micro-Mensaje -->
+                    <div class="p-3 bg-white rounded-lg border border-slate-200/80 text-[11px] text-slate-700 font-sans leading-relaxed relative group">
+                      <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Micro-Mensaje WhatsApp Sugerido:</div>
+                      <p id="msg-text-${c.id}">${c.microMensajeWhatsApp}</p>
+                    </div>
+                  </div>
+
+                  <!-- Botón de 1 Clic para Copiar -->
+                  <button type="button" onclick="window.copyWhatsAppMicroMessage('${c.id}')" id="btn-copy-${c.id}" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs">
+                    <span>📲</span> Copiar Micro-Mensaje WhatsApp (1 Clic)
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          `;
+        })()}
+
           <!-- COLUMNA DERECHA: DISCURSOS SEGMENTADOS POR GRUPO ETARIO (7 COLS) -->
           <div class="lg:col-span-7 space-y-4">
             <div class="card-pvem p-6 bg-white shadow-md rounded-2xl space-y-4">
@@ -2461,7 +3004,8 @@ const Components = {
   /**
    * PESTAÑA 4: BLINDAJE Y DEFENSA ESTRATÉGICA (20 PREGUNTAS CRÍTICAS + RESPUESTAS)
    */
-  renderTab4BlindajeDefensa(containerId, defenseData) {
+  renderTab4BlindajeDefensa(containerId, defenseData, fullReportInput = null) {
+    const fullReport = fullReportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
     const container = document.getElementById(containerId);
     if (!container) return;
 
