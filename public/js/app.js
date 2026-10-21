@@ -1679,7 +1679,8 @@ async function startSimulation() {
     licenseId: appState.activeSession?.user?.id || '',
     username: appState.activeSession?.user?.username || '',
     aiConfig: appState.aiConfig,
-    runId: 'run_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
+    runId: 'run_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    sessionToken: appState.activeSession?.sessionToken || sessionStorage.getItem('pvem_session_token') || ''
   };
 
   const finalizeSimulationSuccess = (reportData) => {
@@ -1708,9 +1709,14 @@ async function startSimulation() {
     const controller = new AbortController();
     const streamTimeout = setTimeout(() => controller.abort(), 12000);
 
+    const sessionAuthToken = appState.activeSession?.sessionToken || sessionStorage.getItem('pvem_session_token') || '';
     const response = await fetch('/api/simulate/stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-session-token': sessionAuthToken,
+        'Authorization': `Bearer ${sessionAuthToken}`
+      },
       body: JSON.stringify(payload),
       signal: controller.signal
     });
@@ -1786,9 +1792,14 @@ async function startSimulation() {
     try {
       logToTerminal('router', 'Sincronizando pipeline en canal seguro directo...');
 
+      const sessionAuthToken = appState.activeSession?.sessionToken || sessionStorage.getItem('pvem_session_token') || '';
       const postRes = await fetch('/api/simulate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionAuthToken,
+          'Authorization': `Bearer ${sessionAuthToken}`
+        },
         body: JSON.stringify(payload)
       });
       const postData = await postRes.json();

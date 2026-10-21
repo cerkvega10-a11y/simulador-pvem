@@ -29,10 +29,10 @@ class FreeLLMService {
   constructor() {
     this.providers = {
       groq: {
-        name: 'Groq Cloud (GPT-OSS 120B / Qwen 27B - Ultra Rápido)',
+        name: 'Groq Cloud LPU (Llama 3.3 70B Versatile - Ultra Rápido ~300 T/s)',
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        defaultModel: 'openai/gpt-oss-120b',
-        availableModels: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
+        defaultModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        availableModels: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
         freeKeyUrl: 'https://console.groq.com/keys'
       },
       gemini: {
@@ -208,7 +208,7 @@ class FreeLLMService {
       headers['X-Title'] = 'Simulador Social Partido Verde Edomex';
     }
 
-    if (provider === 'groq' && (!selectedModel || selectedModel.includes('llama'))) { selectedModel = 'openai/gpt-oss-120b'; }
+    if (provider === 'groq' && !selectedModel) { selectedModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'; }
     const payload = {
       model: selectedModel,
       messages,
@@ -223,9 +223,11 @@ class FreeLLMService {
       signal: AbortSignal.timeout(25000)
     });
 
-    if (!res.ok && res.status === 429 && provider === 'groq') {
-      const fallbackModel = selectedModel === 'openai/gpt-oss-120b' ? 'qwen/qwen3.8-27b' : 'openai/gpt-oss-20b';
-      console.warn(`[Groq TPM Guard] 429 Rate limit en ${selectedModel}. Conmutando en caliente a ${fallbackModel}...`);
+    if (!res.ok && (res.status === 404 || res.status === 429) && provider === 'groq') {
+      const fallbackModel = (selectedModel === 'llama-3.3-70b-versatile' || selectedModel.includes('llama'))
+        ? 'openai/gpt-oss-120b'
+        : (selectedModel === 'openai/gpt-oss-120b' ? 'qwen/qwen3.8-27b' : 'openai/gpt-oss-20b');
+      console.warn(`[Groq Hot Fallback] Status ${res.status} con ${selectedModel}. Reintentando con ${fallbackModel}...`);
       payload.model = fallbackModel;
       res = await fetch(providerConfig.endpoint, {
         method: 'POST',
@@ -370,7 +372,7 @@ Devuelve estrictamente un JSON con este formato:
 ]`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -533,7 +535,7 @@ Devuelve estrictamente este JSON:
 }`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -595,7 +597,7 @@ Devuelve estrictamente un JSON:
 }`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -669,7 +671,7 @@ Devuelve estrictamente este JSON:
 }`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -738,7 +740,7 @@ Devuelve estrictamente este JSON:
 }`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -783,7 +785,7 @@ Devuelve estrictamente un arreglo JSON:
 ]`;
 
     try {
-      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || 'openai/gpt-oss-120b';
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
       const raw = await this.executeChatCompletion({
         provider: effectiveProvider,
         apiKey: effectiveKey,
@@ -803,7 +805,74 @@ Devuelve estrictamente un arreglo JSON:
       return null;
     }
   }
+
+  /**
+   * Inferencia Neural por Arquetipos Comunitarios con Groq LPU
+   * Evalúa un lote de arquetipos sociodemográficos mediante inferencia generativa real
+   */
+  async evaluateArchetypesBatchWithGroq(params = {}) {
+    const { archetypes = [], proposalText = '', municipalResearch = {}, aiConfig = {} } = params;
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) {
+      return null;
+    }
+
+    const muni = municipalResearch.municipio || 'Ecatepec de Morelos';
+    const estado = municipalResearch.estado || 'Estado de México';
+    const problems = (municipalResearch.problematicasLocales || []).map(p => p.tema || p).slice(0, 5).join(', ');
+
+    const promptArchetypes = archetypes.map(a => ({
+      id: a.id,
+      colonia: a.colonia,
+      nse: a.nse,
+      edad: a.edad,
+      genero: a.genero,
+      ocupacion: a.ocupacion,
+      sectorSocial: a.sectorSocial,
+      preocupacionPrioritaria: a.preocupacionPrioritaria
+    }));
+
+    const systemPrompt = `Eres un motor de simulación electoral y sociodemográfica de alta fidelidad que opera sobre arquetipos representativos de ${muni}, ${estado}.
+Problemáticas territoriales de la demarcación: ${problems}.
+Tu tarea es simular la reacción ciudadana auténtica de cada uno de los arquetipos frente a la propuesta sometida a consulta.
+
+Debes responder ÚNICAMENTE un objeto JSON válido con la propiedad "arquetipos", que sea un arreglo de objetos con esta estructura exacta para CADA arquetipo recibido:
+{
+  "arquetipos": [
+    {
+      "id": "ID_DEL_ARQUETIPO",
+      "voto": "A favor" | "En contra" | "Neutro",
+      "nivelEntusiasmo": número entero de 0 a 100,
+      "sentimiento": número decimal de -1.0 a 1.0,
+      "argumentoLocal": "Testimonio en primera persona (máximo 2 oraciones) donde el ciudadano expresa su postura vinculada a su colonia, su situación económica y su realidad cotidiana."
+    }
+  ]
+}`;
+
+    const userContent = `Propuesta en evaluación:\n"${proposalText}"\n\nArquetipos ciudadanos a evaluar:\n${JSON.stringify(promptArchetypes, null, 2)}`;
+
+    try {
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: effectiveProvider === 'groq' ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile') : undefined,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.4,
+        jsonMode: true
+      });
+
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      return Array.isArray(parsed.arquetipos) ? parsed.arquetipos : (Array.isArray(parsed) ? parsed : null);
+    } catch (err) {
+      console.warn('[FreeLLMService] evaluateArchetypesBatchWithGroq error:', err.message);
+      return null;
+    }
+  }
+
 }
 
 module.exports = new FreeLLMService();
-

@@ -134,10 +134,11 @@ class OrchestratorAgent {
       telemetriaContador: { procesados: Math.floor(numSize * 0.78), total: numSize, margen: marginStr }
     });
 
-    const initialSimulation = swarmSimulationEngine.simulateSwarm(
+    const initialSimulation = await swarmSimulationEngine.simulateSwarm(
       swarmData.personas,
       multimodalResult.textoUnificado,
-      municipalResearch
+      municipalResearch,
+      inputData.aiConfig
     );
 
     onProgress({

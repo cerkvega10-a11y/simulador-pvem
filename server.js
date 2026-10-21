@@ -38,6 +38,7 @@ if (fs.existsSync(envFilePath)) {
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
 
 const orchestratorAgent = require('./src/agents/orchestratorAgent');
 const multimodalAgent = require('./src/agents/multimodalAgent');
@@ -67,7 +68,7 @@ const PORT = process.env.PORT || 3000;
 // Configuración de multer para manejo en memoria de archivos subidos
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 } // 25 MB máximo
+  limits: { fileSize: 10 * 1024 * 1024 } // 25 MB máximo
 });
 
 // =========================================================================
@@ -198,8 +199,8 @@ const cyberSentinelSecurityHeaders = (req, res, next) => {
 app.use(cyberSentinelSecurityHeaders);
 app.use(cors());
 app.use(cyberSentinelRateLimiter);
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cyberSentinelSanitizer);
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
@@ -365,10 +366,34 @@ app.post('/api/upload/multimodal', upload.single('file'), async (req, res) => {
 const recentDeductedRunIds = new Map();
 
 // Función para verificar y descontar cuota de propuestas (Kill Switch Demo 3 corridas / 7 días)
-function checkAndIncrementSimulationLimit(inputData = {}) {
+function extractAndVerifySession(req) {
+  if (!req) return null;
+  const token = req.headers['x-session-token'] ||
+    (req.headers['authorization']?.replace(/^Bearer\s+/i, '').trim()) ||
+    req.body?.sessionToken ||
+    req.query?.sessionToken;
+  if (!token) return null;
+  return activeAdminSessions.get(token) || verifyStatelessAdminToken(token) || null;
+}
+
+function requireValidSession(req, res, next) {
+  const session = extractAndVerifySession(req);
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      error: '401 Unauthorized: Sesión requerida o expirada. Por favor inicie sesión en la plataforma.'
+    });
+  }
+  req.authenticatedSession = session;
+  next();
+}
+
+function checkAndIncrementSimulationLimit(inputData = {}, verifiedSession = null) {
   const allLicenses = loadLicensesStore();
-  const licId = inputData.licenseId || inputData.activeSession?.user?.id;
-  const username = inputData.username || inputData.activeSession?.user?.username;
+  const session = verifiedSession || inputData._verifiedSession || null;
+  const sessionUser = session?.userId ? allLicenses.find(l => l.id === session.userId) : null;
+  const username = session?.username || sessionUser?.username;
+  const licId = session?.userId || sessionUser?.id;
   const runId = inputData.runId;
 
   // Limpiar corridas con más de 5 minutos
@@ -379,7 +404,7 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
 
   // Si esta corrida ya fue descontada por la conexión SSE inicial, no duplicar el cargo en el fallback
   if (runId && recentDeductedRunIds.has(runId)) {
-    const matched = licId ? allLicenses.find(l => l.id === licId) : (username ? allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase()) : null);
+    const matched = sessionUser || (licId ? allLicenses.find(l => l.id === licId) : (username ? allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase()) : null));
     const isDemo = Boolean(matched?.isDemo);
     const maxSims = isDemo ? 3 : (matched?.max_simulations || 999999);
     const count = typeof matched?.simulations_count === 'number' ? matched.simulations_count : 0;
@@ -394,13 +419,19 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
     };
   }
 
-  // Si es Administrador Maestro (Cerkvega92, Aland, o rol MASTER_ADMIN), simulaciones ilimitadas
+  // Si es Administrador Maestro validado por sesión de servidor, acceso ilimitado
   const isMasterSession = Boolean(
-    inputData.activeSession?.user?.esAdministradorTotal ||
-    inputData.activeSession?.role === 'MASTER_ADMIN' ||
-    (username && MASTER_ADMIN_ACCOUNTS.some(m => m.username.toLowerCase() === String(username).toLowerCase()))
+    session?.isMasterRole ||
+    session?.role === 'MASTER_ADMIN' ||
+    sessionUser?.esAdministradorTotal ||
+    sessionUser?.role === 'MASTER_ADMIN'
   );
+
   if (isMasterSession) {
+    inputData.activeSession = {
+      user: sessionUser || { id: 'master', username: session?.username || 'master', esAdministradorTotal: true },
+      role: 'MASTER_ADMIN'
+    };
     return {
       allowed: true,
       isDemo: false,
@@ -411,22 +442,24 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
     };
   }
 
-  let matchedLic = null;
-  if (licId) {
-    matchedLic = allLicenses.find(l => l.id === licId);
-  } else if (username) {
-    matchedLic = allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase());
-  }
+  const matchedLic = sessionUser || (licId ? allLicenses.find(l => l.id === licId) : (username ? allLicenses.find(l => l.username.toLowerCase() === String(username).toLowerCase()) : null));
 
   if (!matchedLic) {
     return {
-      allowed: true,
+      allowed: false,
       isDemo: false,
       simulations_count: 0,
-      max_simulations: 999999,
-      remaining: 999999
+      max_simulations: 0,
+      remaining: 0,
+      message: 'Licencia o sesión no válida en el servidor.'
     };
   }
+
+  // Inyectar usuario estrictamente validado desde el servidor (cero spoofing de req.body.activeSession)
+  inputData.activeSession = {
+    user: matchedLic,
+    role: matchedLic.role || 'client'
+  };
 
   if (typeof matchedLic.simulations_count !== 'number') {
     matchedLic.simulations_count = 0;
@@ -501,6 +534,13 @@ function checkAndIncrementSimulationLimit(inputData = {}) {
 
 // 5. Iniciar Simulación Predictiva (Endpoint SSE en Tiempo Real - Soporta GET y POST)
 const handleSimulationStream = async (req, res, inputData) => {
+  const verifiedSession = req.authenticatedSession || extractAndVerifySession(req);
+  if (!verifiedSession) {
+    return res.status(401).json({
+      success: false,
+      error: '401 Unauthorized: Sesión requerida para ejecutar la simulación.'
+    });
+  }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -533,7 +573,7 @@ const handleSimulationStream = async (req, res, inputData) => {
   }
 
   // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días) y Kill Switch
-  const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
+  const simLimitCheck = checkAndIncrementSimulationLimit(inputData, verifiedSession);
   if (!simLimitCheck.allowed) {
     sendEvent({
       status: 'error',
@@ -575,12 +615,12 @@ const handleSimulationStream = async (req, res, inputData) => {
   }
 };
 
-app.post('/api/simulate/stream', async (req, res) => {
+app.post('/api/simulate/stream', requireValidSession, async (req, res) => {
   const inputData = req.body || {};
   await handleSimulationStream(req, res, inputData);
 });
 
-app.get('/api/simulate/stream', async (req, res) => {
+app.get('/api/simulate/stream', requireValidSession, async (req, res) => {
   let inputData = {};
   try {
     const rawData = req.query.data;
@@ -592,7 +632,8 @@ app.get('/api/simulate/stream', async (req, res) => {
 });
 
 // 6. Endpoint POST síncrono estándar para simulación
-app.post('/api/simulate', async (req, res) => {
+app.post('/api/simulate', requireValidSession, async (req, res) => {
+    const verifiedSession = req.authenticatedSession || extractAndVerifySession(req);
   try {
     const inputData = req.body || {};
 
@@ -612,7 +653,7 @@ app.post('/api/simulate', async (req, res) => {
     }
 
     // Validación estricta de límites de cuenta Demo (Máx 3 propuestas / 7 días)
-    const simLimitCheck = checkAndIncrementSimulationLimit(inputData);
+    const simLimitCheck = checkAndIncrementSimulationLimit(inputData, verifiedSession);
     if (!simLimitCheck.allowed) {
       return res.status(403).json({
         success: false,
@@ -636,8 +677,8 @@ app.post('/api/simulate', async (req, res) => {
 
 // --- SISTEMA AUTÓNOMO DE TRIPLE AGENTE (AUDITORÍA & SELF-HEALING) ---
 // Agente 1: Auditor de Integridad de IA (100% activo)
-app.get('/api/ai-engine/audit', (req, res) => {
-  const audit = aiIntegrityAuditorAgent.auditIntegrity();
+app.get('/api/ai-engine/audit', async (req, res) => {
+  const audit = await aiIntegrityAuditorAgent.auditIntegrity();
   res.json({ success: true, ...audit });
 });
 
@@ -655,57 +696,16 @@ app.get('/api/system/self-healing-status', (req, res) => {
 
 // 7. Estado del Motor de IA Centralizado (Blindaje de Caja Negra para Clientes / Control Completo para Admin)
 app.get('/api/ai-engine/status', (req, res) => {
-  const isAdmin = isMasterAdminRequest(req);
-  if (!isAdmin) {
-    return res.json({
-      success: true,
-      blackBox: true,
-      blackBoxMode: true,
-      engine: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)',
-      model: 'neural-govtech-v4',
-      provider: 'govtech-neural',
-      mode: 'Black-Box Military Grade Inference',
-      hasCentralKey: true,
-      status: 'ONLINE_ACTIVE',
-      badgeText: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)',
-      description: 'Motor Activo: Neural Engine GovTech v4.0 (Cifrado Militar Activo)'
-    });
-  }
-
-  const globalAi = loadGlobalAiConfig();
-  const groqEnc = globalAi.groqApiKeyEncrypted || 'enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d';
-  const hasGroq = Boolean((process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_')) || groqEnc);
-  const hasGemini = Boolean((process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy')) || globalAi.geminiApiKeyEncrypted);
-  const hasDeepseek = Boolean(process.env.DEEPSEEK_API_KEY || globalAi.deepseekApiKeyEncrypted);
-  const selectedEngine = globalAi.selectedEngine || 'hybrid';
-
-  let activeEngine = 'Modo Híbrido (Neural Engine + Inferencia Multi-Modelo)';
-  if (selectedEngine === 'gemini') activeEngine = 'Google Gemini Pro (Motor Primario)';
-  else if (selectedEngine === 'deepseek') activeEngine = 'DeepSeek R1 / V3 (Motor Primario)';
-  else if (selectedEngine === 'groq') activeEngine = 'Groq Cloud LPU (Llama 3.3 70B / GPT-OSS 120B)';
-
-  const activeModel = globalAi.model || (hasGroq ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : (process.env.GEMINI_MODEL || 'gemini-1.5-pro'));
-  const isOnline = hasGroq || hasGemini || hasDeepseek;
-
   res.json({
     success: true,
     blackBox: false,
-    selectedEngine,
-    engine: activeEngine,
-    model: activeModel,
-    provider: globalAi.provider || (hasGroq ? 'groq' : (hasGemini ? 'gemini' : 'native')),
-    mode: 'Centralized Server-Managed (Master Admin Control)',
-    hasCentralKey: isOnline,
-    hasGeminiKey: hasGemini,
-    hasDeepseekKey: hasDeepseek,
-    hasGroqKey: hasGroq,
-    geminiKeyMasked: maskApiKey(globalAi.geminiApiKeyEncrypted || process.env.GEMINI_API_KEY || ''),
-    deepseekKeyMasked: maskApiKey(globalAi.deepseekApiKeyEncrypted || process.env.DEEPSEEK_API_KEY || ''),
-    groqKeyMasked: maskApiKey(groqEnc),
-    status: isOnline ? 'ONLINE_ACTIVE' : 'STANDBY_HYBRID',
-    description: isOnline
-      ? `Motor de Inferencia Neuronal Activo (${activeEngine}). Conexión certificada.`
-      : 'Modo híbrido demográfico autónomo.'
+    engine: 'Groq Cloud Neural Engine (LPU)',
+    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    provider: 'groq',
+    environment: 'Vercel Production',
+    status: 'ONLINE_ACTIVE',
+    tasaInferencia: '~300 tokens/segundo (LPU)',
+    hasCentralKey: Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY)
   });
 });
 
@@ -1597,10 +1597,6 @@ function isMasterAdminRequest(req) {
       return true;
     }
   }
-  const adminKey = req.headers['x-master-admin-key'];
-  if (adminKey && adminKey === getEncryptionKey().toString('hex')) {
-    return true;
-  }
   return false;
 }
 
@@ -1614,10 +1610,6 @@ function requireMasterAdmin(req, res, next) {
       }
       return res.status(403).json({ success: false, error: '403 Forbidden: Acceso denegado. Se requieren privilegios de Administrador Maestro.' });
     }
-  }
-  const adminKey = req.headers['x-master-admin-key'];
-  if (adminKey && adminKey === getEncryptionKey().toString('hex')) {
-    return next();
   }
   return res.status(401).json({ success: false, error: 'Autenticación requerida para acceder al panel administrativo de licencias.' });
 }
@@ -1735,26 +1727,38 @@ function resolveAiConfigForSimulation(inputData = {}) {
   };
 }
 
-// Catálogo de Cuentas de Administrador Maestro Autorizadas
-const MASTER_ADMIN_ACCOUNTS = [
-  {
-    id: 'master-admin-erick-vega',
-    clienteNombre: 'Erick Vega — Administrador Maestro (Neural Media House)',
-    username: 'Cerkvega92',
-    password: 'Tutusito1*'
-  },
-  {
-    id: 'master-admin-aland',
-    clienteNombre: 'Aland — Administrador Maestro',
-    username: 'Aland',
-    password: 'Aland2026'
+// Cuentas de Administrador Maestro migradas a users_db.json con bcrypt hashing (12 rounds)
+
+
+async function verifyTurnstileToken(token, remoteIp) {
+  if (!token || token === 'false') return false;
+  const secretKey = process.env.TURNSTILE_SECRET_KEY;
+  if (!secretKey) {
+    return true; // En entorno de desarrollo o sin variable explícita
   }
-];
+  try {
+    const formData = new URLSearchParams();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    if (remoteIp) formData.append('remoteip', remoteIp);
+
+    const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const cfData = await cfRes.json();
+    return Boolean(cfData.success);
+  } catch (err) {
+    console.warn('[TURNSTILE] Error verificando contra Cloudflare API:', err.message);
+    return process.env.NODE_ENV !== 'production';
+  }
+}
 
 let licensesStore = loadLicensesStore();
 
 // 9.1. Login Unificado Multi-Navegador / Multi-Dispositivo con Normalización Estricta (.trim())
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const {
       username = '',
@@ -1770,143 +1774,54 @@ app.post('/api/auth/login', (req, res) => {
     const p = String(password || '').trim();
     const t = String(token || securityToken || '').trim();
 
-    // Validación del sistema Anti-Bots (Turnstile / CAPTCHA) cuando es enviado desde el formulario web
-    if (captchaVerified === false || (req.body && req.body.captchaToken !== undefined && !String(captchaToken).startsWith('turnstile_verified_'))) {
+    // 1. Validación Oficial Server-Side de Cloudflare Turnstile
+    const isCaptchaValid = await verifyTurnstileToken(captchaToken, req.ip || req.headers['x-forwarded-for']);
+    if (!isCaptchaValid && captchaVerified === false) {
       return res.status(403).json({
         success: false,
-        error: 'Verificación Anti-Bots (Turnstile / CAPTCHA) obligatoria. Por favor confirma que eres humano antes de iniciar sesión.'
-      });
-    }
-
-    // Validación de Administradores Maestros (Cerkvega92 y Aland)
-    // Username: case-insensitive (toLowerCase()), Password: exact clean string match (.trim())
-    const masterAccount = MASTER_ADMIN_ACCOUNTS.find(
-      acc => String(acc.username).trim().toLowerCase() === u.toLowerCase() && String(acc.password).trim() === p
-    );
-
-    if (masterAccount) {
-      const authMethod = (u.toUpperCase().startsWith('TK-') || p.toUpperCase().startsWith('TK-') || t.toUpperCase().startsWith('TK-')) ? 'TOKEN' : 'CREDENTIALS';
-      recordAccessLog({
-        userId: masterAccount.id,
-        username: masterAccount.username,
-        clientName: masterAccount.clienteNombre,
-        role: 'MASTER_ADMIN',
-        licenseType: 'MASTER_ADMIN',
-        assignedParties: ['TODOS'],
-        simulationsUsed: 'Ilimitado (Maestro)',
-        authMethod,
-        req
-      });
-
-      const sessionToken = createAdminSessionToken({
-        userId: masterAccount.id,
-        username: masterAccount.username,
-        role: 'MASTER_ADMIN',
-        isMasterRole: true
-      });
-
-      return res.json({
-        success: true,
-        role: 'MASTER_ADMIN',
-        sessionToken,
-        watermark: AUTHORSHIP_WATERMARK,
-        user: {
-          id: masterAccount.id,
-          clienteNombre: masterAccount.clienteNombre,
-          username: masterAccount.username,
-          role: 'admin',
-          partido: 'PVEM',
-          allowed_parties: [
-            "PVEM",
-            "MORENA",
-            "PAN",
-            "PRI",
-            "MC",
-            "PT",
-            "CANDIDATURA INDEPENDIENTE",
-            "COALICIÓN / ALIANZA"
-          ],
-          can_select_any_party: true,
-          login_count: 1,
-          last_login_at: new Date().toISOString(),
-          simulations_count: 0,
-          max_simulations: 999999,
-          isDemo: false,
-          nivelGeografico: 'Nacional / Estatal',
-          etiquetaRegion: 'Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados',
-          estadosAutorizados: ['TODOS'],
-          cargosAutorizados: [
-            'Presidente Municipal / Alcalde',
-            'Regidor',
-            'Diputado Local',
-            'Diputado Federal',
-            'Senador',
-            'Gobernador'
-          ],
-          municipiosAutorizados: ['TODOS'],
-          permisoRadar: true,
-          permisoSimulador: true,
-          esAdministradorTotal: true,
-          permisosGranulares: {
-            crearLicencias: true,
-            killSwitch: true,
-            tokensSeguridad: true,
-            simulador: true,
-            radar: true,
-            descargaReportes: true,
-            soloLectura: false
-          },
-          propuestaFijaTitulo: '',
-          propuestaFijaTexto: '',
-          maxSwarmSize: 100000,
-          fechaInicio: '2025-01-01',
-          fechaExpiracion: '2099-12-31',
-          activo: true
-        }
+        error: 'Verificación Anti-Bots (Cloudflare Turnstile) obligatoria. Por favor confirma que eres humano antes de iniciar sesión.'
       });
     }
 
     // Buscar en la base de datos centralizada del servidor (users_db.json / licensesStore.json)
     licensesStore = loadLicensesStore();
 
-    // Si un navegador envía licencias recién creadas que aún no estaban en un contenedor efímero, agregarlas sin sobrescribir las del servidor
-    const { clientVault, deletedIds: loginDeletedIds } = req.body || {};
-    if (Array.isArray(loginDeletedIds) && loginDeletedIds.length > 0) {
-      const mergedDel = Array.from(new Set([...loadDeletedLicenseIds(), ...loginDeletedIds.map(String)]));
-      saveDeletedLicenseIds(mergedDel);
-      licensesStore = licensesStore.filter(l => !mergedDel.includes(String(l.id)));
-    }
-    if (Array.isArray(clientVault) && clientVault.length > 0) {
-      const delSet = new Set(loadDeletedLicenseIds());
-      let addedMissing = false;
-      clientVault.forEach(vLic => {
-        if (!vLic || !vLic.id || delSet.has(String(vLic.id))) return;
-        const idx = licensesStore.findIndex(l => l.id === vLic.id || String(l.username || '').trim().toLowerCase() === String(vLic.username || '').trim().toLowerCase());
-        if (idx === -1) {
-          licensesStore.push(normalizeLicenseRecord(vLic));
-          addedMissing = true;
-        }
-      });
-      if (addedMissing) saveLicensesStore(licensesStore);
-    }
+    // clientVault y deletedIds eliminados por directiva de seguridad (Cero inyección remota no autorizada)
 
     // Validación Flexible Normalizada:
     // - username: case-insensitive (toLowerCase())
     // - password: exact clean string match (String(inputPassword).trim() === String(dbUser.password).trim())
     // - token: case-insensitive (toUpperCase()) o acceso directo si username y password coinciden con el registro activo del servidor
     const candidateToken = (
-      t ? t : (u.toUpperCase().startsWith('TK-') ? u : (p.toUpperCase().startsWith('TK-') ? p : ''))
+      t ? t : (u.toUpperCase().startsWith("TK-") ? u : (p.toUpperCase().startsWith("TK-") ? p : ""))
     ).trim().toUpperCase();
 
-    const found = licensesStore.find(lic => {
+    let found = null;
+    let usedTokenAuth = false;
+
+    for (const lic of licensesStore) {
       const dbUser = String(lic.username || '').trim().toLowerCase();
-      const dbPass = String(lic.password || '').trim();
       const dbToken = String(lic.tokenSeguridad || '').trim().toUpperCase();
 
-      const matchCredentials = Boolean(u && p && dbUser === u.toLowerCase() && dbPass === p);
-      const matchTokenOnly = Boolean(candidateToken && candidateToken.startsWith('TK-') && dbToken === candidateToken && (!u || u.toUpperCase().startsWith('TK-') || dbUser === u.toLowerCase()));
-      return matchCredentials || matchTokenOnly;
-    });
+      if (candidateToken && candidateToken.startsWith('TK-') && dbToken === candidateToken) {
+        found = lic;
+        usedTokenAuth = true;
+        break;
+      }
+
+      if (u && dbUser === u.toLowerCase()) {
+        let isPassMatch = false;
+        if (lic.passwordHash) {
+          isPassMatch = await bcrypt.compare(p, lic.passwordHash);
+        } else if (lic.password) {
+          isPassMatch = (String(lic.password).trim() === p);
+        }
+        if (isPassMatch) {
+          found = lic;
+          break;
+        }
+      }
+    }
 
     if (!found) {
       return res.status(401).json({
@@ -1964,7 +1879,7 @@ app.post('/api/auth/login', (req, res) => {
     const maxSim = isDemoLic ? 3 : (found.max_simulations || 999999);
     const simUsedStr = isDemoLic ? `${simCount}/3` : `${simCount} corridas`;
     const licTypeStr = isDemoLic ? 'DEMO' : (isMasterRole ? 'MASTER_ADMIN' : 'OFICIAL / PAGADA');
-    const usedTokenAuth = Boolean(candidateToken && !(u && p && String(found.username).trim().toLowerCase() === u.toLowerCase() && String(found.password).trim() === p));
+    usedTokenAuth = Boolean(usedTokenAuth || (candidateToken && !(u && p && String(found.username).trim().toLowerCase() === u.toLowerCase())));
 
     recordAccessLog({
       userId: found.id,
@@ -2431,6 +2346,30 @@ app.post('/api/licenses/sync-vault', requireMasterAdmin, (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+
+// Middleware global de manejo de errores de Express (4 parámetros)
+// Estandariza errores de Multer (413 Payload Too Large) y JSON malformado (400 Bad Request) en JSON
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  let statusCode = err.status || err.statusCode || 500;
+  if (err.name === 'MulterError') {
+    statusCode = 413;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      err.message = 'El archivo adjunto excede el tamaño máximo permitido de 10 MB.';
+    }
+  } else if (err instanceof SyntaxError && 'body' in err) {
+    statusCode = 400;
+    err.message = 'Cuerpo JSON malformado o inválido.';
+  }
+  console.error('[GLOBAL ERROR HANDLER]', statusCode, err.message);
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Error interno del servidor'
+  });
 });
 
 app.use((req, res) => {

@@ -947,5 +947,48 @@ class PoliticalStrategistAgent {
     ];
   }
 
+
+  /**
+   * Genera el Manual Estratégico de Campaña (Naming, Eslogan y Banderazo)
+   */
+  generateStrategicCampaignManual(votosFinales = {}, municipalResearch = {}, tituloProyecto = '', propuestaTexto = '', semanticResult = {}) {
+    const muni = municipalResearch?.municipio || 'nuestro municipio';
+    const estado = municipalResearch?.estado || 'Estado de México';
+    const favor = votosFinales.porcentajeFavor || 50;
+    const contra = votosFinales.porcentajeContra || 30;
+    const titulo = tituloProyecto || 'Proyecto de Transformación y Bienestar';
+
+    const dc = semanticResult?.deepContext || {};
+    const tema = dc.temaCentral || titulo;
+
+    let esloganGanador = `${muni} Con Futuro: Resultados Verdes Para Tu Familia`;
+    let namingOficial = `Plan Maestro ${muni} 2027`;
+    let narrativaBanderazo = `Hoy no venimos a prometer, venimos a comprometernos con soluciones reales y presupuesto etiquetado. "${tema}" es la respuesta que las colonias de ${muni} han esperado por años.`;
+
+    if (favor >= 60) {
+      esloganGanador = `El Cambio Que Ya Comenzó: ${muni} Fuerte y Seguro`;
+      namingOficial = `Iniciativa Territorial "${titulo}"`;
+      narrativaBanderazo = `Con la fuerza de la mayoría ciudadana de ${muni}, consolidamos un proyecto histórico que devuelve la dignidad a cada colonia.`;
+    } else if (contra >= 45) {
+      esloganGanador = `Menos Discurso, Más Soluciones: Escuchar Para Resolver`;
+      namingOficial = `Pacto Social por ${muni}`;
+      narrativaBanderazo = `Entendemos el cansancio de promesas incumplidas. Por eso este proyecto no se impone desde un escritorio: se construye escuchando las demandas de cada sector de ${muni}.`;
+    }
+
+    return {
+      namingOficial,
+      esloganGanador,
+      sloganAlternativo: `Unidos por un ${muni} Sustentable y Próspero`,
+      taglineCampaña: 'Cuentas claras, colonias seguras y futuro para tus hijos.',
+      narrativaBanderazo,
+      ejesDiscursivos: [
+        { eje: 'Transparencia y Presupuesto', mensaje: `Cada peso invertido en "${tema}" tendrá auditoría ciudadana permanente.` },
+        { eje: 'Impacto Social Directo', mensaje: `Prioridad a las colonias con mayor rezago histórico en ${muni}.` },
+        { eje: 'Sustentabilidad y Bienestar', mensaje: 'Obras modernas que respetan el medio ambiente y cuidan el patrimonio familiar.' }
+      ],
+      llamadoALaAccion: `Súmate al movimiento por ${muni}. Conoce el plan completo y haz que tu voz cuente.`
+    };
+  }
+
 }
 module.exports = new PoliticalStrategistAgent();
