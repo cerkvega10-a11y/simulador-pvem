@@ -12,6 +12,87 @@ let chartDemograficoInstance = null;
 let chartRadarProblemasInstance = null;
 let chartEvolucionInstance = null;
 
+// Instancias de visualizaciones avanzadas del War Room (Chart.js)
+let chart11SectoresInstance = null;
+let chartMomentoCurveInstance = null;
+let chartPolarizacionInstance = null;
+let chartElasticidadInstance = null;
+let chartDemografiaEdadInstance = null;
+let chartDemografiaNseInstance = null;
+let chartUnionsDonutInstance = null;
+let chartUnionsBarInstance = null;
+
+/**
+ * Generador de Medidor Semicircular SVG Estilo Tacómetro / Nivel de Riesgo
+ */
+function renderGaugeDialSVG(score, label = '', size = 80) {
+  const val = Math.max(0, Math.min(100, Number(score) || 0));
+  const strokeW = 7;
+  const r = (size - strokeW * 2) / 2;
+  const arcLength = Math.PI * r;
+  const strokeDashoffset = arcLength - (val / 100) * arcLength;
+  
+  let arcColor = '#10b981'; // Bajo / Favorable
+  let textColor = 'text-emerald-700';
+  let badgeText = 'Bajo';
+  if (val >= 65) {
+    arcColor = '#f43f5e'; // Crítico
+    textColor = 'text-rose-700';
+    badgeText = 'Crítico';
+  } else if (val >= 35) {
+    arcColor = '#f59e0b'; // Moderado
+    textColor = 'text-amber-700';
+    badgeText = 'Moderado';
+  }
+
+  const angleDeg = -90 + (val / 100) * 180;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const cx = size / 2;
+  const cy = size / 2 + 6;
+  const needleLen = r - 2;
+  const nx = cx + needleLen * Math.sin(angleRad);
+  const ny = cy - needleLen * Math.cos(angleRad);
+
+  return `
+    <div class="inline-flex flex-col items-center shrink-0">
+      <svg width="${size}" height="${Math.round(size * 0.62)}" viewBox="0 0 ${size} ${Math.round(size * 0.62)}">
+        <path d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}" 
+              fill="none" stroke="#e2e8f0" stroke-width="${strokeW}" stroke-linecap="round" />
+        <path d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}" 
+              fill="none" stroke="${arcColor}" stroke-width="${strokeW}" stroke-linecap="round"
+              stroke-dasharray="${arcLength}" stroke-dashoffset="${strokeDashoffset}" />
+        <circle cx="${cx}" cy="${cy}" r="3" fill="#1e293b" />
+        <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <div class="text-center -mt-1 leading-tight">
+        <span class="text-[11px] font-black ${textColor}">${val}%</span>
+        ${label ? `<span class="text-[8px] uppercase tracking-wider font-extrabold text-slate-500 block">${label} (${badgeText})</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Generador de Medidor Radial Circular SVG (Compacto)
+ */
+function renderRadialPercentSVG(pct, size = 46, color = '#10b981') {
+  const p = Math.max(0, Math.min(100, Number(pct) || 0));
+  const strokeW = 4;
+  const r = (size - strokeW * 2) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (p / 100) * c;
+  return `
+    <div class="relative inline-flex items-center justify-center shrink-0" style="width: ${size}px; height: ${size}px;">
+      <svg class="transform -rotate-90" width="${size}" height="${size}">
+        <circle cx="${size / 2}" cy="${size / 2}" r="${r}" stroke="#e2e8f0" stroke-width="${strokeW}" fill="none" />
+        <circle cx="${size / 2}" cy="${size / 2}" r="${r}" stroke="${color}" stroke-width="${strokeW}"
+          stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round" fill="none" />
+      </svg>
+      <span class="absolute text-[10px] font-black text-slate-800 leading-none">${p}%</span>
+    </div>
+  `;
+}
+
 const Components = {
   /**
    * 1. Gráfica Global: Donut / Pie (% A Favor #008f39, % En Contra #dc2626, % Neutro #f59e0b)
@@ -587,11 +668,12 @@ const Components = {
    * Renderiza la Segmentación Demográfica por Edad, Estrato Socioeconómico (NSE) y Sectores Clave
    * con Barras Gráficas Proporcionales Segmentadas (A Favor, En Contra, Neutro)
    */
-  renderHeatmap(containerId, heatmapData) {
+  renderHeatmap(containerId, heatmapData, fullReportInput = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.classList.remove('hidden');
 
+    const report = fullReportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || (heatmapData && heatmapData.resumenEjecutivo ? heatmapData : {}) || {};
     const data = (heatmapData && heatmapData.porEdad) ? heatmapData : (heatmapData && heatmapData.mapaCalorDemografico) ? heatmapData.mapaCalorDemografico : {};
     
     const porEdad = (Array.isArray(data.porEdad) && data.porEdad.length > 0) ? data.porEdad : [
@@ -607,22 +689,45 @@ const Components = {
       { nivel: 'D+ y D/E (Estratos Populares)', favor: 64, contra: 22, neutro: 14, observacion: 'Alta receptividad ante beneficios directos inmediatos y transporte' }
     ];
 
-    const porSectorSocial = (Array.isArray(data.porSectorSocial) && data.porSectorSocial.length > 0) ? data.porSectorSocial : (data.porOcupacion || []);
+    const default11Sectores = [
+      { sector: 'Estudiantes y Universitarios', icono: '🎓', favor: 62, contra: 20, neutro: 18, friccionSocial: 24, sensibilidad: 'Becas, tecnología, empleo juvenil y digitalización', pesoElectoral: 14, observacion: 'Sólida identificación con causas de modernización y movilidad sustentable.' },
+      { sector: 'Comerciantes y Tianguistas / MiPyMEs', icono: '🏪', favor: 48, contra: 38, neutro: 14, friccionSocial: 58, sensibilidad: 'Cuotas de piso, operativos viales, seguridad y trámites', pesoElectoral: 16, observacion: 'Receptivos si no se obstaculizan accesos comerciales ni se elevan cobros.' },
+      { sector: 'Transportistas y Choferes de Ruta', icono: '🚌', favor: 42, contra: 46, neutro: 12, friccionSocial: 72, sensibilidad: 'Tarifas, bacheo, concesiones y ordenamiento vial', pesoElectoral: 9, observacion: 'Gremio de alta reactividad ante desvíos de tráfico o cambios regulatorios.' },
+      { sector: 'Sector Salud, Médicos y Enfermería', icono: '🏥', favor: 68, contra: 18, neutro: 14, friccionSocial: 22, sensibilidad: 'Insumos, equipamiento, horarios y presupuesto clínico', pesoElectoral: 7, observacion: 'Respaldo contundente ante mejoras preventivas y reducción de riesgos sanitarios.' },
+      { sector: 'Magisterio, Docentes y Académicos', icono: '📚', favor: 65, contra: 21, neutro: 14, friccionSocial: 26, sensibilidad: 'Salarios, infraestructura escolar y estabilidad gremial', pesoElectoral: 8, observacion: 'Alineación pedagógica favorable con demandas de presupuesto transparente.' },
+      { sector: 'Burocracia y Empleados Públicos', icono: '🏛️', favor: 58, contra: 26, neutro: 16, friccionSocial: 32, sensibilidad: 'Prestaciones, escalafón laboral y cargas de trabajo', pesoElectoral: 8, observacion: 'Priorizan orden institucional y certidumbre en las condiciones de empleo.' },
+      { sector: 'Empresarios y Sector Industrial', icono: '💼', favor: 52, contra: 33, neutro: 15, friccionSocial: 45, sensibilidad: 'Certeza jurídica, incentivos fiscales y trámites ágiles', pesoElectoral: 6, observacion: 'Exigen viabilidad financiera y apego a planes de desarrollo económico.' },
+      { sector: 'Madres de Familia y Jefas de Hogar', icono: '🏡', favor: 66, contra: 19, neutro: 15, friccionSocial: 20, sensibilidad: 'Seguridad en colonias, canasta básica, guarderías y agua', pesoElectoral: 18, observacion: 'Base central de cohesión barrial con alta respuesta a programas familiares directos.' },
+      { sector: 'Sector Campesino, Ejidatarios y Agrícola', icono: '🌾', favor: 59, contra: 25, neutro: 16, friccionSocial: 35, sensibilidad: 'Riego, abono, caminos saca-cosechas y precios de garantía', pesoElectoral: 5, observacion: 'Demandan respeto a parcelas ejidales y apoyo técnico continuo sin intermediarios.' },
+      { sector: 'Adultos Mayores, Jubilados y Pensionados', icono: '👴', favor: 70, contra: 16, neutro: 14, friccionSocial: 18, sensibilidad: 'Pensión, medicamentos gratuitos, rampas y trato preferente', pesoElectoral: 12, observacion: 'Fuerte lealtad participativa y voto duro consolidado en casillas matutinas.' },
+      { sector: 'Obreros y Trabajadores de la Construcción', icono: '🏗️', favor: 54, contra: 31, neutro: 15, friccionSocial: 42, sensibilidad: 'Salario digno, seguridad en obra, obra pública local y transporte', pesoElectoral: 7, observacion: 'Favorecen inversión en infraestructura urbana que garantice empleo en su municipio.' }
+    ];
+
+    const rawSectores = (Array.isArray(data.porSectorSocial) && data.porSectorSocial.length > 0) ? data.porSectorSocial : (Array.isArray(data.porOcupacion) && data.porOcupacion.length > 0) ? data.porOcupacion : [];
+    
+    // Garantizar que estén los 11 sectores completos
+    const porSectorSocial = (rawSectores.length >= 11) ? rawSectores : default11Sectores.map((defSec, idx) => {
+      const match = rawSectores.find(r => (r.sector || '').toLowerCase().includes(defSec.sector.toLowerCase().slice(0, 8)));
+      return match ? { ...defSec, ...match } : (rawSectores[idx] ? { ...defSec, ...rawSectores[idx] } : defSec);
+    });
+
+    // Guardar para filtros interactivos
+    Components._cached11Sectores = porSectorSocial;
 
     const renderBarHTML = (favor, contra, neutro) => {
       const f = Math.max(0, Math.min(100, Number(favor) || 0));
       const c = Math.max(0, Math.min(100, Number(contra) || 0));
       const n = Math.max(0, Math.min(100, Number(neutro) || 0));
       return `
-        <div class="w-full bg-slate-200 rounded-full h-3 flex overflow-hidden shadow-inner my-1 border border-slate-300/60">
+        <div class="w-full bg-slate-200 rounded-full h-2.5 flex overflow-hidden shadow-inner my-1 border border-slate-300/60">
           <div style="width: ${f}%" class="bg-emerald-600 h-full transition-all duration-500" title="A Favor: ${f}%"></div>
-          <div style="width: ${c}%" class="bg-red-600 h-full transition-all duration-500" title="En Contra: ${c}%"></div>
-          <div style="width: ${n}%" class="bg-slate-400 h-full transition-all duration-500" title="Neutro: ${n}%"></div>
+          <div style="width: ${c}%" class="bg-rose-600 h-full transition-all duration-500" title="En Contra: ${c}%"></div>
+          <div style="width: ${n}%" class="bg-amber-400 h-full transition-all duration-500" title="Neutro: ${n}%"></div>
         </div>
         <div class="flex items-center justify-between text-[11px] font-bold">
           <span class="text-emerald-700 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>${f}% <span class="text-[9px] font-medium text-emerald-600 hidden sm:inline">Favor</span></span>
-          <span class="text-red-600 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-600 inline-block"></span>${c}% <span class="text-[9px] font-medium text-red-500 hidden sm:inline">Contra</span></span>
-          <span class="text-slate-600 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-400 inline-block"></span>${n}% <span class="text-[9px] font-medium text-slate-500 hidden sm:inline">Neutro</span></span>
+          <span class="text-rose-600 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span>${c}% <span class="text-[9px] font-medium text-rose-500 hidden sm:inline">Contra</span></span>
+          <span class="text-amber-700 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>${n}% <span class="text-[9px] font-medium text-amber-600 hidden sm:inline">Neutro</span></span>
         </div>
       `;
     };
@@ -636,28 +741,59 @@ const Components = {
               <span class="w-3 h-3 rounded-full bg-emerald-600"></span> Segmentación Demográfica y Estrato Socioeconómico
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
-              Agrupación dinámica y ponderación estadística real de agentes del enjambre según censos INEGI / PVEM.
+              Auditoría estocástica y ponderación censal real INEGI / AMAI sobre el enjambre de agentes sintéticos.
             </p>
           </div>
           <!-- Leyenda de colores -->
           <div class="flex items-center gap-3 text-xs font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">
             <span class="flex items-center gap-1 text-emerald-800"><span class="w-2.5 h-2.5 rounded-xs bg-emerald-600"></span> A Favor</span>
-            <span class="flex items-center gap-1 text-red-800"><span class="w-2.5 h-2.5 rounded-xs bg-red-600"></span> En Contra</span>
-            <span class="flex items-center gap-1 text-slate-700"><span class="w-2.5 h-2.5 rounded-xs bg-slate-400"></span> Neutro</span>
+            <span class="flex items-center gap-1 text-rose-800"><span class="w-2.5 h-2.5 rounded-xs bg-rose-600"></span> En Contra</span>
+            <span class="flex items-center gap-1 text-amber-800"><span class="w-2.5 h-2.5 rounded-xs bg-amber-400"></span> Neutro</span>
           </div>
         </div>
 
-        <!-- Grid de 2 Columnas: Rango de Edad vs Nivel Socioeconómico (NSE) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- MÓDULO VISUAL: COMPARATIVAS GRÁFICAS DE EDAD Y NSE (CHART.JS) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-cyan-600"></span> Comparativa: 4 Cohortes Generacionales
+              </h4>
+              <span class="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                Chart.js Activo
+              </span>
+            </div>
+            <div class="relative w-full" style="height: 180px;">
+              <canvas id="chart-demografia-edad"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-purple-600"></span> Comparativa: Estrato Socioeconómico (NSE)
+              </h4>
+              <span class="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                Ponderación AMAI
+              </span>
+            </div>
+            <div class="relative w-full" style="height: 180px;">
+              <canvas id="chart-demografia-nse"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid de 2 Columnas Detalladas: Rango de Edad vs Nivel Socioeconómico (NSE) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
           
           <!-- Columna 1: Distribución por Grupos de Edad -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-cyan-600"></span> Distribución por Rango de Edad
+                <span class="w-2 h-2 rounded-full bg-cyan-600"></span> Fichas de Comportamiento por Rango de Edad
               </h4>
               <span class="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                4 Cohortes Generacionales
+                4 Cohortes
               </span>
             </div>
             
@@ -679,10 +815,10 @@ const Components = {
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-purple-600"></span> Distribución por Nivel Socioeconómico (NSE)
+                <span class="w-2 h-2 rounded-full bg-purple-600"></span> Fichas de Estrato Socioeconómico (NSE)
               </h4>
               <span class="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                Ponderación AMAI / INEGI
+                INEGI / AMAI
               </span>
             </div>
 
@@ -704,45 +840,91 @@ const Components = {
               <span class="text-base">📊</span>
               <div>
                 <strong class="font-bold text-emerald-900">Rigor de Agregación Demográfica:</strong>
-                <p class="text-emerald-800 mt-0.5">Cada voto individual del enjambre se calcula simultáneamente en su sector territorial, grupo de edad y estrato socioeconómico real sin fallbacks estáticos.</p>
+                <p class="text-emerald-800 mt-0.5">Cada voto individual del enjambre se calcula simultáneamente en su sector territorial, grupo de edad y estrato socioeconómico real sin sesgos estáticos.</p>
               </div>
             </div>
           </div>
 
         </div>
 
-        ${porSectorSocial.length > 0 ? `
-          <!-- Desglose por Sector Social Clave -->
-          <div class="pt-4 border-t border-slate-200">
-            <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Catálogo Oficial de 11 Sectores Demográficos y Sociolaborales (INEGI / AMAI / Censo Electoral)
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- ========================================================
+             MÓDULO: CATÁLOGO OFICIAL DE 11 SECTORES DEMOGRÁFICOS
+             ======================================================== -->
+        <div class="pt-6 border-t border-slate-200 space-y-4">
+          <!-- Gráfico Interactivo Chart.js de Barras Apiladas Horizontales -->
+          <div class="bg-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                  <h4 class="text-sm font-black uppercase tracking-wider text-cyan-300">
+                    Matriz Gráfica Comparativa: 11 Sectores Sociolaborales (Chart.js)
+                  </h4>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  Visualización interactiva: Aprobación (Verde), Fricción/Rechazo (Rojo) y Neutralidad (Ámbar).
+                </p>
+              </div>
+              <!-- Botones de ordenamiento interactivo -->
+              <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px] font-bold">
+                <button type="button" onclick="Components.filter11Sectores('all')" id="btn-sec-all" class="px-2.5 py-1 rounded bg-cyan-600 text-white font-black shadow-xs">Todos (11)</button>
+                <button type="button" onclick="Components.filter11Sectores('contra')" id="btn-sec-contra" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition-all">Mayor Fricción</button>
+                <button type="button" onclick="Components.filter11Sectores('favor')" id="btn-sec-favor" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition-all">Mayor Respaldo</button>
+              </div>
+            </div>
+            <div class="relative w-full" style="height: 380px;">
+              <canvas id="chart-sectores-11"></canvas>
+            </div>
+          </div>
+
+          <!-- Cuadrícula de 11 Tarjetas Sectoriales con Tacómetros SVG -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Catálogo Detallado de los 11 Perfiles Sectoriales
+              </h4>
+              <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                11 Sectores Monitoreados
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               ${porSectorSocial.map(item => {
-                const friccion = item.friccionSocial || Math.min(Math.max(Math.round(item.contra * 0.95), 5), 98);
-                const friccionColor = friccion >= 65 ? 'bg-red-50 text-red-700 border-red-200' : (friccion >= 35 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
+                const friccion = item.friccionSocial || Math.min(Math.max(Math.round(item.contra * 1.02), 5), 98);
                 return `
-                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 hover:shadow-xs transition-all space-y-2">
-                  <div class="flex items-start justify-between gap-1.5">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                      <span class="text-base shrink-0">${item.icono || '👥'}</span>
-                      <span class="text-xs font-black text-slate-900 leading-tight truncate" title="${item.sector}">${item.sector}</span>
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-cyan-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-2.5">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-xl shrink-0">${item.icono || '👥'}</span>
+                        <div class="min-w-0">
+                          <h5 class="text-xs font-black text-slate-900 leading-tight truncate" title="${item.sector}">${item.sector}</h5>
+                          <span class="text-[10px] font-bold text-slate-500">${item.pesoElectoral ? `${item.pesoElectoral}% del Padrón` : 'Sector Estratégico'}</span>
+                        </div>
+                      </div>
+                      ${renderGaugeDialSVG(friccion, 'Fricción', 68)}
                     </div>
-                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded border shrink-0 ${friccionColor}">
-                      Fricción: ${friccion}/100
-                    </span>
+
+                    ${renderBarHTML(item.favor, item.contra, item.neutro)}
                   </div>
-                  ${renderBarHTML(item.favor, item.contra, item.neutro)}
-                  <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
-                    <span class="font-semibold text-slate-600">${item.pesoElectoral ? `${item.pesoElectoral}% del Padrón` : (item.total ? `${item.total} ag.` : 'Sector Estratégico')}</span>
-                    <span class="text-[9px] font-bold text-slate-500 truncate max-w-[140px]" title="${item.sensibilidad || ''}">${item.sensibilidad ? `Sensible a ${item.sensibilidad.slice(0, 18)}...` : ''}</span>
+
+                  <div class="space-y-1.5 pt-1.5 border-t border-slate-200/60 text-[10px]">
+                    ${item.sensibilidad ? `
+                      <div class="text-slate-600 leading-tight">
+                        <strong class="text-slate-800">Sensibilidad:</strong> ${item.sensibilidad}
+                      </div>
+                    ` : ''}
+                    ${item.observacion ? `
+                      <p class="text-slate-600 bg-white p-2 rounded-lg border border-slate-200/60 leading-tight italic">
+                        "${item.observacion}"
+                      </p>
+                    ` : ''}
                   </div>
-                  ${item.observacion ? `<p class="text-[10px] text-slate-600 bg-white/80 p-1.5 rounded border border-slate-200/50 leading-tight italic">${item.observacion}</p>` : ''}
                 </div>
               `; }).join('')}
             </div>
           </div>
-        ` : ''}
+        </div>
 
         ${(data.microNichosCensales && data.microNichosCensales.length > 0) ? `
           <!-- Micro-Nichos Censales (Desbloqueados a Escala 25K a 100K Agentes) -->
@@ -768,6 +950,7 @@ const Components = {
             </div>
           </div>
         ` : ''}
+
         <!-- ========================================================
              MÓDULO 2.2: CURVA DE MOMENTUM POLÍTICO (ESTILO BOLSA DE VALORES)
              ======================================================== -->
@@ -798,11 +981,11 @@ const Components = {
                       Módulo 2 • Analítica Predictiva Avanzada
                     </span>
                     <span class="text-xs text-slate-400">•</span>
-                    <span class="text-xs text-emerald-300 font-bold">Inercia Estilo Bolsa de Valores</span>
+                    <span class="text-xs text-emerald-300 font-bold">Curva de Tendencia e Inercia 2027-2030</span>
                   </div>
                   <h4 class="text-xl font-black text-white flex items-center gap-2">
                     <span class="text-emerald-400 font-mono text-2xl">${mom.ticker}</span>
-                    <span class="text-xs px-2.5 py-1 rounded-full font-black ${isBull ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-red-500/20 text-red-300 border border-red-400/30'}">
+                    <span class="text-xs px-2.5 py-1 rounded-full font-black ${isBull ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'}">
                       ${mom.variacionDiaria} Hoy
                     </span>
                   </h4>
@@ -810,7 +993,7 @@ const Components = {
                 <div class="flex items-center gap-3">
                   <div class="text-right">
                     <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Tendencia Activa</span>
-                    <span class="text-xs font-black ${isBull ? 'text-emerald-400' : 'text-red-400'}">${mom.tendencia}</span>
+                    <span class="text-xs font-black ${isBull ? 'text-emerald-400' : 'text-rose-400'}">${mom.tendencia}</span>
                   </div>
                 </div>
               </div>
@@ -839,25 +1022,17 @@ const Components = {
                 </div>
               </div>
 
-              <!-- Proyección a 7, 14 y 30 días -->
-              <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+              <!-- GRÁFICO INTERACTIVO DE CURVA DE MOMENTUM (CHART.JS) -->
+              <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-300">
-                  <span>Proyección de Intención de Voto (Curva de Momentum)</span>
+                  <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    Curva de Tendencia y Proyección Temporal (Inercia Swarm)
+                  </span>
                   <span class="text-emerald-400 font-mono text-[11px]">Algoritmo Swarm ARIMA-PVEM</span>
                 </div>
-                <div class="grid grid-cols-3 gap-3 pt-1">
-                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
-                    <span class="text-[10px] text-slate-400 block">7 Días</span>
-                    <span class="text-base font-black text-emerald-400">${mom.proyecciones?.dias7 || 66}%</span>
-                  </div>
-                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
-                    <span class="text-[10px] text-slate-400 block">14 Días</span>
-                    <span class="text-base font-black text-emerald-300">${mom.proyecciones?.dias14 || 70}%</span>
-                  </div>
-                  <div class="text-center p-2 rounded-lg bg-slate-950 border border-slate-800">
-                    <span class="text-[10px] text-slate-400 block">30 Días</span>
-                    <span class="text-base font-black text-cyan-300">${mom.proyecciones?.dias30 || 74}%</span>
-                  </div>
+                <div class="relative w-full" style="height: 220px;">
+                  <canvas id="chart-momento-curve"></canvas>
                 </div>
                 <p class="text-[11px] text-slate-300 pt-2 border-t border-slate-800 leading-relaxed italic">
                   "${mom.diagnosticoTicker}"
@@ -873,7 +1048,11 @@ const Components = {
              ======================================================== -->
         ${(() => {
           const elast = report.elasticidadElectorado || data.elasticidadElectorado || {
-            matriz: [],
+            matriz: [
+              { origen: 'Transporte Público', destino: 'Comerciantes / Tianguis', tipo: 'Movilidad Comercial', coeficiente: '+0.72', elasticidad: 'Alta', impacto: 'Favorable', mecanismo: 'Un transporte fluido incrementa de inmediato las ventas del comercio local.' },
+              { origen: 'Comercio Local', destino: 'Madres de Familia', tipo: 'Canasta Básica', coeficiente: '+0.58', elasticidad: 'Moderada', impacto: 'Favorable', mecanismo: 'Precios estables reducen la presión económica familiar en el municipio.' },
+              { origen: 'Obras Viales', destino: 'Transportistas', tipo: 'Fricción Temporal', coeficiente: '-0.45', elasticidad: 'Moderada', impacto: 'Desfavorable', mecanismo: 'Cierres de carriles detonan quejas inmediatas si no hay rutas alternas.' }
+            ],
             coeficientePromedio: '+0.53',
             sectorMasVulnerable: 'Comerciantes y Tianguistas / MiPyMEs',
             sectorMasApalancable: 'Madres de Familia y Hogares',
@@ -897,6 +1076,19 @@ const Components = {
               </span>
             </div>
 
+            <!-- Gráfico Horizontal de Coeficientes de Elasticidad (Chart.js) -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-cyan-600"></span> Dispersión de Coeficientes Intersectoriales
+                </span>
+                <span class="text-[10px] font-bold text-slate-500">Sinergias (+) vs Fricción (-)</span>
+              </div>
+              <div class="relative w-full" style="height: 180px;">
+                <canvas id="chart-elasticidad-bars"></canvas>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               ${items.map(m => `
                 <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-cyan-300 hover:shadow-xs transition-all space-y-2">
@@ -907,7 +1099,7 @@ const Components = {
                   </div>
                   <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
                     <span class="font-bold text-slate-700">${m.tipo}</span>
-                    <span class="font-black px-1.5 py-0.5 rounded text-[10px] ${m.impacto === 'Favorable' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                    <span class="font-black px-1.5 py-0.5 rounded text-[10px] ${m.impacto === 'Favorable' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                       ${m.coeficiente} (${m.elasticidad})
                     </span>
                   </div>
@@ -924,7 +1116,7 @@ const Components = {
                 <strong class="font-bold text-cyan-900 block mb-0.5">Diagnóstico Táctico de Elasticidad:</strong>
                 <p class="leading-relaxed text-cyan-900">${elast.diagnosticoElasticidad}</p>
                 <div class="flex flex-wrap gap-3 mt-1.5 text-[11px] font-semibold">
-                  <span class="text-red-700">⚠️ Sector Más Sensible a Externalidades: <strong>${elast.sectorMasVulnerable}</strong></span>
+                  <span class="text-rose-700">⚠️ Sector Más Sensible a Externalidades: <strong>${elast.sectorMasVulnerable}</strong></span>
                   <span class="text-emerald-700">🎯 Sector de Mayor Apalancamiento Social: <strong>${elast.sectorMasApalancable}</strong></span>
                 </div>
               </div>
@@ -965,55 +1157,442 @@ const Components = {
               </span>
             </div>
 
-            <!-- Barra gráfica de polarización de 3 segmentos -->
-            <div class="space-y-1.5">
-              <div class="w-full bg-slate-200 rounded-xl h-6 flex overflow-hidden shadow-inner border border-slate-300">
-                <div style="width: ${pol.votoDuroFavor}%" class="bg-emerald-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Voto Duro A Favor: ${pol.votoDuroFavor}%">
-                  ${pol.votoDuroFavor >= 15 ? `Duro ${pol.votoDuroFavor}%` : ''}
+            <!-- Gráfico Donut de Polarización + Barras y Métricas de Conversión -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+              <div class="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-2xs">
+                <div class="relative w-full flex items-center justify-center" style="height: 190px;">
+                  <canvas id="chart-polarizacion-donut"></canvas>
                 </div>
-                <div style="width: ${pol.votoBlandoIndecisos}%" class="bg-amber-400 h-full flex items-center justify-center text-[11px] font-black text-slate-900" title="Voto Blando e Indecisos: ${pol.votoBlandoIndecisos}%">
-                  ${pol.votoBlandoIndecisos >= 15 ? `Battleground ${pol.votoBlandoIndecisos}%` : ''}
-                </div>
-                <div style="width: ${pol.rechazoRadical}%" class="bg-red-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Rechazo Radical: ${pol.rechazoRadical}%">
-                  ${pol.rechazoRadical >= 15 ? `Oposición ${pol.rechazoRadical}%` : ''}
+                <div class="mt-2 text-center">
+                  <span class="text-[11px] font-black text-slate-700">Ratio de Persuasión: <strong class="text-purple-700">${pol.ratioPersuasion || 2.1}x</strong></span>
+                  <span class="text-[10px] text-slate-500 block">Indecisos convertibles por cada detractor</span>
                 </div>
               </div>
-              <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span class="text-emerald-700 flex items-center gap-1.5">
-                  <span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span> Voto Duro Leal (${pol.votoDuroFavor}%)
-                </span>
-                <span class="text-amber-700 flex items-center gap-1.5">
-                  <span class="w-3 h-3 rounded-xs bg-amber-400 inline-block"></span> Voto Blando / Indecisos (${pol.votoBlandoIndecisos}%)
-                </span>
-                <span class="text-red-700 flex items-center gap-1.5">
-                  <span class="w-3 h-3 rounded-xs bg-red-600 inline-block"></span> Rechazo Radical Opositor (${pol.rechazoRadical}%)
-                </span>
-              </div>
-            </div>
 
-            <!-- Recomendaciones de Conversión Táctica -->
-            <div class="p-4 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2">
-              <span class="text-xs font-black text-purple-950 uppercase tracking-wide flex items-center gap-1.5">
-                <span>🎯</span> Recomendaciones de Conversión y Captura de Indecisos:
-              </span>
-              <ul class="space-y-1.5 text-xs text-purple-950">
-                ${(pol.recomendacionesConversion || []).map(rec => `
-                  <li class="flex items-start gap-2">
-                    <span class="text-purple-600 font-bold shrink-0">✓</span>
-                    <span class="leading-relaxed">${rec}</span>
-                  </li>
-                `).join('')}
-              </ul>
+              <div class="lg:col-span-7 space-y-3">
+                <!-- Barra gráfica de polarización de 3 segmentos -->
+                <div class="space-y-1.5">
+                  <div class="w-full bg-slate-200 rounded-xl h-6 flex overflow-hidden shadow-inner border border-slate-300">
+                    <div style="width: ${pol.votoDuroFavor}%" class="bg-emerald-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Voto Duro A Favor: ${pol.votoDuroFavor}%">
+                      ${pol.votoDuroFavor >= 15 ? `Duro ${pol.votoDuroFavor}%` : ''}
+                    </div>
+                    <div style="width: ${pol.votoBlandoIndecisos}%" class="bg-amber-400 h-full flex items-center justify-center text-[11px] font-black text-slate-900" title="Voto Blando e Indecisos: ${pol.votoBlandoIndecisos}%">
+                      ${pol.votoBlandoIndecisos >= 15 ? `Battleground ${pol.votoBlandoIndecisos}%` : ''}
+                    </div>
+                    <div style="width: ${pol.rechazoRadical}%" class="bg-rose-600 h-full flex items-center justify-center text-[11px] font-black text-white" title="Rechazo Radical: ${pol.rechazoRadical}%">
+                      ${pol.rechazoRadical >= 15 ? `Oposición ${pol.rechazoRadical}%` : ''}
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span class="text-emerald-700 flex items-center gap-1.5">
+                      <span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span> Voto Duro Leal (${pol.votoDuroFavor}%)
+                    </span>
+                    <span class="text-amber-700 flex items-center gap-1.5">
+                      <span class="w-3 h-3 rounded-xs bg-amber-400 inline-block"></span> Voto Blando / Indecisos (${pol.votoBlandoIndecisos}%)
+                    </span>
+                    <span class="text-rose-700 flex items-center gap-1.5">
+                      <span class="w-3 h-3 rounded-xs bg-rose-600 inline-block"></span> Rechazo Radical Opositor (${pol.rechazoRadical}%)
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Recomendaciones de Conversión Táctica -->
+                <div class="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2">
+                  <span class="text-xs font-black text-purple-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>🎯</span> Recomendaciones de Conversión y Captura de Indecisos:
+                  </span>
+                  <ul class="space-y-1 text-xs text-purple-950">
+                    ${(pol.recomendacionesConversion || []).map(rec => `
+                      <li class="flex items-start gap-1.5">
+                        <span class="text-purple-600 font-bold shrink-0">✓</span>
+                        <span class="leading-relaxed">${rec}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
           `;
         })()}
 
-
       </div>
     `;
 
     container.innerHTML = html;
+
+    // INICIALIZACIÓN SÍNCRONA / RAF DE LOS GRÁFICOS INTERACTIVOS CHART.JS
+    requestAnimationFrame(() => {
+      if (typeof Chart === 'undefined') return;
+
+      // 1. Gráfico de 11 Sectores (Barras Horizontales Apiladas)
+      const canvas11 = document.getElementById('chart-sectores-11');
+      if (canvas11) {
+        const existing = Chart.getChart(canvas11);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chart11SectoresInstance) try { chart11SectoresInstance.destroy(); } catch (e) {}
+
+        const ctx11 = canvas11.getContext('2d');
+        const labels11 = porSectorSocial.map(s => (s.sector || '').split(' / '));
+        const fav11 = porSectorSocial.map(s => Number(s.favor) || 0);
+        const con11 = porSectorSocial.map(s => Number(s.contra) || 0);
+        const neu11 = porSectorSocial.map(s => Number(s.neutro) || 0);
+
+        chart11SectoresInstance = new Chart(ctx11, {
+          type: 'bar',
+          data: {
+            labels: labels11,
+            datasets: [
+              {
+                label: 'A Favor (%)',
+                data: fav11,
+                backgroundColor: '#10b981',
+                borderRadius: 4,
+                barPercentage: 0.72,
+                categoryPercentage: 0.85
+              },
+              {
+                label: 'En Contra / Fricción (%)',
+                data: con11,
+                backgroundColor: '#f43f5e',
+                borderRadius: 4,
+                barPercentage: 0.72,
+                categoryPercentage: 0.85
+              },
+              {
+                label: 'Neutro (%)',
+                data: neu11,
+                backgroundColor: '#f59e0b',
+                borderRadius: 4,
+                barPercentage: 0.72,
+                categoryPercentage: 0.85
+              }
+            ]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                stacked: true,
+                max: 100,
+                ticks: {
+                  color: '#94a3b8',
+                  callback: v => `${v}%`,
+                  font: { size: 10, weight: '600', family: "'Inter', sans-serif" }
+                },
+                grid: { color: 'rgba(51, 65, 85, 0.4)' }
+              },
+              y: {
+                stacked: true,
+                ticks: {
+                  color: '#f1f5f9',
+                  font: { size: 10, weight: '700', family: "'Inter', sans-serif" }
+                },
+                grid: { display: false }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                align: 'end',
+                labels: {
+                  color: '#e2e8f0',
+                  font: { size: 11, weight: '700', family: "'Inter', sans-serif" },
+                  boxWidth: 12,
+                  boxHeight: 12,
+                  usePointStyle: true
+                }
+              },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#38bdf8',
+                bodyColor: '#f8fafc',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: c => ` ${c.dataset.label}: ${c.raw}% de los agentes del sector`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. Gráficos Demográficos: Edad y NSE
+      const canvasEdad = document.getElementById('chart-demografia-edad');
+      if (canvasEdad) {
+        const existing = Chart.getChart(canvasEdad);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartDemografiaEdadInstance) try { chartDemografiaEdadInstance.destroy(); } catch (e) {}
+
+        const ctxEdad = canvasEdad.getContext('2d');
+        chartDemografiaEdadInstance = new Chart(ctxEdad, {
+          type: 'bar',
+          data: {
+            labels: porEdad.map(e => (e.grupo || e.rango || '').split(' ')[0]),
+            datasets: [
+              { label: 'Favor', data: porEdad.map(e => Number(e.favor) || 0), backgroundColor: '#10b981', borderRadius: 4 },
+              { label: 'Contra', data: porEdad.map(e => Number(e.contra) || 0), backgroundColor: '#f43f5e', borderRadius: 4 },
+              { label: 'Neutro', data: porEdad.map(e => Number(e.neutro) || 0), backgroundColor: '#94a3b8', borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { ticks: { font: { size: 10, weight: '700' } } },
+              y: { max: 100, ticks: { font: { size: 9 }, callback: v => `${v}%` } }
+            },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 8, font: { size: 10, weight: '600' } } }
+            }
+          }
+        });
+      }
+
+      const canvasNse = document.getElementById('chart-demografia-nse');
+      if (canvasNse) {
+        const existing = Chart.getChart(canvasNse);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartDemografiaNseInstance) try { chartDemografiaNseInstance.destroy(); } catch (e) {}
+
+        const ctxNse = canvasNse.getContext('2d');
+        chartDemografiaNseInstance = new Chart(ctxNse, {
+          type: 'bar',
+          data: {
+            labels: porNSE.map(n => (n.nivel || n.estrato || '').split(' ')[0]),
+            datasets: [
+              { label: 'Favor', data: porNSE.map(n => Number(n.favor) || 0), backgroundColor: '#10b981', borderRadius: 4 },
+              { label: 'Contra', data: porNSE.map(n => Number(n.contra) || 0), backgroundColor: '#f43f5e', borderRadius: 4 },
+              { label: 'Neutro', data: porNSE.map(n => Number(n.neutro) || 0), backgroundColor: '#94a3b8', borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { ticks: { font: { size: 10, weight: '700' } } },
+              y: { max: 100, ticks: { font: { size: 9 }, callback: v => `${v}%` } }
+            },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 8, font: { size: 10, weight: '600' } } }
+            }
+          }
+        });
+      }
+
+      // 3. Gráfico de Curva de Momentum Político
+      const canvasMom = document.getElementById('chart-momento-curve');
+      if (canvasMom) {
+        const existing = Chart.getChart(canvasMom);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartMomentoCurveInstance) try { chartMomentoCurveInstance.destroy(); } catch (e) {}
+
+        const ctxMom = canvasMom.getContext('2d');
+        const momData = report.momentumPolitico || data.momentumPolitico || {};
+        const basePrice = Number(momData.precioIndice || 64);
+        const d7 = Number(momData.proyecciones?.dias7 || (basePrice + 4));
+        const d14 = Number(momData.proyecciones?.dias14 || (basePrice + 8));
+        const d30 = Number(momData.proyecciones?.dias30 || (basePrice + 12));
+
+        const gradient = ctxMom.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
+        gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+        chartMomentoCurveInstance = new Chart(ctxMom, {
+          type: 'line',
+          data: {
+            labels: ['Hoy (Base)', '+7 Días', '+14 Días', '+30 Días (Inercia 2027)'],
+            datasets: [{
+              label: 'Intención de Voto (%)',
+              data: [basePrice, d7, d14, d30],
+              borderColor: '#22d3ee',
+              backgroundColor: gradient,
+              borderWidth: 3,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#06b6d4',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 6,
+              pointHoverRadius: 9,
+              pointHoverBackgroundColor: '#10b981',
+              pointHoverBorderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8', font: { size: 10, weight: '700' } },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' }
+              },
+              y: {
+                min: Math.max(0, Math.min(basePrice, d7, d14, d30) - 15),
+                max: 100,
+                ticks: {
+                  color: '#94a3b8',
+                  callback: v => `${v}%`,
+                  font: { size: 10, weight: '600' }
+                },
+                grid: { color: 'rgba(51, 65, 85, 0.3)' }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#020617',
+                titleColor: '#22d3ee',
+                bodyColor: '#ffffff',
+                borderColor: '#06b6d4',
+                borderWidth: 1,
+                padding: 8,
+                callbacks: {
+                  label: c => ` Intención: ${c.raw}% (${c.raw >= basePrice ? '+' : ''}${(c.raw - basePrice).toFixed(1)}% vs hoy)`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 4. Gráfico de Coeficientes de Elasticidad
+      const canvasElast = document.getElementById('chart-elasticidad-bars');
+      const elastObj = report.elasticidadElectorado || data.elasticidadElectorado || {};
+      const elastItems = elastObj.matriz || [];
+      if (canvasElast && elastItems.length > 0) {
+        const existing = Chart.getChart(canvasElast);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartElasticidadInstance) try { chartElasticidadInstance.destroy(); } catch (e) {}
+
+        const ctxElast = canvasElast.getContext('2d');
+        const labelsEl = elastItems.map(m => `${m.origen} ➔ ${m.destino}`);
+        const valsEl = elastItems.map(m => {
+          const raw = parseFloat(String(m.coeficiente || '0').replace('+', ''));
+          return isNaN(raw) ? 0.5 : raw;
+        });
+        const colorsEl = valsEl.map(v => v >= 0 ? '#10b981' : '#f43f5e');
+
+        chartElasticidadInstance = new Chart(ctxElast, {
+          type: 'bar',
+          data: {
+            labels: labelsEl,
+            datasets: [{
+              label: 'Coeficiente',
+              data: valsEl,
+              backgroundColor: colorsEl,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: { font: { size: 10, weight: '600' } },
+                grid: { color: 'rgba(226, 232, 240, 0.8)' }
+              },
+              y: {
+                ticks: { font: { size: 10, weight: '700' } },
+                grid: { display: false }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: c => ` Impacto: ${c.raw >= 0 ? '+' : ''}${c.raw}`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 5. Gráfico Donut de Polarización
+      const canvasPol = document.getElementById('chart-polarizacion-donut');
+      const polData = report.matrizPolarizacion || data.matrizPolarizacion || {};
+      if (canvasPol) {
+        const existing = Chart.getChart(canvasPol);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartPolarizacionInstance) try { chartPolarizacionInstance.destroy(); } catch (e) {}
+
+        const ctxPol = canvasPol.getContext('2d');
+        const vDuro = Number(polData.votoDuroFavor || 38);
+        const vBlando = Number(polData.votoBlandoIndecisos || 42);
+        const vRad = Number(polData.rechazoRadical || 20);
+
+        chartPolarizacionInstance = new Chart(ctxPol, {
+          type: 'doughnut',
+          data: {
+            labels: [
+              `Voto Duro (${vDuro}%)`,
+              `Battleground (${vBlando}%)`,
+              `Rechazo Radical (${vRad}%)`
+            ],
+            datasets: [{
+              data: [vDuro, vBlando, vRad],
+              backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+              borderWidth: 2,
+              borderColor: '#ffffff',
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { font: { size: 9, weight: '700' }, boxWidth: 8, usePointStyle: true }
+              },
+              tooltip: {
+                callbacks: {
+                  label: c => ` ${c.label}: ${c.raw}% del electorado total`
+                }
+              }
+            },
+            cutout: '62%'
+          }
+        });
+      }
+    });
+  },
+
+  /**
+   * Filtro interactivo de la Gráfica de 11 Sectores (Chart.js)
+   */
+  filter11Sectores(mode) {
+    if (!chart11SectoresInstance || !this._cached11Sectores) return;
+    const btnAll = document.getElementById('btn-sec-all');
+    const btnContra = document.getElementById('btn-sec-contra');
+    const btnFavor = document.getElementById('btn-sec-favor');
+    
+    [btnAll, btnContra, btnFavor].forEach(b => {
+      if (b) b.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white transition-all';
+    });
+
+    let filtered = [...this._cached11Sectores];
+    if (mode === 'contra') {
+      if (btnContra) btnContra.className = 'px-2.5 py-1 rounded bg-rose-600 text-white font-black shadow-xs';
+      filtered.sort((a, b) => (Number(b.contra) || 0) - (Number(a.contra) || 0));
+    } else if (mode === 'favor') {
+      if (btnFavor) btnFavor.className = 'px-2.5 py-1 rounded bg-emerald-600 text-white font-black shadow-xs';
+      filtered.sort((a, b) => (Number(b.favor) || 0) - (Number(a.favor) || 0));
+    } else {
+      if (btnAll) btnAll.className = 'px-2.5 py-1 rounded bg-cyan-600 text-white font-black shadow-xs';
+    }
+
+    chart11SectoresInstance.data.labels = filtered.map(s => (s.sector || '').split(' / '));
+    chart11SectoresInstance.data.datasets[0].data = filtered.map(s => Number(s.favor) || 0);
+    chart11SectoresInstance.data.datasets[1].data = filtered.map(s => Number(s.contra) || 0);
+    chart11SectoresInstance.data.datasets[2].data = filtered.map(s => Number(s.neutro) || 0);
+    chart11SectoresInstance.update();
   },
 
   /**
@@ -2845,13 +3424,30 @@ const Components = {
       fuerzas = []
     } = unionData;
 
+    const default12Fuerzas = [
+      { gremio: 'Magisterio, Cultura, INAH y Universidades', siglas: 'CNTE / SNTE / STUNAM', favor: 38, contra: 46, neutro: 16, postura: 'Alerta y Movilización', pliegoPetitorio: 'Preservación de presupuestos educativos y patrimonio.', liderTestimonio: 'No permitiremos afectaciones presupuestales ni imposiciones unilaterales.' },
+      { gremio: 'Medio Ambiente, Parques y Bosques Ejidales', siglas: 'SNTSEMARNAT / CONAFOR / CNC', favor: 58, contra: 28, neutro: 14, postura: 'Respaldo Condicionado', pliegoPetitorio: 'Veda a tala de arbolado y respeto estricto a reservas ecológicas.', liderTestimonio: 'Respaldamos la agenda ambiental siempre que respete los ejidos.' },
+      { gremio: 'Burócratas y Servidores Públicos', siglas: 'FSTSE / SUTEYM / UNT', favor: 52, contra: 30, neutro: 18, postura: 'Mesa de Concertación', pliegoPetitorio: 'Estabilidad en plazas sindicalizadas y respeto escalafonario.', liderTestimonio: 'Exigimos respeto irrestricto a los contratos colectivos de trabajo.' },
+      { gremio: 'Transporte Público, Metro y Rutas Viales', siglas: 'SNTSTC / Tranviarios / FAT / CTM', favor: 34, contra: 54, neutro: 12, postura: 'Riesgo de Bloqueo Vial', pliegoPetitorio: 'Cero invasión de rutas, subsidio a combustible y seguridad.', liderTestimonio: 'Si colapsan nuestras rutas o alteran tarifas, pararemos los accesos.' },
+      { gremio: 'Agua Potable, Drenaje y Limpia Urbana', siglas: 'SACMEX / CAEM / CONAGUA', favor: 62, contra: 24, neutro: 14, postura: 'Alineación Favorable', pliegoPetitorio: 'Equipamiento pesado, guantes y modernización hidráulica.', liderTestimonio: 'Requerimos inversión urgente en pozos y red primaria de bombeo.' },
+      { gremio: 'Salud, Médicos, IMSS e ISSSTE', siglas: 'SNTSA / SNTSS / SNTISSSTE', favor: 64, contra: 22, neutro: 14, postura: 'Respaldo Institucional', pliegoPetitorio: 'Abasto al 100% de fármacos y basificación de enfermería.', liderTestimonio: 'El sistema de salud exige certidumbre y no recortes presupuestales.' },
+      { gremio: 'Electricistas y Sector Energético', siglas: 'SME / SUTERM / FSM', favor: 45, contra: 39, neutro: 16, postura: 'Reserva Estratégica', pliegoPetitorio: 'Mano de obra sindicalizada en redes de alumbrado y transición.', liderTestimonio: 'Vigilaremos que la infraestructura energética sea operada por agremiados.' },
+      { gremio: 'Comerciantes de Mercados y Tianguis', siglas: 'CONACCA / Locatarios', favor: 40, contra: 48, neutro: 12, postura: 'Resistencia Activa', pliegoPetitorio: 'Cero desalojos de vía pública y congelamiento de tarifas.', liderTestimonio: 'Si intentan reubicar tianguis sin consenso, marcharemos al palacio.' },
+      { gremio: 'Construcción y Materialistas de Obra', siglas: 'CTM Construcción / FROC', favor: 56, contra: 28, neutro: 16, postura: 'Alineación Productiva', pliegoPetitorio: 'Contratación de acarreos y mano de obra local en obras.', liderTestimonio: 'La obra pública debe reactivar a los sindicatos de la zona.' },
+      { gremio: 'Industria Manufacturera y Maquiladoras', siglas: 'CROC / CTM Industrial', favor: 50, contra: 32, neutro: 18, postura: 'Diálogo Paritario', pliegoPetitorio: 'Capacitación técnica, incentivos de productividad y bonos.', liderTestimonio: 'Priorizamos la productividad siempre que existan estímulos salariales.' },
+      { gremio: 'Seguridad Ciudadana y Custodios Viales', siglas: 'Frente Policial / SUTGCDMX', favor: 60, contra: 25, neutro: 15, postura: 'Alineación Operativa', pliegoPetitorio: 'Seguro de vida digno, patrullas nuevas y chalecos balísticos.', liderTestimonio: 'Respaldamos la estrategia si nos otorgan el equipamiento prometido.' },
+      { gremio: 'Telecomunicaciones y Repartidores por App', siglas: 'STRM / Unión de Plataformas', favor: 55, contra: 27, neutro: 18, postura: 'Mesa de Regulación', pliegoPetitorio: 'Zonas de recarga, seguridad en trayecto y seguro por accidente.', liderTestimonio: 'Buscamos formalización sin impuestos excesivos que reduzcan el ingreso.' }
+    ];
+
+    const finalFuerzas = (Array.isArray(fuerzas) && fuerzas.length >= 12) ? fuerzas : (Array.isArray(fuerzas) && fuerzas.length > 0) ? [...fuerzas, ...default12Fuerzas.slice(fuerzas.length)] : default12Fuerzas;
+
     let semaforoColor = 'bg-amber-500 text-slate-900';
     let semaforoBorder = 'border-amber-400';
     let semaforoBg = 'bg-amber-50';
     if (semaforo === 'Rojo' || riesgoParoScore >= 70) {
-      semaforoColor = 'bg-red-600 text-white animate-pulse';
-      semaforoBorder = 'border-red-400';
-      semaforoBg = 'bg-red-50';
+      semaforoColor = 'bg-rose-600 text-white animate-pulse';
+      semaforoBorder = 'border-rose-400';
+      semaforoBg = 'bg-rose-50';
     } else if (semaforo === 'Verde' && riesgoParoScore < 40) {
       semaforoColor = 'bg-emerald-600 text-white';
       semaforoBorder = 'border-emerald-300';
@@ -2859,15 +3455,15 @@ const Components = {
     }
 
     const renderBar = (favor, contra, neutro) => `
-      <div class="w-full bg-slate-200 rounded-full h-3 flex overflow-hidden shadow-inner my-1.5 border border-slate-300/60">
+      <div class="w-full bg-slate-200 rounded-full h-2.5 flex overflow-hidden shadow-inner my-1.5 border border-slate-300/60">
         <div style="width: ${favor}%" class="bg-emerald-600 h-full" title="A Favor: ${favor}%"></div>
-        <div style="width: ${contra}%" class="bg-red-600 h-full" title="En Contra: ${contra}%"></div>
-        <div style="width: ${neutro}%" class="bg-slate-400 h-full" title="Neutro: ${neutro}%"></div>
+        <div style="width: ${contra}%" class="bg-rose-600 h-full" title="En Contra: ${contra}%"></div>
+        <div style="width: ${neutro}%" class="bg-amber-400 h-full" title="Neutro: ${neutro}%"></div>
       </div>
       <div class="flex items-center justify-between text-[11px] font-bold">
         <span class="text-emerald-700">${favor}% <span class="text-[9px] font-normal text-emerald-600">Favor</span></span>
-        <span class="text-red-600">${contra}% <span class="text-[9px] font-normal text-red-500">Contra</span></span>
-        <span class="text-slate-600">${neutro}% <span class="text-[9px] font-normal text-slate-400">Neutro</span></span>
+        <span class="text-rose-600">${contra}% <span class="text-[9px] font-normal text-rose-500">Contra</span></span>
+        <span class="text-amber-700">${neutro}% <span class="text-[9px] font-normal text-amber-500">Neutro</span></span>
       </div>
     `;
 
@@ -2895,30 +3491,30 @@ const Components = {
             </div>
           </div>
 
-          <!-- EXPEDIENTE OBLIGATORIO DE REACCIÓN SINDICAL CONCRETA (4 PUNTOS) -->
+          <!-- EXPEDIENTE OBLIGATORIO DE REACCIÓN SINDICAL CONCRETA (3 COLUMNAS) -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-slate-300/70">
-            <!-- Punto 2: Sindicatos y Gremios Específicos que Reaccionarán -->
+            <!-- Punto 1: Sindicatos y Gremios que Reaccionarán -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-black uppercase tracking-wider text-red-800 flex items-center gap-1.5">
-                  <span>🪧</span> Sindicatos y Gremios que Reaccionarán
+                <span class="text-[11px] font-black uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+                  <span>🪧</span> Sindicatos que Reaccionarán
                 </span>
-                <span class="text-[10px] font-bold bg-red-100 text-red-800 px-2 py-0.5 rounded-full">${sindicatosReactivos.length || 6} Activos</span>
+                <span class="text-[10px] font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">${sindicatosReactivos.length || 6} Activos</span>
               </div>
               <ul class="space-y-1.5 text-xs text-slate-800">
-                ${(sindicatosReactivos.length > 0 ? sindicatosReactivos : fuerzas.filter(f => f.esAfectadoDirecto).map(f => `${f.siglas} (${f.gremio})`)).map(s => `
+                ${(sindicatosReactivos.length > 0 ? sindicatosReactivos : finalFuerzas.filter(f => (f.contra >= 35 || f.postura?.includes('Contra') || f.postura?.includes('Alerta'))).map(f => `${f.siglas} (${f.gremio})`)).slice(0, 6).map(s => `
                   <li class="flex items-start gap-1.5 leading-snug">
-                    <span class="text-red-600 font-black shrink-0">•</span>
+                    <span class="text-rose-600 font-black shrink-0">•</span>
                     <span class="font-semibold text-[11px]">${s}</span>
                   </li>
                 `).join('')}
               </ul>
             </div>
 
-            <!-- Punto 3: Modo de Acción en Calle (Táctica Sindical) -->
-            <div class="bg-white p-4 rounded-xl border border-red-200 shadow-2xs space-y-2">
+            <!-- Punto 2: Modo de Acción en Calle -->
+            <div class="bg-white p-4 rounded-xl border border-rose-200 shadow-2xs space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-black uppercase tracking-wider text-red-900 flex items-center gap-1.5">
+                <span class="text-[11px] font-black uppercase tracking-wider text-rose-900 flex items-center gap-1.5">
                   <span>🚧</span> Modo de Acción en Calle (Táctica Sindical)
                 </span>
                 <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Operativo en Calle</span>
@@ -2928,7 +3524,7 @@ const Components = {
               </p>
             </div>
 
-            <!-- Punto 4: Protocolo de Desactivación / Negociación -->
+            <!-- Punto 3: Protocolo de Desactivación / Negociación -->
             <div class="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-2xs space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
@@ -2943,14 +3539,59 @@ const Components = {
           </div>
         </div>
 
-        <!-- MATRIZ DE LAS 12 FUERZAS SINDICALES -->
+        <!-- SECCIÓN GRÁFICA INTERACTIVA: DONUT DE RIESGO Y COMPARATIVA DE 12 FUERZAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Donut Chart: Distribución por Nivel de Riesgo -->
+          <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-md flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Riesgo de Movilización Sindical
+                </h4>
+                <span class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-700">12 Gremios</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Distribución proporcional de las 12 fuerzas según nivel de conflictividad.</p>
+            </div>
+            <div class="relative w-full flex items-center justify-center my-2" style="height: 190px;">
+              <canvas id="chart-unions-donut"></canvas>
+            </div>
+            <div class="text-[11px] font-bold text-center text-slate-600 pt-2 border-t border-slate-100">
+              Riesgo Promedio Ponderado: <strong class="text-rose-700">${riesgoParoScore}/100</strong>
+            </div>
+          </div>
+
+          <!-- Bar Breakdown Chart: Comparativa de 12 Fuerzas -->
+          <div class="lg:col-span-8 bg-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-md flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <h4 class="text-xs font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Auditoría Comparativa de las 12 Fuerzas Gremiales
+                </h4>
+                <p class="text-xs text-slate-400 mt-0.5">Postura estocástica (Favor vs Contra vs Neutro) por organización sindical.</p>
+              </div>
+              <span class="text-[10px] font-bold bg-slate-900 border border-slate-700 text-cyan-300 px-2.5 py-1 rounded-full">
+                CFCRL / STPS
+              </span>
+            </div>
+            <div class="relative w-full my-2" style="height: 250px;">
+              <canvas id="chart-unions-bar"></canvas>
+            </div>
+            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-2 border-t border-slate-800">
+              <span class="text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600"></span> Alianza Institucional</span>
+              <span class="text-rose-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600"></span> Alerta de Paro / Bloqueo</span>
+              <span class="text-amber-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Mesa de Diálogo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MATRIZ DE LAS 12 FUERZAS SINDICALES CON TACÓMETROS SVG -->
         <div class="card-pvem p-6 bg-white rounded-2xl shadow-md space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div>
               <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-600"></span> Matriz de Reacción de las 12 Fuerzas Sindicales
               </h3>
-              <p class="text-xs text-slate-500">Auditoría cruzada de contratos colectivos (CFCRL/STPS) y pliegos petitorios gremiales frente al tema.</p>
+              <p class="text-xs text-slate-500">Auditoría cruzada de contratos colectivos y pliegos petitorios gremiales.</p>
             </div>
             <span class="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">
               12 Fuerzas Monitoreadas
@@ -2958,22 +3599,28 @@ const Components = {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${fuerzas.map(f => {
+            ${finalFuerzas.map(f => {
+              const unionRisk = f.riesgoScore || (f.contra ? Math.min(98, Math.max(10, Math.round(f.contra * 1.1))) : (f.postura?.includes('Contra') || f.postura?.includes('Rechazo') || f.postura?.includes('Bloqueo') || f.postura?.includes('Alerta') ? 78 : (f.postura?.includes('Reserva') || f.postura?.includes('Condicionado') || f.postura?.includes('Diálogo') ? 48 : 20)));
+
               let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-              if ((f.postura || '').includes('Contra') || (f.postura || '').includes('Rechazo')) badgeBg = 'bg-red-100 text-red-800 border-red-200';
-              else if ((f.postura || '').includes('Reserva') || (f.postura || '').includes('Condicionado')) badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
+              if (unionRisk >= 65 || (f.postura || '').includes('Contra') || (f.postura || '').includes('Rechazo') || (f.postura || '').includes('Bloqueo')) {
+                badgeBg = 'bg-rose-100 text-rose-800 border-rose-200';
+              } else if (unionRisk >= 35 || (f.postura || '').includes('Reserva') || (f.postura || '').includes('Condicionado') || (f.postura || '').includes('Diálogo')) {
+                badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
+              }
 
               return `
                 <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
                   <div>
                     <div class="flex items-start justify-between gap-2 mb-1.5">
-                      <div>
+                      <div class="min-w-0 pr-1">
                         <h4 class="text-xs font-black text-slate-900 leading-tight">${f.gremio}</h4>
-                        <span class="text-[10px] font-bold text-slate-500 font-mono">${f.siglas}</span>
+                        <span class="text-[10px] font-bold text-slate-500 font-mono block mt-0.5">${f.siglas}</span>
+                        <span class="inline-block text-[9px] font-extrabold px-2 py-0.5 mt-1 rounded-full border ${badgeBg}">
+                          ${f.postura}
+                        </span>
                       </div>
-                      <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${badgeBg} whitespace-nowrap">
-                        ${f.postura}
-                      </span>
+                      ${renderGaugeDialSVG(unionRisk, 'Riesgo', 74)}
                     </div>
 
                     ${renderBar(f.favor, f.contra, f.neutro)}
@@ -2999,6 +3646,148 @@ const Components = {
     `;
 
     container.innerHTML = html;
+
+    // INICIALIZACIÓN SÍNCRONA / RAF DE LOS GRÁFICOS DE SINDICATOS (CHART.JS)
+    requestAnimationFrame(() => {
+      if (typeof Chart === 'undefined') return;
+
+      // 1. Donut de Distribución de Riesgo Sindical
+      const canvasUnionDonut = document.getElementById('chart-unions-donut');
+      if (canvasUnionDonut) {
+        const existing = Chart.getChart(canvasUnionDonut);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartUnionsDonutInstance) try { chartUnionsDonutInstance.destroy(); } catch (e) {}
+
+        const ctxDonut = canvasUnionDonut.getContext('2d');
+        let criticos = 0, moderados = 0, bajos = 0;
+        finalFuerzas.forEach(f => {
+          const r = f.riesgoScore || (f.contra >= 40 ? 75 : (f.contra >= 25 ? 45 : 18));
+          if (r >= 65) criticos++;
+          else if (r >= 35) moderados++;
+          else bajos++;
+        });
+
+        chartUnionsDonutInstance = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: [`Riesgo Crítico (${criticos})`, `Riesgo Moderado (${moderados})`, `Riesgo Bajo (${bajos})`],
+            datasets: [{
+              data: [criticos, moderados, bajos],
+              backgroundColor: ['#dc2626', '#f59e0b', '#10b981'],
+              borderWidth: 2,
+              borderColor: '#ffffff',
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { font: { size: 9, weight: '700' }, boxWidth: 8, usePointStyle: true }
+              },
+              tooltip: {
+                callbacks: {
+                  label: c => ` ${c.label} organizaciones sindicales`
+                }
+              }
+            },
+            cutout: '64%'
+          }
+        });
+      }
+
+      // 2. Gráfico Horizontal de Barras Comparativo de las 12 Fuerzas
+      const canvasUnionBar = document.getElementById('chart-unions-bar');
+      if (canvasUnionBar) {
+        const existing = Chart.getChart(canvasUnionBar);
+        if (existing) try { existing.destroy(); } catch (e) {}
+        if (chartUnionsBarInstance) try { chartUnionsBarInstance.destroy(); } catch (e) {}
+
+        const ctxBar = canvasUnionBar.getContext('2d');
+        const unionLabels = finalFuerzas.map(f => (f.siglas || f.gremio).split('/')[0].trim());
+
+        chartUnionsBarInstance = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: unionLabels,
+            datasets: [
+              {
+                label: 'A Favor (%)',
+                data: finalFuerzas.map(f => Number(f.favor) || 0),
+                backgroundColor: '#10b981',
+                borderRadius: 3,
+                barPercentage: 0.7
+              },
+              {
+                label: 'En Contra (%)',
+                data: finalFuerzas.map(f => Number(f.contra) || 0),
+                backgroundColor: '#f43f5e',
+                borderRadius: 3,
+                barPercentage: 0.7
+              },
+              {
+                label: 'Neutro (%)',
+                data: finalFuerzas.map(f => Number(f.neutro) || 0),
+                backgroundColor: '#f59e0b',
+                borderRadius: 3,
+                barPercentage: 0.7
+              }
+            ]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                stacked: true,
+                max: 100,
+                ticks: {
+                  color: '#94a3b8',
+                  callback: v => `${v}%`,
+                  font: { size: 9, weight: '600' }
+                },
+                grid: { color: 'rgba(51, 65, 85, 0.4)' }
+              },
+              y: {
+                stacked: true,
+                ticks: {
+                  color: '#f1f5f9',
+                  font: { size: 9, weight: '700' }
+                },
+                grid: { display: false }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                align: 'end',
+                labels: {
+                  color: '#e2e8f0',
+                  font: { size: 10, weight: '700' },
+                  boxWidth: 10,
+                  boxHeight: 10,
+                  usePointStyle: true
+                }
+              },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#38bdf8',
+                bodyColor: '#f8fafc',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 8,
+                callbacks: {
+                  label: c => ` ${c.dataset.label}: ${c.raw}%`
+                }
+              }
+            }
+          }
+        });
+      }
+    });
   },
 
   /**

@@ -544,6 +544,11 @@ window.switchWarRoomTab = function(tabId) {
       tab.classList.remove('tabFadeIn');
     }
   });
+
+  // Redimensionar automáticamente gráficos de Chart.js al cambiar de pestaña
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
 };
 
 /**
