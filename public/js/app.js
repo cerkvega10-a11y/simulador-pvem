@@ -959,6 +959,48 @@ function setupEventListeners() {
     });
   }
 
+  // Dynamic Input Binding en tiempo real (Sincroniza propuestas nuevas directamente con appState)
+  const inputTituloEl = document.getElementById('input-titulo');
+  const inputPropuestaEl = document.getElementById('input-propuesta');
+  const radarInputTituloEl = document.getElementById('radar-input-titulo');
+  const radarInputPropuestaEl = document.getElementById('radar-input-propuesta');
+
+  if (inputTituloEl) {
+    inputTituloEl.addEventListener('input', (e) => {
+      appState.tituloProyecto = e.target.value.trim();
+      appState.customTitle = e.target.value.trim();
+    });
+  }
+
+  if (inputPropuestaEl) {
+    inputPropuestaEl.addEventListener('input', (e) => {
+      appState.propuestaTexto = e.target.value;
+      appState.customProposal = e.target.value;
+      appState.proposalText = e.target.value;
+      // Ocultar advertencia visual y remover estilos de alerta si el usuario escribe
+      const warnBox = document.getElementById('proposal-validation-warning');
+      if (warnBox) warnBox.classList.add('hidden');
+      inputPropuestaEl.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500', 'bg-rose-50/20');
+    });
+  }
+
+  if (radarInputTituloEl) {
+    radarInputTituloEl.addEventListener('input', (e) => {
+      appState.tituloProyecto = e.target.value.trim();
+      appState.customTitle = e.target.value.trim();
+      if (inputTituloEl && !inputTituloEl.value) inputTituloEl.value = e.target.value;
+    });
+  }
+
+  if (radarInputPropuestaEl) {
+    radarInputPropuestaEl.addEventListener('input', (e) => {
+      appState.propuestaTexto = e.target.value;
+      appState.customProposal = e.target.value;
+      appState.proposalText = e.target.value;
+      if (inputPropuestaEl && !inputPropuestaEl.value) inputPropuestaEl.value = e.target.value;
+    });
+  }
+
   // Botón Principal: Iniciar Simulación
   const btnSimular = document.getElementById('btn-iniciar-simulacion');
   btnSimular.addEventListener('click', () => {
@@ -1617,8 +1659,15 @@ async function startSimulation() {
   }
 
   const payload = {
-    tituloProyecto: appState.tituloProyecto,
-    propuestaTexto: appState.propuestaTexto,
+    // Dynamic Input Binding: Inyección multi-alias para compatibilidad total con el motor de IA
+    customProposal: propuesta,
+    proposalText: propuesta,
+    propuestaTexto: propuesta,
+    propuesta: propuesta,
+    customTitle: titulo,
+    tituloProyecto: titulo,
+    titulo: titulo,
+    isCustomProposal: Boolean(propuesta && propuesta.length > 0),
     documentData: appState.documentData,
     visualData: appState.visualData,
     estado: appState.estado,

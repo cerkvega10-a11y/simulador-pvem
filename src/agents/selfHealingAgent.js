@@ -23,9 +23,31 @@ class SelfHealingBugfixAgent {
     const rawSwarm = parseInt(sanitized.swarmSize, 10);
     sanitized.swarmSize = (!isNaN(rawSwarm) && rawSwarm >= 50 && rawSwarm <= 100000) ? rawSwarm : 10000;
 
-    // 2. Cadenas de texto críticas
-    sanitized.tituloProyecto = String(sanitized.tituloProyecto || 'Iniciativa Estratégica Municipal').trim();
-    sanitized.propuestaTexto = String(sanitized.propuestaTexto || sanitized.propuesta || 'Propuesta de fortalecimiento comunitario y modernización de servicios.').trim();
+    // 2. Cadenas de texto críticas con soporte prioritario para customProposal
+    const rawProposal = String(
+      sanitized.customProposal ||
+      sanitized.proposalText ||
+      sanitized.propuestaTexto ||
+      sanitized.propuesta ||
+      sanitized.texto ||
+      sanitized.documentData?.textoExtraido ||
+      'Propuesta de fortalecimiento comunitario y modernización de servicios.'
+    ).trim();
+
+    const rawTitle = String(
+      sanitized.customTitle ||
+      sanitized.tituloProyecto ||
+      sanitized.titulo ||
+      'Iniciativa Estratégica Ciudadana'
+    ).trim();
+
+    sanitized.customProposal = rawProposal;
+    sanitized.proposalText = rawProposal;
+    sanitized.propuestaTexto = rawProposal;
+    sanitized.propuesta = rawProposal;
+    sanitized.customTitle = rawTitle;
+    sanitized.tituloProyecto = rawTitle;
+    sanitized.titulo = rawTitle;
     sanitized.estado = String(sanitized.estado || 'Estado de México').trim();
     sanitized.municipio = String(sanitized.municipio || 'Ecatepec de Morelos').trim();
     sanitized.localidad = String(sanitized.localidad || 'Zona General').trim();

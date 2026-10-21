@@ -26,18 +26,41 @@ class OrchestratorAgent {
   async runSimulationPipeline(inputData, onProgress = () => {}) {
     const startTime = Date.now();
     const simulationId = 'sim_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    const {
-      tituloProyecto = inputData.titulo || 'Iniciativa Comunitaria Verde',
-      propuestaTexto = inputData.propuesta || '',
-      documentData = null,
-      visualData = null,
-      estado = 'Estado de México',
-      municipio = 'Ecatepec de Morelos',
-      localidad = '',
-      filtrosDemograficos = {},
-      swarmSize = inputData.tamanoEnjambre || 250,
-      webSearchActive = true
-    } = inputData;
+    // Dynamic Input Binding: Extracción robusta de propuesta y título de cualquier fuente
+    const propuestaTexto = String(
+      inputData.customProposal ||
+      inputData.proposalText ||
+      inputData.propuestaTexto ||
+      inputData.propuesta ||
+      inputData.descripcion ||
+      inputData.documentData?.textoExtraido ||
+      ''
+    ).trim();
+
+    const tituloProyecto = String(
+      inputData.customTitle ||
+      inputData.tituloProyecto ||
+      inputData.titulo ||
+      'Iniciativa Estratégica Ciudadana'
+    ).trim();
+
+    const documentData = inputData.documentData || null;
+    const visualData = inputData.visualData || null;
+    const estado = inputData.estado || 'Estado de México';
+    const municipio = inputData.municipio || 'Ecatepec de Morelos';
+    const localidad = inputData.localidad || '';
+    const filtrosDemograficos = inputData.filtrosDemograficos || {};
+    const swarmSize = inputData.swarmSize || inputData.tamanoEnjambre || 10000;
+    const webSearchActive = inputData.webSearchActive !== undefined ? inputData.webSearchActive : true;
+
+    // Sincronizar hacia inputData para downstream modules (Watchdog, LLM, etc.)
+    inputData.customProposal = propuestaTexto;
+    inputData.proposalText = propuestaTexto;
+    inputData.propuestaTexto = propuestaTexto;
+    inputData.propuesta = propuestaTexto;
+    inputData.customTitle = tituloProyecto;
+    inputData.tituloProyecto = tituloProyecto;
+    inputData.titulo = tituloProyecto;
 
     // --- PASO 1: Análisis Multimodal (Document & Vision Parser) ---
     onProgress({
