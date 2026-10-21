@@ -1,8 +1,70 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_KEY || 'govtech-warroom-master-aes256-encryption-secret-2027';
+
+function decryptStoredApiKey(cipherText) {
+  if (!cipherText || typeof cipherText !== 'string' || !cipherText.startsWith('enc:')) {
+    return cipherText || '';
+  }
+  try {
+    const parts = cipherText.split(':');
+    if (parts.length !== 4) return '';
+    const iv = Buffer.from(parts[1], 'hex');
+    const authTag = Buffer.from(parts[2], 'hex');
+    const encryptedText = parts[3];
+    const key = crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest();
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted.trim();
+  } catch (err) {
+    return '';
+  }
+}
+
+function loadPersistedAiKeys() {
+  const candidateFiles = [
+    path.join(__dirname, '../data/ai_config_db.json'),
+    path.join(process.cwd(), 'src/data/ai_config_db.json'),
+    '/tmp/ai_config_db.json'
+  ];
+
+  for (const f of candidateFiles) {
+    try {
+      if (fs.existsSync(f)) {
+        const raw = fs.readFileSync(f, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed.groqApiKeyEncrypted && !process.env.GROQ_API_KEY) {
+          const dec = decryptStoredApiKey(parsed.groqApiKeyEncrypted);
+          if (dec) process.env.GROQ_API_KEY = dec;
+        }
+        if (parsed.geminiApiKeyEncrypted && !process.env.GEMINI_API_KEY) {
+          const dec = decryptStoredApiKey(parsed.geminiApiKeyEncrypted);
+          if (dec) process.env.GEMINI_API_KEY = dec;
+        }
+        if (parsed.deepseekApiKeyEncrypted && !process.env.DEEPSEEK_API_KEY) {
+          const dec = decryptStoredApiKey(parsed.deepseekApiKeyEncrypted);
+          if (dec) process.env.DEEPSEEK_API_KEY = dec;
+        }
+        if (parsed.openaiApiKeyEncrypted && !process.env.OPENAI_API_KEY) {
+          const dec = decryptStoredApiKey(parsed.openaiApiKeyEncrypted);
+          if (dec) process.env.OPENAI_API_KEY = dec;
+        }
+        break;
+      }
+    } catch (_) {}
+  }
+
+  if (!process.env.GROQ_API_KEY) {
+    const fallbackDec = decryptStoredApiKey('enc:6e20af1e2e2fde5c7c46f6b50bfa2976:5397cc64eae4339e1c398ba4de0241f5:c2496df185a5d3faeb27f90ffba4464b72d81835eef94ccf030a81e5d3feb9cc75f5140bb8fa8444665ca2aabc9b7e26ebcf4fdaaf439d3d');
+    if (fallbackDec) process.env.GROQ_API_KEY = fallbackDec;
+  }
+}
 
 function ensureEnvLoaded() {
-  if (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY) return;
   const envPath = path.join(__dirname, '../../.env');
   if (fs.existsSync(envPath)) {
     try {
@@ -22,6 +84,7 @@ function ensureEnvLoaded() {
       });
     } catch (_) {}
   }
+  loadPersistedAiKeys();
 }
 ensureEnvLoaded();
 
@@ -869,6 +932,113 @@ Debes responder ÚNICAMENTE un objeto JSON válido con la propiedad "arquetipos"
       return Array.isArray(parsed.arquetipos) ? parsed.arquetipos : (Array.isArray(parsed) ? parsed : null);
     } catch (err) {
       console.warn('[FreeLLMService] evaluateArchetypesBatchWithGroq error:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * 6. Genera Micro-Segmentación Psicográfica y WhatsApp, Naming, Eslogan, ROI y Radiografía de Desgaste con IA en tiempo real
+   */
+  async generateStrategicCampaignAndMicroSegmentationWithLLM(params = {}) {
+    const {
+      propuestaTexto = '',
+      tituloProyecto = '',
+      municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
+      votosFinales = {},
+      aiConfig = {}
+    } = params;
+
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) {
+      return null;
+    }
+
+    const favor = votosFinales.porcentajeFavor || 55;
+    const contra = votosFinales.porcentajeContra || 28;
+
+    const systemPrompt = `Eres el Director Estratégico de Campaña y Analista Psicográfico de Cuarto de Guerra para ${municipio}, ${estado}.
+Analiza la siguiente iniciativa ("${tituloProyecto}": "${propuestaTexto}") con una proyección electoral de ${favor}% A Favor y ${contra}% En Contra.
+
+Debes generar una estrategia integral quirúrgica en formato JSON ESTRICTO con 4 bloques:
+
+1. "microSegmentacionGeneracional": Arreglo con 4 cohortes psicográficas clave:
+   - "cohorte_jovenes" (18-29 años): Centennials / Universitarios.
+   - "cohorte_millennials" (30-49 años): Familias Jóvenes y Adultos Productivos.
+   - "cohorte_maduros" (50-64 años): Adultos Maduros y Comerciantes.
+   - "cohorte_mayores" (65+ años): Adultos Mayores y Jubilados.
+   Para cada cohorte genera:
+   - "id": string
+   - "cohorte": string (Nombre completo de la cohorte)
+   - "nombre": string
+   - "rangoEdad": string
+   - "pesoElectoral": string
+   - "canalPrincipal": string
+   - "canalPrioritario": string
+   - "tonoComunicacion": string
+   - "disparadorEmocional": string
+   - "propuestaAncla": string
+   - "mensajeClaveWhatsApp": string (Mensaje hiper-atractivo listo para reenviar en grupos vecinales de WhatsApp con emojis y llamado a la acción)
+   - "microMensajeWhatsApp": string (Mismo mensaje)
+
+2. "manualCampanaEstrategico":
+   - "namingEstrategico": string (Nombre contundente del proyecto o bandera)
+   - "sloganOficial": string (Eslogan de alto impacto popular)
+   - "namingOficial": string (Mismo naming)
+   - "esloganGanador": string (Mismo slogan)
+   - "banderazoSalida": { "colonia": string, "horario": string, "justificacion": string }
+   - "discursosSegmentados": {
+       "jovenes": { "rango": "18 a 29 años", "soundbite": string, "riesgoEvitar": string },
+       "adultos": { "rango": "30 a 49 años", "soundbite": string, "riesgoEvitar": string },
+       "mayores": { "rango": "65+ años", "soundbite": string, "riesgoEvitar": string }
+     }
+
+3. "calculadoraROICampana":
+   - "padronElectoralEstimado": number
+   - "metaVotosVictoria": number
+   - "totalSeccionesElectorales": number
+   - "clasificacionSecciones": {
+       "bastionesSeguros": { "secciones": number, "porcentaje": number, "estrategia": string },
+       "battlegroundPrioritario": { "secciones": number, "porcentaje": number, "estrategia": string },
+       "riesgoOpositor": { "secciones": number, "porcentaje": number, "estrategia": string }
+     }
+   - "asignacionRecursos": { "brigadistasRecomendados": number, "lonasPublicidad": number, "asambleasVecinales": number }
+   - "costoPorVotoPersuadido": string
+   - "roiElectoralScore": number
+   - "diagnosticoROI": string
+
+4. "indiceEscepticismo":
+   - "scoreEscepticismo": number
+   - "nivelEscepticismo": string
+   - "promesasMayorRiesgo": [
+       { "promesa": string, "escepticismo": number, "motivo": string },
+       { "promesa": string, "escepticismo": number, "motivo": string },
+       { "promesa": string, "escepticismo": number, "motivo": string }
+     ]
+   - "mecanismoMitigacion": string
+   - "estrategiaBlindaje": string
+
+Responde EXCLUSIVAMENTE el objeto JSON sin markdown exterior.`;
+
+    try {
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Genera la micro-segmentación y manual de campaña para la propuesta: "${propuestaTexto}" en ${municipio}, ${estado}.` }
+        ],
+        temperature: 0.5,
+        jsonMode: true
+      });
+
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      return parsed;
+    } catch (err) {
+      console.warn('[FreeLLMService] generateStrategicCampaignAndMicroSegmentationWithLLM error:', err.message);
       return null;
     }
   }

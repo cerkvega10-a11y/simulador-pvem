@@ -129,6 +129,7 @@ class WatchdogAuditAgent {
     let aiAttackData = null;
     let aiDigitalTrends = null;
     let aiColoniaCalibration = null;
+    let aiStrategicCampaignData = null;
     let neuralChats = null;
 
     if (hasCentralKey || hasClientKey) {
@@ -177,6 +178,14 @@ class WatchdogAuditAgent {
             estado: estado,
             colonias: municipalResearch.coloniasRepresentativas || [],
             aiConfig: inputData.aiConfig
+          }),
+          freeLLMService.generateStrategicCampaignAndMicroSegmentationWithLLM({
+            propuestaTexto: textoOriginal,
+            tituloProyecto: tituloProyecto,
+            municipio: muni,
+            estado: estado,
+            votosFinales,
+            aiConfig: inputData.aiConfig
           })
         ]);
 
@@ -186,6 +195,7 @@ class WatchdogAuditAgent {
         if (results[3].status === 'fulfilled' && results[3].value) aiAttackData = results[3].value;
         if (results[4].status === 'fulfilled' && results[4].value) aiDigitalTrends = results[4].value;
         if (results[5].status === 'fulfilled' && results[5].value) aiColoniaCalibration = results[5].value;
+        if (results[6].status === 'fulfilled' && results[6].value) aiStrategicCampaignData = results[6].value;
       } catch (parErr) {
         console.warn('[Watchdog] Continuación con módulos híbridos:', parErr.message);
       }
@@ -412,6 +422,7 @@ class WatchdogAuditAgent {
       modoAtaque,
       tendenciasDigitales: aiDigitalTrends,
       calibracionColoniasAI: aiColoniaCalibration,
+      strategicCampaignData: aiStrategicCampaignData,
       variacionMuestral,
       qaWatchdogCertificacion
     };

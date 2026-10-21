@@ -527,20 +527,40 @@ input:focus, select:focus, textarea:focus {
   transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Acordeón de 20 Preguntas de Defensa */
+/* Acordeón de 20 Preguntas de Defensa y Blindaje */
+.defense-card.card-pvem {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
 .accordion-toggle {
   cursor: pointer;
   user-select: none;
 }
+
 .accordion-content {
-  max-height: 0;
-  overflow: hidden;
+  max-height: 0 !important;
+  overflow: hidden !important;
   transition: max-height 0.3s ease-out, opacity 0.25s ease-out;
-  opacity: 0;
+  opacity: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-top-width: 0 !important;
+  border: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
+
 .accordion-content.open {
-  max-height: 800px;
-  opacity: 1;
+  max-height: 2000px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 1.25rem !important;
+  border-top-width: 1px !important;
+  border-top-style: solid !important;
+  border-top-color: rgba(226, 232, 240, 0.6) !important;
 }
 
 /* Indicador de Candado y Bloqueo de Estados */

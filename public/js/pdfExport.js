@@ -889,7 +889,7 @@
       curY += 5.2;
 
       fuentes18.forEach((f, idx) => {
-        const rowH = 6.2;
+        const rowH = 4.8;
         const bg = (idx % 2 === 0) ? [255, 255, 255] : [248, 250, 252];
         doc.setFillColor(bg[0], bg[1], bg[2]);
         doc.rect(margin, curY, contentWidth, rowH, 'F');
@@ -897,32 +897,32 @@
         doc.rect(margin, curY, contentWidth, rowH, 'S');
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6);
+        doc.setFontSize(5.8);
         doc.setTextColor(15, 23, 42);
-        doc.text(f.institucion, margin + 2, curY + 4.2);
+        doc.text(f.institucion, margin + 2, curY + 3.4);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(2, 132, 199);
-        doc.text(' CALIBRACIÓN SWARM AI', margin + 47, curY + 4.2);
+        doc.text('CALIBRACIÓN SWARM AI', margin + 47, curY + 3.4);
 
         doc.setTextColor(51, 65, 85);
-        doc.text(f.indicador.substring(0, 68), margin + 85, curY + 4.2);
+        doc.text(f.indicador.substring(0, 68), margin + 85, curY + 3.4);
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 143, 57);
-        doc.text('✔ Procesado', margin + 165, curY + 4.2);
+        doc.text('[OK] Procesado', margin + 165, curY + 3.4);
 
         curY += rowH;
       });
 
       // MONITOREO DE RIESGO DE POLARIZACIÓN Y RECOMENDACIONES TÁCTICAS EJECUTIVAS
-      curY += 5;
+      curY += 3.5;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
       doc.text('MONITOREO EJECUTIVO DE GOBERNANZA, POLARIZACIÓN Y BLINDAJE SOCIAL', margin, curY);
 
-      curY += 3.5;
+      curY += 2.5;
 
       const res = reportData.resumenEjecutivo || {};
       const scoreFavor = Number(res.porcentajeFavor || 55);
@@ -940,7 +940,7 @@
       ];
 
       const kpiW = (contentWidth - 6) / 4;
-      const kpiH = 16;
+      const kpiH = 13.5;
       kpis.forEach((k, idx) => {
         const kX = margin + (idx * (kpiW + 2));
         doc.setFillColor(255, 255, 255);
@@ -948,25 +948,25 @@
         doc.roundedRect(kX, curY, kpiW, kpiH, 1.2, 1.2, 'FD');
 
         doc.setFillColor(k.color[0], k.color[1], k.color[2]);
-        doc.rect(kX, curY, kpiW, 1.5, 'F');
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.2);
-        doc.setTextColor(100, 116, 139);
-        doc.text(k.label.toUpperCase(), kX + 2, curY + 4.8);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.setTextColor(k.color[0], k.color[1], k.color[2]);
-        doc.text(k.val, kX + 2, curY + 10.5);
+        doc.rect(kX, curY, kpiW, 1.2, 'F');
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(k.label.toUpperCase(), kX + 2, curY + 4.2);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(k.color[0], k.color[1], k.color[2]);
+        doc.text(k.val, kX + 2, curY + 8.8);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(4.8);
         doc.setTextColor(71, 85, 105);
-        doc.text(k.sub, kX + 2, curY + 14);
+        doc.text(k.sub, kX + 2, curY + 12);
       });
 
-      curY += kpiH + 4;
+      curY += kpiH + 3.5;
 
       // Matriz de Recomendaciones Tácticas Ejecutivas
       const recomendaciones = [
@@ -985,7 +985,7 @@
       ];
 
       recomendaciones.forEach(r => {
-        const recH = 14.5;
+        const recH = 12;
         doc.setFillColor(248, 250, 252);
         doc.setDrawColor(226, 232, 240);
         doc.roundedRect(margin, curY, contentWidth, recH, 1.2, 1.2, 'FD');
@@ -994,17 +994,17 @@
         doc.rect(margin, curY, 2.5, recH, 'F');
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        doc.setFontSize(6.2);
         doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-        doc.text(r.eje, margin + 5, curY + 4.5);
+        doc.text(r.eje, margin + 5, curY + 3.8);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.8);
+        doc.setFontSize(5.5);
         doc.setTextColor(51, 65, 85);
         const descLines = doc.splitTextToSize(r.desc, contentWidth - 8);
-        doc.text(descLines.slice(0, 2), margin + 5, curY + 8.8);
+        doc.text(descLines.slice(0, 2), margin + 5, curY + 7.6);
 
-        curY += recH + 2.5;
+        curY += recH + 2;
       });
     },
 
@@ -1014,23 +1014,23 @@
     drawPage6BlindajeParte1(doc, ctx) {
       const { margin, contentWidth, party, reportData } = ctx;
 
-      let curY = 17;
+      let curY = 16;
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.2);
+      doc.setFontSize(7);
       doc.setTextColor(71, 85, 105);
       const sub = 'Media training intensivo generado para la propuesta evaluada en sesión. Bloque 1 y Bloque 2 (Preguntas 1 a 10):';
       doc.text(doc.splitTextToSize(sub, contentWidth), margin, curY);
 
-      curY += 5;
+      curY += 4.5;
 
       const rawPR = reportData.blindajeEstrategico?.preguntasRespuestas || reportData.blindajeDefensa?.preguntas || [];
       const preguntas = rawPR.length > 0
         ? rawPR.map((item, idx) => ({
             numero: item.numero || (idx + 1),
             bloque: item.categoria || item.bloque || 'Blindaje Táctico',
-            dardo: item.pregunta || item.dardo || '',
-            escudo: item.respuestaMaestra || item.escudo || '',
-            pivotePolitico: item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`,
+            dardo: this.cleanPdfText(item.pregunta || item.dardo || ''),
+            escudo: this.cleanPdfText(item.respuestaMaestra || item.escudo || ''),
+            pivotePolitico: this.cleanPdfText(item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`),
             peligro: item.nivelRiesgo || item.peligro || 'Riesgo Alto',
             sectorAtacante: item.sectorAtacante || 'Cuestionamiento Crítico'
           }))
@@ -1038,7 +1038,7 @@
       const pBloque1y2 = preguntas.slice(0, 10);
 
       pBloque1y2.forEach((q) => {
-        const qH = 22.8;
+        const qH = 21.2;
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(226, 232, 240);
         doc.roundedRect(margin, curY, contentWidth, qH, 1.2, 1.2, 'FD');
@@ -1047,34 +1047,33 @@
         doc.rect(margin, curY, 2.5, qH, 'F');
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.4);
+        doc.setFontSize(6.2);
         doc.setTextColor(185, 28, 28);
-        doc.text(`Q${q.numero} [${q.bloque}] 🎯 Dardo: "${(q.dardo || '').substring(0, 125)}"`, margin + 5, curY + 4.5);
+        doc.text(`Q${q.numero} [${q.bloque}] [DARDO]: "${(q.dardo || '').substring(0, 120)}"`, margin + 5, curY + 4.2);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.8);
-        doc.setTextColor(0, 104, 41);
         doc.setFont('helvetica', 'bold');
-        doc.text('🛡️ Escudo (30s):', margin + 5, curY + 9.5);
+        doc.setFontSize(5.6);
+        doc.setTextColor(0, 104, 41);
+        doc.text('[ESCUDO 30s]:', margin + 5, curY + 8.8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(30, 41, 59);
-        const escLines = doc.splitTextToSize((q.escudo || '').substring(0, 160), contentWidth - 28);
-        doc.text(escLines.slice(0, 2), margin + 25, curY + 9.5);
+        const escLines = doc.splitTextToSize((q.escudo || '').substring(0, 150), contentWidth - 32);
+        doc.text(escLines.slice(0, 2), margin + 28, curY + 8.8);
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-        doc.text('🔄 Pivote:', margin + 5, curY + 16.5);
+        doc.text('[PIVOTE]:', margin + 5, curY + 15.2);
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(51, 65, 85);
-        const pivLines = doc.splitTextToSize((q.pivotePolitico || '').substring(0, 150), contentWidth - 28);
-        doc.text(pivLines.slice(0, 1), margin + 25, curY + 16.5);
+        const pivLines = doc.splitTextToSize((q.pivotePolitico || '').substring(0, 140), contentWidth - 32);
+        doc.text(pivLines.slice(0, 1), margin + 28, curY + 15.2);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(4.8);
+        doc.setFontSize(4.6);
         doc.setTextColor(148, 163, 184);
-        doc.text(`Alerta: ${q.peligro || 'Peligro Alto'}  |  Categoría: ${q.bloque}`, margin + 5, curY + qH - 2);
+        doc.text(`Alerta: ${q.peligro || 'Peligro Alto'}  |  Categoría: ${q.bloque}`, margin + 5, curY + qH - 1.8);
 
-        curY += qH + 2.2;
+        curY += qH + 1.8;
       });
     },
 
@@ -1084,28 +1083,28 @@
     drawPage7BlindajeParte2YModoAtaque(doc, ctx) {
       const { margin, contentWidth, party, reportData } = ctx;
 
-      let curY = 17;
+      let curY = 16;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.8);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
       doc.text('PREGUNTAS LETALES 11 A 20: CONFLICTO SINDICAL, TÉCNICO Y LEGAL', margin, curY);
 
-      curY += 3;
+      curY += 2.8;
 
       const rawPR = reportData.blindajeEstrategico?.preguntasRespuestas || reportData.blindajeDefensa?.preguntas || [];
       const preguntas = rawPR.length > 0
         ? rawPR.map((item, idx) => ({
             numero: item.numero || (idx + 1),
             bloque: item.categoria || item.bloque || 'Blindaje Táctico',
-            dardo: item.pregunta || item.dardo || '',
-            escudo: item.respuestaMaestra || item.escudo || '',
-            pivotePolitico: item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`
+            dardo: this.cleanPdfText(item.pregunta || item.dardo || ''),
+            escudo: this.cleanPdfText(item.respuestaMaestra || item.escudo || ''),
+            pivotePolitico: this.cleanPdfText(item.pivotePolitico || `Enfocar el mensaje en el beneficio directo para las familias de ${ctx.municipio}.`)
           }))
         : this.buildPreguntasFallback();
       const pBloque3y4 = preguntas.slice(10, 20);
 
       pBloque3y4.forEach((q) => {
-        const qH = 14.5;
+        const qH = 11.5;
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(226, 232, 240);
         doc.roundedRect(margin, curY, contentWidth, qH, 1, 1, 'FD');
@@ -1114,32 +1113,32 @@
         doc.rect(margin, curY, 2, qH, 'F');
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(5.8);
+        doc.setFontSize(5.5);
         doc.setTextColor(185, 28, 28);
-        doc.text(`Q${q.numero}: "${(q.dardo || '').substring(0, 115)}"`, margin + 4, curY + 3.8);
+        doc.text(`Q${q.numero}: "${(q.dardo || '').substring(0, 115)}"`, margin + 4, curY + 3.2);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.2);
+        doc.setFontSize(5);
         doc.setTextColor(0, 104, 41);
-        doc.text(`🛡️ Escudo: ${(q.escudo || '').substring(0, 120)}`, margin + 4, curY + 7.8);
+        doc.text(`[Escudo]: ${(q.escudo || '').substring(0, 120)}`, margin + 4, curY + 6.8);
 
         doc.setTextColor(51, 65, 85);
         doc.setFont('helvetica', 'italic');
-        doc.text(`🔄 Pivote: ${(q.pivotePolitico || '').substring(0, 120)}`, margin + 4, curY + 11.8);
+        doc.text(`[Pivote]: ${(q.pivotePolitico || '').substring(0, 120)}`, margin + 4, curY + 10.2);
 
-        curY += qH + 1.8;
+        curY += qH + 1.2;
       });
 
       // MODO ATAQUE: SOLO SI FUE ACTIVADO O EVALÚA LA SESIÓN ACTIVA
       curY += 2;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.8);
       doc.setTextColor(185, 28, 28);
       doc.text('ARSENAL DE MODO ATAQUE: INGENIERÍA INVERSA Y CONTRASTE DE CAMPAÑA', margin, curY);
 
-      curY += 3;
+      curY += 2.8;
       const attack = reportData.modoAtaque || null;
-      const atkBoxH = 50;
+      const atkBoxH = 42;
 
       doc.setFillColor(254, 242, 242);
       doc.setDrawColor(254, 202, 202);
@@ -1150,49 +1149,53 @@
 
       if (!attack || (!attack.partidoRival && !attack.soundbites && !attack.puntosDebilesRival)) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
+        doc.setFontSize(7.2);
         doc.setTextColor(153, 27, 27);
         doc.text('Sin datos suficientes de simulación para compilar el expediente de Modo Ataque (Módulo no activado en esta corrida).', margin + 6, curY + 12);
       } else {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.2);
+        doc.setFontSize(6.8);
         doc.setTextColor(153, 27, 27);
-        doc.text(`PARTIDO RIVAL EVALUADO: ${attack.partidoRival || 'OPOSICIÓN'}  |  VULNERABILIDAD DETECTADA: ${attack.rechazoEstimado || 65}%`, margin + 6, curY + 6);
+        doc.text(`PARTIDO RIVAL EVALUADO: ${attack.partidoRival || 'OPOSICIÓN'}  |  VULNERABILIDAD DETECTADA: ${attack.rechazoEstimado || 65}%`, margin + 6, curY + 5.5);
 
-        let aY = curY + 12;
-        doc.setFontSize(6.2);
+        let aY = curY + 10.5;
+        doc.setFontSize(6);
         doc.setTextColor(15, 23, 42);
         doc.text('SOUNDBITES LETALES DE CONTRAATAQUE (30 SEGUNDOS EN DEBATE):', margin + 6, aY);
 
-        aY += 4.5;
+        aY += 4;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.8);
+        doc.setFontSize(5.5);
         doc.setTextColor(69, 10, 10);
-        const sb1 = attack.soundbites?.[0] || attack.puntosDebilesRival?.[0] || 'Contraste técnico y presupuestal frente a la propuesta adversaria.';
-        const sb2 = attack.soundbites?.[1] || attack.puntosDebilesRival?.[1] || 'Enfoque en resultados verificables para el municipio evaluado.';
-        doc.text(doc.splitTextToSize(String(sb1), contentWidth - 12), margin + 6, aY);
-        aY += 6.5;
-        doc.text(doc.splitTextToSize(String(sb2), contentWidth - 12), margin + 6, aY);
+        const sb1 = this.cleanPdfText(attack.soundbites?.[0] || attack.puntosDebilesRival?.[0] || 'Contraste técnico y presupuestal frente a la propuesta adversaria.');
+        const sb2 = this.cleanPdfText(attack.soundbites?.[1] || attack.puntosDebilesRival?.[1] || 'Enfoque en resultados verificables para el municipio evaluado.');
+        const sb1Lines = doc.splitTextToSize(String(sb1), contentWidth - 14).slice(0, 2);
+        doc.text(sb1Lines, margin + 6, aY);
+        aY += (sb1Lines.length * 3.2) + 1.5;
 
-        aY += 7.5;
+        const sb2Lines = doc.splitTextToSize(String(sb2), contentWidth - 14).slice(0, 2);
+        doc.text(sb2Lines, margin + 6, aY);
+        aY += (sb2Lines.length * 3.2) + 2;
+
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 104, 41);
-        doc.text(`CONTRAPROPUESTA: ${(attack.contrapropuestaGanadora?.titulo || attack.estrategiaContraste || 'Alternativa Viable en Sesión').substring(0, 95)}`, margin + 6, aY);
+        const contra = this.cleanPdfText(attack.contrapropuestaGanadora?.titulo || attack.estrategiaContraste || 'Alternativa Viable en Sesión');
+        doc.text(`CONTRAPROPUESTA: ${contra.substring(0, 95)}`, margin + 6, aY);
       }
 
       // Sello de Certificación Final
-      curY += atkBoxH + 4;
+      curY += atkBoxH + 3;
       doc.setFillColor(party.lightBg[0], party.lightBg[1], party.lightBg[2]);
       doc.setDrawColor(party.primary[0], party.primary[1], party.primary[2]);
-      doc.roundedRect(margin, curY, contentWidth, 13.5, 1, 1, 'FD');
+      doc.roundedRect(margin, curY, contentWidth, 12, 1, 1, 'FD');
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.5);
+      doc.setFontSize(6.2);
       doc.setTextColor(party.dark[0], party.dark[1], party.dark[2]);
-      doc.text('CERTIFICACIÓN INSTITUCIONAL — DESARROLLADO POR NEURAL MEDIA HOUSE / ERICK VEGA', margin + 3.5, curY + 4.2);
+      doc.text('CERTIFICACIÓN INSTITUCIONAL — DESARROLLADO POR NEURAL MEDIA HOUSE / ERICK VEGA', margin + 3.5, curY + 4);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.2);
+      doc.setFontSize(5);
       doc.setTextColor(30, 41, 59);
       doc.text('GovTech War Room v4.5 Enterprise Macro-Censal Edition. Dirección de Proyecto: Erick Vega. Procesamiento por enjambre sintético escalable y micro-targeting territorial, auditoría QA Watchdog y blindaje Cyber Sentinel 24/7.', margin + 3.5, curY + 8.2);
     },
@@ -1368,6 +1371,17 @@
         { gremio: 'Campesinos y Ejidatarios', siglas: 'CNC / Ejidos', postura: 'A Favor', pliegoPetitorio: 'Defensa del agua de pozos agrícolas y fertilizante subsidiado a tiempo.', liderTestimonio: 'El campo mexiquense requiere inversión real y bordos de agua.' },
         { gremio: 'Seguridad y Policías Municipales', siglas: 'Cuerpos Policiales', postura: 'A Favor', pliegoPetitorio: 'Seguro de vida digno, chalecos balísticos y defensa legal institucional.', liderTestimonio: 'Con respaldo jurídico y armamento digno pacificaremos los barrios.' }
       ];
+    },
+
+    cleanPdfText(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+        .replace(/[\u{2600}-\u{26FF}]/gu, '')
+        .replace(/[\u{2700}-\u{27BF}]/gu, '')
+        .replace(/🛡️?|🎯|🔄|✔|⚔️|📢|🎙️|📍|👥|💧|👵|🚀|🚨|⚠️|🏆|✅|❌/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
     },
 
     build18FuentesFallback() {

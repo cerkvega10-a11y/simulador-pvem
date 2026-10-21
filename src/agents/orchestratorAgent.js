@@ -224,6 +224,7 @@ class OrchestratorAgent {
       inteligenciaSindical: auditResult.inteligenciaSindical,
       blindajeDefensa: auditResult.blindajeDefensa,
       modoAtaque: auditResult.modoAtaque,
+      strategicCampaignData: auditResult.strategicCampaignData,
       variacionMuestral: auditResult.variacionMuestral,
       qaWatchdogCertificacion: auditResult.qaWatchdogCertificacion
     };

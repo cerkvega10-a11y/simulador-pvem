@@ -2951,10 +2951,10 @@ const Components = {
             </span>
             <div class="space-y-2">
               <h4 class="text-lg font-black text-slate-900 leading-tight">
-                ${manual.namingEstrategico}
+                ${manual.namingEstrategico || manual.namingOficial || manual.nombreCampana || 'Fuerza Territorial de Resultados'}
               </h4>
               <p class="text-sm text-emerald-800 font-bold italic leading-relaxed">
-                ${manual.sloganOficial}
+                ${manual.sloganOficial || manual.esloganGanador || manual.esloganOficial || manual.slogan || 'Resultados Reales y Futuro Seguro para tu Familia'}
               </p>
             </div>
             <div class="p-3 bg-white rounded-xl border border-emerald-200 text-xs text-slate-700 leading-relaxed">
@@ -3179,20 +3179,25 @@ const Components = {
             <span>⚠️</span> Promesas Auditadas con Mayor Riesgo de Fricción
           </h4>
           <div class="space-y-2.5">
-            ${(esc.promesasMayorRiesgo || []).map(p => `
+            ${(esc.promesasMayorRiesgo || []).map(p => {
+              const promText = p?.promesa || p?.titulo || p?.texto || 'Compromiso de Campaña';
+              const motText = p?.motivo || p?.causa || p?.riesgo || 'Antecedente de obras o servicios en el territorio';
+              const escepVal = typeof p?.escepticismo === 'number' ? p.escepticismo : (Number(p?.score || p?.desgaste) || 48);
+              return `
               <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                 <div class="space-y-0.5 min-w-0">
-                  <span class="font-black text-slate-900 block truncate">${p.promesa}</span>
-                  <span class="text-[11px] text-slate-600">${p.motivo}</span>
+                  <span class="font-black text-slate-900 block truncate">${promText}</span>
+                  <span class="text-[11px] text-slate-600">${motText}</span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <span class="text-[10px] font-bold uppercase text-slate-400">Desgaste:</span>
-                  <span class="px-2.5 py-1 rounded-full text-xs font-black ${p.escepticismo >= 70 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
-                    ${p.escepticismo}%
+                  <span class="px-2.5 py-1 rounded-full text-xs font-black ${escepVal >= 70 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                    ${escepVal}%
                   </span>
                 </div>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         </div>
 
@@ -3221,34 +3226,41 @@ const Components = {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const micro = microDataInput || fullReport.microSegmentacionGeneracional || {
-      segmentos: [
-        {
-          cohorte: 'Gen Z (18 a 24 años)',
-          canalPrincipal: 'TikTok / WhatsApp Stories',
-          disparadorEmocional: 'Indignación por falta de espacios y empleo digno',
-          mensajeClaveWhatsApp: '🚨 Amig@: no es normal que gastes 4 horas al día en combis y no haya internet en tu colonia. Conoce el plan para transformar nuestra movilidad sin aumentos de pasaje ➡️ [Link]'
-        },
-        {
-          cohorte: 'Millennials (25 a 39 años)',
-          canalPrincipal: 'WhatsApp Grupos Vecinales / Instagram',
-          disparadorEmocional: 'Hartazgo por el costo de pipas de agua y delincuencia en el trayecto',
-          mensajeClaveWhatsApp: '💧 Vecin@s de la colonia: se acabó pagar 1,200 pesos por pipa. El proyecto contempla pozos inteligentes y agua por red. Súmate a la asamblea este sábado.'
-        },
-        {
-          cohorte: 'Adultos Productivos (40 a 59 años)',
-          canalPrincipal: 'WhatsApp Directo / Reuniones Comunitarias',
-          disparadorEmocional: 'Protección del patrimonio familiar y apoyo a comerciantes',
-          mensajeClaveWhatsApp: '🏪 Estimad@ compañer@: cero cobro de piso y certeza para nuestros negocios. Consulta los 5 compromisos firmados para nuestro municipio.'
-        },
-        {
-          cohorte: 'Adultos Mayores (60+ años)',
-          canalPrincipal: 'WhatsApp Familiar / Volanteo Mano a Mano',
-          disparadorEmocional: 'Búsqueda de tranquilidad, salud barrial y respeto',
-          mensajeClaveWhatsApp: '👵 Familia: farmacias de barrio gratuitas y agua segura para nuestros adultos mayores. Un proyecto con rostro humano para nuestras familias.'
-        }
-      ]
-    };
+    const defaultSegmentos = [
+      {
+        cohorte: 'Gen Z (18 a 24 años)',
+        canalPrincipal: 'TikTok / WhatsApp Stories',
+        disparadorEmocional: 'Indignación por falta de espacios y empleo digno',
+        mensajeClaveWhatsApp: '🚨 Amig@: no es normal que gastes 4 horas al día en combis y no haya internet en tu colonia. Conoce el plan para transformar nuestra movilidad sin aumentos de pasaje ➡️ [Link]'
+      },
+      {
+        cohorte: 'Millennials (25 a 39 años)',
+        canalPrincipal: 'WhatsApp Grupos Vecinales / Instagram',
+        disparadorEmocional: 'Hartazgo por el costo de pipas de agua y delincuencia en el trayecto',
+        mensajeClaveWhatsApp: '💧 Vecin@s de la colonia: se acabó pagar 1,200 pesos por pipa. El proyecto contempla pozos inteligentes y agua por red. Súmate a la asamblea este sábado.'
+      },
+      {
+        cohorte: 'Adultos Productivos (40 a 59 años)',
+        canalPrincipal: 'WhatsApp Directo / Reuniones Comunitarias',
+        disparadorEmocional: 'Protección del patrimonio familiar y apoyo a comerciantes',
+        mensajeClaveWhatsApp: '🏪 Estimad@ compañer@: cero cobro de piso y certeza para nuestros negocios. Consulta los 5 compromisos firmados para nuestro municipio.'
+      },
+      {
+        cohorte: 'Adultos Mayores (60+ años)',
+        canalPrincipal: 'WhatsApp Familiar / Volanteo Mano a Mano',
+        disparadorEmocional: 'Búsqueda de tranquilidad, salud barrial y respeto',
+        mensajeClaveWhatsApp: '👵 Familia: farmacias de barrio gratuitas y agua segura para nuestros adultos mayores. Un proyecto con rostro humano para nuestras familias.'
+      }
+    ];
+
+    let rawSegs = null;
+    if (Array.isArray(microDataInput)) rawSegs = microDataInput;
+    else if (Array.isArray(microDataInput?.segmentos)) rawSegs = microDataInput.segmentos;
+    else if (Array.isArray(fullReport.microSegmentacionGeneracional)) rawSegs = fullReport.microSegmentacionGeneracional;
+    else if (Array.isArray(fullReport.microSegmentacionGeneracional?.segmentos)) rawSegs = fullReport.microSegmentacionGeneracional.segmentos;
+    else if (Array.isArray(fullReport.strategicCampaignData?.cohortes)) rawSegs = fullReport.strategicCampaignData.cohortes;
+
+    const segmentos = (rawSegs && rawSegs.length > 0) ? rawSegs : defaultSegmentos;
 
     let html = `
       <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
@@ -3272,26 +3284,35 @@ const Components = {
 
         <!-- Cuadrícula de Cohortes -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          ${(micro.segmentos || []).map((seg, sIdx) => `
+          ${segmentos.map((seg, sIdx) => {
+            const cohorte = seg?.cohorte || seg?.nombre || `Cohorte ${sIdx + 1}`;
+            const canal = seg?.canalPrincipal || seg?.canalPrioritario || seg?.canal || 'WhatsApp / Redes';
+            const disparador = seg?.disparadorEmocional || seg?.motivadorPrincipal || seg?.motivacion || 'Interés prioritario de la comunidad';
+            const mensaje = seg?.mensajeClaveWhatsApp || seg?.microMensajeWhatsApp || seg?.mensajeWhatsApp || seg?.mensaje || '';
+            const cleanMensaje = String(mensaje || '').trim() || 'Propuesta estratégica para el desarrollo de la comunidad.';
+            const safeCopy = cleanMensaje.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+            return `
             <div class="card-pvem p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 flex flex-col justify-between">
               <div class="space-y-2">
                 <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h5 class="text-xs font-black text-slate-900 uppercase tracking-wide">${seg.cohorte}</h5>
-                  <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">${seg.canalPrincipal}</span>
+                  <h5 class="text-xs font-black text-slate-900 uppercase tracking-wide">${cohorte}</h5>
+                  <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">${canal}</span>
                 </div>
                 <div class="text-[11px] text-slate-600">
-                  <strong class="text-slate-800">Disparador Emocional:</strong> ${seg.disparadorEmocional}
+                  <strong class="text-slate-800">Disparador Emocional:</strong> ${disparador}
                 </div>
                 <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-800 font-mono leading-relaxed relative">
-                  ${seg.mensajeClaveWhatsApp}
+                  ${cleanMensaje}
                 </div>
               </div>
-              <button type="button" onclick="navigator.clipboard.writeText('${seg.mensajeClaveWhatsApp.replace(/'/g, "\\\'")}'); if(typeof showToast==='function') showToast('Mensaje de WhatsApp copiado al portapapeles');"
+              <button type="button" onclick="navigator.clipboard.writeText('${safeCopy}'); if(typeof showToast==='function') showToast('Mensaje de WhatsApp copiado al portapapeles');"
                 class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
                 <span>📲</span><span>Copiar Mensaje para WhatsApp</span>
               </button>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -3799,25 +3820,34 @@ const Components = {
 
         <!-- LISTA DE LAS 20 PREGUNTAS (ACORDEÓN INTERACTIVO) -->
         <div id="defense-questions-list" class="space-y-3.5">
-          ${(preguntas || []).map((q, idx) => `
-            <div class="card-pvem bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs hover:border-emerald-300 transition-all defense-card" data-block="${q.bloque || 'General'}">
+          ${(preguntas || []).map((q, idx) => {
+            const qNum = q?.numero || (idx + 1);
+            const qPeligro = q?.peligro || q?.nivelRiesgo || 'Riesgo Crítico';
+            const qBloque = q?.bloque || q?.categoria || 'Estratégico';
+            const qSector = q?.sectorAtacante || q?.sector || 'Prensa';
+            const qDardo = q?.dardo || q?.pregunta || q?.question || 'Cuestionamiento sobre la viabilidad de la iniciativa';
+            const qEscudo = q?.escudo || q?.respuestaMaestra || q?.answer || 'Respuesta técnica y social sustentada en datos del proyecto.';
+            const qPivote = q?.pivotePolitico || q?.pivote || 'Enfocar la conversación en los beneficios directos para las familias del municipio.';
+
+            return `
+            <div class="card-pvem bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs hover:border-emerald-300 transition-all defense-card" data-block="${qBloque}">
               <!-- Cabecera / Dardo Hostil -->
               <div class="accordion-toggle p-4 sm:p-5 flex items-start justify-between gap-3 bg-slate-50/50 hover:bg-emerald-50/30 transition-colors" onclick="toggleDefenseAccordion(this)">
                 <div class="flex items-start gap-3">
                   <span class="w-7 h-7 rounded-lg bg-slate-800 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
-                    ${q.numero || (idx + 1)}
+                    ${qNum}
                   </span>
                   <div class="space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
                       <span class="text-[10px] font-black uppercase tracking-wider text-red-800 bg-red-100 border border-red-200 px-2 py-0.5 rounded">
-                        ${q.peligro || 'Riesgo Crítico'}
+                        ${qPeligro}
                       </span>
                       <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                        ${q.bloque || 'Estratégico'} • ${q.sectorAtacante || 'Prensa'}
+                        ${qBloque} • ${qSector}
                       </span>
                     </div>
                     <h4 class="text-sm font-black text-slate-900 leading-snug">
-                      🎯 ${q.dardo || 'Cuestionamiento sobre la viabilidad de la iniciativa'}
+                      🎯 ${qDardo}
                     </h4>
                   </div>
                 </div>
@@ -3831,7 +3861,7 @@ const Components = {
                   <div class="flex items-center gap-2 text-emerald-900 font-black text-[11px] uppercase tracking-wide">
                     <span>🛡️</span> <span>Respuesta Maestra Factible (Guion de 30 Segundos):</span>
                   </div>
-                  <p class="leading-relaxed font-medium text-slate-800">${q.escudo || 'Respuesta técnica y social sustentada en datos del proyecto.'}</p>
+                  <p class="leading-relaxed font-medium text-slate-800">${qEscudo}</p>
                 </div>
 
                 <!-- Pivote Político -->
@@ -3839,11 +3869,12 @@ const Components = {
                   <div class="flex items-center gap-1.5 text-amber-400 font-black text-[10px] uppercase tracking-wider">
                     <span>🔄</span> <span>Pivote Político (Transforma el Ataque en Fortaleza):</span>
                   </div>
-                  <p class="text-slate-200 font-semibold leading-relaxed">${q.pivotePolitico || 'Enfocar la conversación en los beneficios directos para las familias del municipio.'}</p>
+                  <p class="text-slate-200 font-semibold leading-relaxed">${qPivote}</p>
                 </div>
               </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       </div>
     `;

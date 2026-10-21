@@ -63,10 +63,13 @@ class PoliticalStrategistAgent {
     const testResilienciaCrisis = this.generateCrisisResilienceTest(votosFinales, municipalResearch, tituloProyecto);
     const contraNarrativasDefensa = this.generateDefenseCounterNarratives(votosFinales, municipalResearch, tituloProyecto);
     const radarFakeNews = this.generateFakeNewsRadar(votosFinales, municipalResearch, tituloProyecto);
-    const calculadoraROICampana = this.generateCampaignROICalculator(votosFinales, municipalResearch, realSwarmSize);
-    const indiceEscepticismo = this.generatePromiseSkepticismIndex(votosFinales, municipalResearch);
-    const microSegmentacionGeneracional = this.generateGenerationalMicroSegmentation(votosFinales, municipalResearch, tituloProyecto);
-    const manualCampanaEstrategico = this.generateStrategicCampaignManual(votosFinales, municipalResearch, tituloProyecto, propuestaTexto, orchestratorState.semanticResult);
+    
+    // Integración prioritaria con IA en Tiempo Real (Groq LPU)
+    const aiStrat = orchestratorState.strategicCampaignData || {};
+    const calculadoraROICampana = aiStrat.calculadoraROICampana || this.generateCampaignROICalculator(votosFinales, municipalResearch, realSwarmSize);
+    const indiceEscepticismo = aiStrat.indiceEscepticismo || this.generatePromiseSkepticismIndex(votosFinales, municipalResearch);
+    const microSegmentacionGeneracional = aiStrat.microSegmentacionGeneracional || this.generateGenerationalMicroSegmentation(votosFinales, municipalResearch, tituloProyecto);
+    const manualCampanaEstrategico = aiStrat.manualCampanaEstrategico || this.generateStrategicCampaignManual(votosFinales, municipalResearch, tituloProyecto, propuestaTexto, orchestratorState.semanticResult);
 
     return {
       fechaGeneracion: new Date().toISOString(),
@@ -167,7 +170,9 @@ class PoliticalStrategistAgent {
       radarFakeNews,
       calculadoraROICampana,
       indiceEscepticismo,
-      microSegmentacionGeneracional
+      microSegmentacionGeneracional,
+      manualCampanaEstrategico,
+      manualEstrategicoCampana: manualCampanaEstrategico
     };
   }
 
@@ -900,51 +905,89 @@ class PoliticalStrategistAgent {
 
     return {
       indiceEscepticismo,
+      scoreEscepticismo: indiceEscepticismo,
+      nivelEscepticismo: nivelDesgaste,
       nivelDesgaste,
+      promesasMayorRiesgo: [
+        { promesa: `Conclusión y entrega en tiempo récord en ${municipalResearch?.municipio || 'la demarcación'}`, escepticismo: Math.min(88, Math.round(indiceEscepticismo * 1.15)), motivo: 'Antecedente histórico de obras inconclusas o retrasos en administraciones pasadas.' },
+        { promesa: 'Cero cobros extraordinarios o cuotas ocultas a vecinos', escepticismo: Math.min(82, Math.round(indiceEscepticismo * 1.05)), motivo: 'Temor ciudadano a cobros posteriores o aumentos en servicios.' },
+        { promesa: 'Mantenimiento continuo y supervisión ciudadana 24/7', escepticismo: Math.max(35, Math.round(indiceEscepticismo * 0.9)), motivo: 'Falta recurrente de seguimiento institucional tras el corte de listón.' }
+      ],
+      mecanismoMitigacion: 'Firma de compromiso notariado con comités vecinales, calendario de avance físico quincenal y contraloría ciudadana con portal abierto.',
+      estrategiaBlindaje: 'Fijar metas quincenales auditables en lugar de promesas abiertas, con cláusulas de penalización a contratistas por demora.',
       factoresIncredulidad,
       blindajeFinanciero
     };
   }
 
   /**
-   * Micro-Segmentación Generacional (3 Cohortes con Micro-Mensajes de WhatsApp de 1 Clic)
+   * Micro-Segmentación Generacional (4 Cohortes con Micro-Mensajes de WhatsApp de 1 Clic)
    */
   generateGenerationalMicroSegmentation(votosFinales, municipalResearch, tituloProyecto) {
     const muni = municipalResearch?.municipio || 'nuestro municipio';
     const titulo = tituloProyecto || 'Proyecto de Transformación y Bienestar';
 
-    return [
+    const cohortes = [
       {
         id: 'cohorte_jovenes',
+        cohorte: 'Gen Z y Universitarios (18 a 29 años)',
         nombre: 'Centennials y Jóvenes Universitarios',
         rangoEdad: '18 a 29 años',
         pesoElectoral: '31% del Padrón',
+        canalPrincipal: 'TikTok / Instagram Reels / WhatsApp Stories',
         canalPrioritario: 'TikTok, Instagram Reels y WhatsApp de Redes Estudiantiles',
         tonoComunicacion: 'Directo, fresco, pragmático, libre de retórica burocrática y con énfasis en futuro y libertad.',
+        disparadorEmocional: 'Indignación por falta de transporte eficiente, carencia de conectividad y precariedad laboral.',
         propuestaAncla: 'Internet público de alta velocidad, transporte seguro con tarifa preferencial y espacios deportivos/culturales sustentables.',
+        mensajeClaveWhatsApp: `¡Hola! 🚀 En ${muni} ya estuvo bueno de promesas de siempre. Con el proyecto "${titulo}" vamos por conectividad libre, ciclovías seguras y transporte digno para que estudiar y trabajar no sea una pesadilla. Cero rollo, soluciones reales. ¿Le entras? Échale un ojo y compártelo con tus compas: [Enlace]`,
         microMensajeWhatsApp: `¡Hola! 🚀 En ${muni} ya estuvo bueno de promesas de siempre. Con el proyecto "${titulo}" vamos por conectividad libre, ciclovías seguras y transporte digno para que estudiar y trabajar no sea una pesadilla. Cero rollo, soluciones reales. ¿Le entras? Échale un ojo y compártelo con tus compas: [Enlace]`
       },
       {
         id: 'cohorte_adultos',
+        cohorte: 'Millennials y Familias Jóvenes (30 a 49 años)',
         nombre: 'Familias y Adultos en Edad Productiva',
-        rangoEdad: '30 a 64 años',
-        pesoElectoral: '54% del Padrón',
+        rangoEdad: '30 a 49 años',
+        pesoElectoral: '38% del Padrón',
+        canalPrincipal: 'WhatsApp Grupos Vecinales / Facebook Comunitario',
         canalPrioritario: 'Facebook Comunitario, Grupos de WhatsApp Vecinales y Encuentros en Calle',
         tonoComunicacion: 'Serio, empático, enfocado en cuidar el bolsillo familiar, la seguridad de los hijos y el agua.',
+        disparadorEmocional: 'Hartazgo por el costo de pipas de agua, inseguridad en el trayecto y bacheo en colonias.',
         propuestaAncla: 'Abasto de agua regular sin extorsión de pipas, senderos escolares iluminados y cero nuevos impuestos vecinales.',
+        mensajeClaveWhatsApp: `Estimados vecinos de ${muni}: Les comparto una propuesta seria y con presupuesto asegurado. Con "${titulo}" blindamos el suministro de agua, reforzamos las patrullas en los horarios de las escuelas de nuestros hijos y protegemos la economía familiar sin aumentos al predial. Cuidar a nuestras familias es lo primero. Con gusto lo platicamos en la próxima junta vecinal: [Enlace]`,
         microMensajeWhatsApp: `Estimados vecinos de ${muni}: Les comparto una propuesta seria y con presupuesto asegurado. Con "${titulo}" blindamos el suministro de agua, reforzamos las patrullas en los horarios de las escuelas de nuestros hijos y protegemos la economía familiar sin aumentos al predial. Cuidar a nuestras familias es lo primero. Con gusto lo platicamos en la próxima junta vecinal: [Enlace]`
       },
       {
+        id: 'cohorte_maduros',
+        cohorte: 'Adultos Maduros y Comerciantes (50 a 64 años)',
+        nombre: 'Comerciantes y Adultos Maduros',
+        rangoEdad: '50 a 64 años',
+        pesoElectoral: '16% del Padrón',
+        canalPrincipal: 'WhatsApp Directo / Comités de Mercado y Asambleas',
+        canalPrioritario: 'Reuniones de barrio, mercados municipales y WhatsApp directo',
+        tonoComunicacion: 'Firme, de certeza jurídica, protección al patrimonio y fomento al comercio local.',
+        disparadorEmocional: 'Preocupación por extorsión, cobro de piso, clausuras y estabilidad económica para sus negocios.',
+        propuestaAncla: 'Cero cobro de piso, créditos a tasa preferente para pequeños comercios y alumbrado en corredores comerciales.',
+        mensajeClaveWhatsApp: `Estimad@s comerciantes y vecinos de ${muni}: Cuidar el patrimonio de quienes trabajan todos los días es una prioridad absoluta. La iniciativa "${titulo}" contempla simplificación de trámites, cero clausuras injustificadas y corredores iluminados para que nuestros clientes compren seguros. Consulta los 5 compromisos firmados: [Enlace]`,
+        microMensajeWhatsApp: `Estimad@s comerciantes y vecinos de ${muni}: Cuidar el patrimonio de quienes trabajan todos los días es una prioridad absoluta. La iniciativa "${titulo}" contempla simplificación de trámites, cero clausuras injustificadas y corredores iluminados para que nuestros clientes compren seguros. Consulta los 5 compromisos firmados: [Enlace]`
+      },
+      {
         id: 'cohorte_mayores',
+        cohorte: 'Adultos Mayores y Jubilados (65+ años)',
         nombre: 'Adultos Mayores y Jubilados',
         rangoEdad: '65 años en adelante',
         pesoElectoral: '15% del Padrón',
+        canalPrincipal: 'WhatsApp Familiar / Volanteo Mano a Mano',
         canalPrioritario: 'Comités de Barrio, Radio Local, Volante Mano a Mano y WhatsApp Familiar',
         tonoComunicacion: 'Respetuoso, cálido, de reconocimiento a su esfuerzo de toda la vida y garantía de tranquilidad.',
+        disparadorEmocional: 'Búsqueda de tranquilidad, salud barrial digna, medicamentos y banquetas libres de obstáculos.',
         propuestaAncla: 'Medicamentos gratuitos garantizados, banquetas planas y accesibles, y transporte gratuito preferencial.',
+        mensajeClaveWhatsApp: `Apreciadas familias y amigos de ${muni}: Les comparto una noticia de respeto y justicia. La iniciativa "${titulo}" contempla abasto de medicamentos garantizado, clínicas de barrio con atención digna y banquetas seguras para que nuestros adultos mayores caminen en paz y sin riesgo de caídas. Porque su tranquilidad es sagrada. Les mando un saludo con afecto y bendiciones: [Enlace]`,
         microMensajeWhatsApp: `Apreciadas familias y amigos de ${muni}: Les comparto una noticia de respeto y justicia. La iniciativa "${titulo}" contempla abasto de medicamentos garantizado, clínicas de barrio con atención digna y banquetas seguras para que nuestros adultos mayores caminen en paz y sin riesgo de caídas. Porque su tranquilidad es sagrada. Les mando un saludo con afecto y bendiciones: [Enlace]`
       }
     ];
+
+    cohortes.segmentos = cohortes;
+    return cohortes;
   }
 
 
@@ -976,16 +1019,29 @@ class PoliticalStrategistAgent {
     }
 
     return {
+      namingEstrategico: namingOficial,
+      sloganOficial: esloganGanador,
       namingOficial,
       esloganGanador,
       sloganAlternativo: `Unidos por un ${muni} Sustentable y Próspero`,
       taglineCampaña: 'Cuentas claras, colonias seguras y futuro para tus hijos.',
       narrativaBanderazo,
+      banderazoSalida: {
+        colonia: 'Zona Centro / Cabecera Municipal',
+        horario: '08:30 AM',
+        justificacion: `Punto neurálgico con alto flujo de familias y trabajadores de ${muni}.`
+      },
+      discursosSegmentados: {
+        jovenes: { rango: '18 a 29 años', soundbite: `"En ${muni} no venimos a improvisar; modernizamos con hechos y tecnología sustentable."`, riesgoEvitar: 'Discursos acartonados o promesas sin plazos' },
+        adultos: { rango: '30 a 49 años', soundbite: `"Servicios dignos, agua garantizada y seguridad para el patrimonio de tu familia."`, riesgoEvitar: 'Minimizar los gastos diarios del hogar' },
+        mayores: { rango: '65+ años', soundbite: `"Respeto absoluto a toda una vida de esfuerzo, salud de barrio y trato digno."`, riesgoEvitar: 'Trámites digitales complejos sin apoyo presencial' }
+      },
       ejesDiscursivos: [
         { eje: 'Transparencia y Presupuesto', mensaje: `Cada peso invertido en "${tema}" tendrá auditoría ciudadana permanente.` },
         { eje: 'Impacto Social Directo', mensaje: `Prioridad a las colonias con mayor rezago histórico en ${muni}.` },
         { eje: 'Sustentabilidad y Bienestar', mensaje: 'Obras modernas que respetan el medio ambiente y cuidan el patrimonio familiar.' }
       ],
+      curvaCrecimiento: { fase1: 'Movilización de Bastiones', fase2: 'Ofensiva en Battlegrounds', fase3: 'Cierre con Testigos Sociales' },
       llamadoALaAccion: `Súmate al movimiento por ${muni}. Conoce el plan completo y haz que tu voz cuente.`
     };
   }

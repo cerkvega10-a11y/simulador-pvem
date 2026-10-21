@@ -19,8 +19,6 @@ scratch/
 # Bases de datos JSON locales con credenciales y telemetria
 src/data/licensesStore.json
 src/data/accessLogs.json
-src/data/users_db.json
-src/data/ai_config_db.json
 *.json.bak
 
 # Archivos de Sistema Operativo
