@@ -57,6 +57,9 @@ const electoralRadarEngine = require('./src/agents/electoralRadarEngine');
 const coloniasData = require('./src/data/coloniasData');
 const freeLLMService = require('./src/services/freeLLMService');
 const semanticAnalyzer = require('./src/agents/semanticAnalyzer');
+const aiIntegrityAuditorAgent = require('./src/agents/aiIntegrityAuditorAgent');
+const codeExecutionAuditAgent = require('./src/agents/codeExecutionAuditAgent');
+const selfHealingAgent = require('./src/agents/selfHealingAgent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -629,6 +632,25 @@ app.post('/api/simulate', async (req, res) => {
     console.error('Error en POST /api/simulate:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// --- SISTEMA AUTÓNOMO DE TRIPLE AGENTE (AUDITORÍA & SELF-HEALING) ---
+// Agente 1: Auditor de Integridad de IA (100% activo)
+app.get('/api/ai-engine/audit', (req, res) => {
+  const audit = aiIntegrityAuditorAgent.auditIntegrity();
+  res.json({ success: true, ...audit });
+});
+
+// Agente 2: Auditor de Ejecución de Código (100% integral)
+app.get('/api/system/code-audit', (req, res) => {
+  const audit = codeExecutionAuditAgent.auditCodebase();
+  res.json({ success: true, ...audit });
+});
+
+// Agente 3: Métricas de Auto-Reparación y Resiliencia
+app.get('/api/system/self-healing-status', (req, res) => {
+  const status = selfHealingAgent.getHealingMetrics();
+  res.json({ success: true, ...status });
 });
 
 // 7. Estado del Motor de IA Centralizado (Blindaje de Caja Negra para Clientes / Control Completo para Admin)
