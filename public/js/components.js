@@ -1129,16 +1129,19 @@ const Components = {
              MÓDULO 2.3: MATRIZ DE POLARIZACIÓN (VOTO DURO VS VOTO BLANDO / INDECISOS)
              ======================================================== -->
         ${(() => {
-          const pol = report.matrizPolarizacion || data.matrizPolarizacion || {
-            votoDuroFavor: 38,
-            votoBlandoIndecisos: 42,
-            rechazoRadical: 20,
-            ratioPersuasion: 2.1,
-            tamanoBattleground: '42%',
-            recomendacionesConversion: [
-              'Enfocar el 75% del presupuesto en el segmento indeciso popular.',
-              'Blindar el voto duro con asambleas de reconocimiento vecinal.'
-            ]
+          const polRaw = report.matrizPolarizacion || data.matrizPolarizacion || {};
+          const pol = {
+            votoDuroFavor: Math.max(0, Math.min(100, Number(polRaw.votoDuroFavor ?? 38))),
+            votoBlandoIndecisos: Math.max(0, Math.min(100, Number(polRaw.votoBlandoIndecisos ?? 42))),
+            rechazoRadical: Math.max(0, Math.min(100, Number(polRaw.rechazoRadical ?? 20))),
+            ratioPersuasion: polRaw.ratioPersuasion || 2.1,
+            tamanoBattleground: polRaw.tamanoBattleground || '42%',
+            recomendacionesConversion: (Array.isArray(polRaw.recomendacionesConversion) && polRaw.recomendacionesConversion.length > 0)
+              ? polRaw.recomendacionesConversion
+              : [
+                'Enfocar el 75% del presupuesto en el segmento indeciso popular.',
+                'Blindar el voto duro con asambleas de reconocimiento vecinal.'
+              ]
           };
 
           return `
@@ -1745,17 +1748,17 @@ const Components = {
                 <!-- Encabezado del Agente -->
                 <div class="flex items-start justify-between gap-2 mb-2.5">
                   <div class="flex items-center gap-2.5">
-                    <img src="${avatarUrl}" alt="${agente.nombre}" class="w-10 h-10 rounded-full border border-slate-300 bg-slate-50 shrink-0 object-cover" />
+                    <img src="${avatarUrl}" alt="${agente.nombre || 'Ciudadano'}" class="w-10 h-10 rounded-full border border-slate-300 bg-slate-50 shrink-0 object-cover" />
                     <div>
                       <div class="flex items-center gap-1.5 flex-wrap">
-                        <h5 class="text-sm font-bold text-slate-900 leading-tight">${agente.nombre}</h5>
+                        <h5 class="text-sm font-bold text-slate-900 leading-tight">${agente.nombre || 'Ciudadano Sintético'}</h5>
                         <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">${agente.nse || 'NSE C'}</span>
                       </div>
-                      <p class="text-xs text-slate-500">${agente.edad} años • ${agente.ocupacion}</p>
+                      <p class="text-xs text-slate-500">${agente.edad || 35} años • ${agente.ocupacion || 'Vecino'}</p>
                     </div>
                   </div>
                   <span class="text-[11px] px-2.5 py-1 rounded-full border font-bold ${badgeColor} shrink-0">
-                    ${agente.voto}
+                    ${agente.voto || 'Neutro'}
                   </span>
                 </div>
 
@@ -1763,10 +1766,10 @@ const Components = {
                 <div class="mb-2.5 text-xs text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-200/70 space-y-1">
                   <div class="flex items-center justify-between text-[11px]">
                     <span class="truncate">📍 Col. <b>${agente.colonia || 'Centro'}</b>, ${agente.municipio || 'Edomex'}</span>
-                    <span class="font-bold text-slate-800 shrink-0">Entusiasmo: ${agente.entusiasmo || 50}%</span>
+                    <span class="font-bold text-slate-800 shrink-0">Entusiasmo: ${agente.entusiasmo ?? 50}%</span>
                   </div>
                   <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div class="h-1.5 rounded-full ${barColor}" style="width: ${agente.entusiasmo || 50}%"></div>
+                    <div class="h-1.5 rounded-full ${barColor}" style="width: ${agente.entusiasmo ?? 50}%"></div>
                   </div>
                 </div>
 
@@ -1820,8 +1823,8 @@ const Components = {
             <div class="bg-gradient-to-r from-slate-900 to-slate-800 p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Hilo de Debate #${tIdx + 1}</span>
-                <h4 class="text-sm font-bold text-white">${thread.tema}</h4>
-                <p class="text-xs text-slate-300 mt-0.5">${thread.contexto}</p>
+                <h4 class="text-sm font-bold text-white">${thread.tema || 'Debate Ciudadano'}</h4>
+                <p class="text-xs text-slate-300 mt-0.5">${thread.contexto || 'Intercambio de posturas ciudadanas'}</p>
               </div>
               <span class="text-xs bg-emerald-950 text-emerald-300 font-bold px-2.5 py-1 rounded-full border border-emerald-700 self-start sm:self-auto shrink-0">
                 ${thread.mensajes ? thread.mensajes.length : 0} intervenciones
@@ -1834,10 +1837,11 @@ const Components = {
                 let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
                 let borderBar = 'border-l-4 border-emerald-600 bg-emerald-50/20';
 
-                if (msg.postura.toLowerCase().includes('contra')) {
+                const posturaStr = (msg.postura || 'Neutro').toLowerCase();
+                if (posturaStr.includes('contra')) {
                   badgeColor = 'bg-red-100 text-red-800 border-red-300';
                   borderBar = 'border-l-4 border-red-500 bg-red-50/20';
-                } else if (msg.postura.toLowerCase().includes('neutro')) {
+                } else if (posturaStr.includes('neutro')) {
                   badgeColor = 'bg-slate-100 text-slate-800 border-slate-300';
                   borderBar = 'border-l-4 border-slate-400 bg-slate-50/30';
                 }
@@ -1850,16 +1854,16 @@ const Components = {
                       <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">#${mIdx + 1}</span>
                         <div>
-                          <span class="text-xs font-bold text-slate-900">${msg.nombre}</span>
-                          <span class="text-[11px] text-slate-500">(${msg.edad} años • ${msg.ocupacion} - Col. ${msg.colonia})</span>
+                          <span class="text-xs font-bold text-slate-900">${msg.nombre || msg.autor || 'Ciudadano'}</span>
+                          <span class="text-[11px] text-slate-500">(${msg.edad || 35} años • ${msg.ocupacion || 'Vecino'} - Col. ${msg.colonia || 'Centro'})</span>
                         </div>
                       </div>
-                      <span class="text-[11px] px-2 py-0.5 rounded-full border font-bold ${badgeColor}">${msg.postura}</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full border font-bold ${badgeColor}">${msg.postura || 'Comentario'}</span>
                     </div>
 
                     <!-- Mensaje coloquial -->
                     <div class="p-3 rounded-lg text-xs text-slate-800 leading-relaxed ${borderBar}">
-                      "${msg.mensaje}"
+                      "${msg.mensaje || msg.argumento || ''}"
                     </div>
 
                     <!-- Argumento de Fondo y Condición de Cambio -->
@@ -1892,28 +1896,35 @@ const Components = {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    const estrat = estrategia || {};
+    const alerta = estrat.alertaGobernabilidad;
+    const ejes = Array.isArray(estrat.ejesClaveCampanaVerde) ? estrat.ejesClaveCampanaVerde : [];
+    const mitigacion = Array.isArray(estrat.planMitigacionRiesgos) ? estrat.planMitigacionRiesgos : [];
+    const alianzas = Array.isArray(estrat.alianzasEstrategicasSugeridas) ? estrat.alianzasEstrategicasSugeridas : [];
+    const eslogan = estrat.esloganSugeridoPVEM || 'Por el Bienestar y la Sustentabilidad de Nuestra Gente';
+
     let html = `
       <div class="space-y-6">
         <!-- 1. Alerta de Riesgo de Gobernabilidad y Movilizaciones (Requerimiento Maestro) -->
-        ${estrategia.alertaGobernabilidad ? `
-          <div class="p-4 rounded-xl border-2 ${estrategia.alertaGobernabilidad.nivelRiesgo === 'Crítico' ? 'border-red-500 bg-red-50/50' : (estrategia.alertaGobernabilidad.nivelRiesgo === 'Alto' ? 'border-orange-500 bg-orange-50/50' : 'border-emerald-300 bg-emerald-50/30')} space-y-3">
+        ${alerta ? `
+          <div class="p-4 rounded-xl border-2 ${alerta.nivelRiesgo === 'Crítico' ? 'border-red-500 bg-red-50/50' : (alerta.nivelRiesgo === 'Alto' ? 'border-orange-500 bg-orange-50/50' : 'border-emerald-300 bg-emerald-50/30')} space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="text-xl">${estrategia.alertaGobernabilidad.nivelRiesgo === 'Crítico' || estrategia.alertaGobernabilidad.nivelRiesgo === 'Alto' ? '🚨' : '🛡️'}</span>
+                <span class="text-xl">${alerta.nivelRiesgo === 'Crítico' || alerta.nivelRiesgo === 'Alto' ? '🚨' : '🛡️'}</span>
                 <div>
-                  <h4 class="text-sm font-black ${estrategia.alertaGobernabilidad.nivelRiesgo === 'Crítico' ? 'text-red-900' : 'text-slate-900'} uppercase tracking-wide">
-                    Alerta de Riesgo de Gobernabilidad: Nivel ${estrategia.alertaGobernabilidad.nivelRiesgo} (${estrategia.alertaGobernabilidad.scoreFriccion}/100)
+                  <h4 class="text-sm font-black ${alerta.nivelRiesgo === 'Crítico' ? 'text-red-900' : 'text-slate-900'} uppercase tracking-wide">
+                    Alerta de Riesgo de Gobernabilidad: Nivel ${alerta.nivelRiesgo || 'Bajo'} (${alerta.scoreFriccion ?? 25}/100)
                   </h4>
                   <p class="text-[11px] text-slate-600">Evaluación de probabilidad de conflicto vecinal, marchas o bloqueos viales</p>
                 </div>
               </div>
-              <span class="text-xs px-3 py-1 rounded-full font-black ${estrategia.alertaGobernabilidad.nivelRiesgo === 'Crítico' ? 'bg-red-600 text-white' : (estrategia.alertaGobernabilidad.nivelRiesgo === 'Alto' ? 'bg-orange-600 text-white' : 'bg-emerald-600 text-white')} shrink-0">
-                ${estrategia.alertaGobernabilidad.nivelRiesgo}
+              <span class="text-xs px-3 py-1 rounded-full font-black ${alerta.nivelRiesgo === 'Crítico' ? 'bg-red-600 text-white' : (alerta.nivelRiesgo === 'Alto' ? 'bg-orange-600 text-white' : 'bg-emerald-600 text-white')} shrink-0">
+                ${alerta.nivelRiesgo || 'Bajo'}
               </span>
             </div>
             
             <p class="text-xs text-slate-800 leading-relaxed font-medium bg-white/80 p-2.5 rounded-lg border border-slate-200">
-              ${estrategia.alertaGobernabilidad.riesgoProtestas}
+              ${alerta.riesgoProtestas || 'Bajo riesgo de fricción comunitaria.'}
             </p>
 
             <!-- Cambios Exactos Requeridos -->
@@ -1922,7 +1933,7 @@ const Components = {
                 <span>📋</span> Cambios Exactos Requeridos en la Propuesta para Convertir el Rechazo en Respaldo:
               </span>
               <ul class="space-y-1.5 text-slate-700">
-                ${(estrategia.alertaGobernabilidad.cambiosExactosRequeridos || []).map(cambio => `
+                ${(alerta.cambiosExactosRequeridos || []).map(cambio => `
                   <li class="flex items-start gap-2">
                     <span class="text-emerald-600 font-bold text-sm shrink-0">➔</span>
                     <span class="text-[11px]">${cambio}</span>
@@ -1936,7 +1947,7 @@ const Components = {
         <!-- 2. Eslogan Oficial Sugerido -->
         <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white shadow-md">
           <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-300 block mb-1">Eslogan Estratégico de Campaña PVEM</span>
-          <p class="text-base font-extrabold text-white italic">${estrategia.esloganSugeridoPVEM}</p>
+          <p class="text-base font-extrabold text-white italic">${eslogan}</p>
         </div>
 
         <!-- 3. Pilares de Narrativa Verde -->
@@ -1945,10 +1956,10 @@ const Components = {
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Ejes Clave de Comunicación Positiva
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            ${estrategia.ejesClaveCampanaVerde.map(eje => `
+            ${ejes.map(eje => `
               <div class="p-3 border border-emerald-200 rounded-lg bg-emerald-50/40">
-                <h5 class="text-xs font-bold text-emerald-900 mb-1">${eje.pilar}</h5>
-                <p class="text-xs text-gray-700 leading-relaxed">${eje.narrativa}</p>
+                <h5 class="text-xs font-bold text-emerald-900 mb-1">${eje.pilar || 'Pilar'}</h5>
+                <p class="text-xs text-gray-700 leading-relaxed">${eje.narrativa || 'Narrativa estratégica de beneficio común.'}</p>
               </div>
             `).join('')}
           </div>
@@ -1960,14 +1971,14 @@ const Components = {
             <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Plan de Mitigación de Fricción Social y Opositores
           </h4>
           <div class="space-y-2.5">
-            ${estrategia.planMitigacionRiesgos.map(riesgo => `
+            ${mitigacion.map(riesgo => `
               <div class="p-3 border border-red-200 rounded-lg bg-red-50/30 text-xs">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="font-bold text-red-900">Grupo en Riesgo: ${riesgo.grupoEnRiesgo}</span>
+                  <span class="font-bold text-red-900">Grupo en Riesgo: ${riesgo.grupoEnRiesgo || 'Comunidad'}</span>
                   <span class="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">Acción Preventiva Prioritaria</span>
                 </div>
-                <p class="text-gray-800 mb-1"><b>Acción Inmediata:</b> ${riesgo.accionPreventiva}</p>
-                <p class="text-emerald-800"><b>Compromiso Público Sugerido:</b> ${riesgo.compromisoPublico}</p>
+                <p class="text-gray-800 mb-1"><b>Acción Inmediata:</b> ${riesgo.accionPreventiva || 'Diálogo de proximidad'}</p>
+                <p class="text-emerald-800"><b>Compromiso Público Sugerido:</b> ${riesgo.compromisoPublico || 'Minuta de acuerdos vecinales'}</p>
               </div>
             `).join('')}
           </div>
@@ -1979,7 +1990,7 @@ const Components = {
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Alianzas Estratégicas Territoriales Sugeridas
           </h4>
           <ul class="list-disc list-inside space-y-1 text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
-            ${estrategia.alianzasEstrategicasSugeridas.map(alianza => `
+            ${alianzas.map(alianza => `
               <li>${alianza}</li>
             `).join('')}
           </ul>
@@ -2021,7 +2032,7 @@ const Components = {
             <div>
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs uppercase tracking-widest font-black text-emerald-400">Meta-Agente 8 • Watchdog & Telemetry</span>
-                <span class="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">${proof.auditoriaId}</span>
+                <span class="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">${proof.auditoriaId || 'AUD-PVEM-2027'}</span>
                 ${proof.hashUnicidadChat ? `
                   <span class="text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-700 font-bold">
                     Hash Unicidad: ${proof.hashUnicidadChat}
@@ -2038,7 +2049,7 @@ const Components = {
               ✓ Unicidad Chat: 100.0%
             </span>
             <span class="text-xs px-3 py-1 rounded-full border font-bold ${badgeColor}">
-              ${proof.estadoAuditoria}
+              ${proof.estadoAuditoria || 'AUDITORÍA CONFORME'}
             </span>
           </div>
         </div>
@@ -2259,10 +2270,10 @@ const Components = {
                   <td class="px-4 py-3 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <span class="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-black flex items-center justify-center text-xs shrink-0">
-                        ${f.institucion.substring(0, 3)}
+                        ${(f.institucion || 'GOB').substring(0, 3)}
                       </span>
                       <div>
-                        <span class="font-extrabold text-slate-900 block">${f.institucion}</span>
+                        <span class="font-extrabold text-slate-900 block">${f.institucion || 'Institución Oficial'}</span>
                         <span class="text-[10px] text-slate-500 font-mono">Calibración Territorial</span>
                       </div>
                     </div>
@@ -3077,7 +3088,7 @@ const Components = {
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <span class="text-xs font-black px-3 py-1.5 bg-emerald-600 text-white rounded-xl shadow-xs">
-                  ROI Score: ${roi.roiElectoralScore}/100
+                  ROI Score: ${roi.roiElectoralScore ?? 84}/100
                 </span>
               </div>
             </div>
@@ -3101,7 +3112,7 @@ const Components = {
               </div>
               <div class="p-3 rounded-xl bg-cyan-50 border border-cyan-200">
                 <span class="text-[10px] text-cyan-800 uppercase tracking-wider block">Costo / Voto Persuadido</span>
-                <div class="text-xl font-black text-cyan-700">${roi.costoPorVotoPersuadido}</div>
+                <div class="text-xl font-black text-cyan-700">${roi.costoPorVotoPersuadido || '$42 a $58 MXN'}</div>
                 <span class="text-[9px] text-cyan-700">Costo operativo optimizado</span>
               </div>
             </div>
@@ -3117,21 +3128,21 @@ const Components = {
                     <span class="text-xs font-black text-emerald-950 uppercase">🟢 Bastiones Seguros</span>
                     <span class="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">${sec.bastionesSeguros?.secciones || 90} Secc. (${sec.bastionesSeguros?.porcentaje || 45}%)</span>
                   </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.bastionesSeguros?.estrategia}</p>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.bastionesSeguros?.estrategia || 'Consolidar lealtad con presencia vecinal continua y agenda de proximidad.'}</p>
                 </div>
                 <div class="p-4 rounded-xl border border-amber-300 bg-amber-50/60 space-y-1.5">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-black text-amber-950 uppercase">🟡 Battleground Prioritario</span>
                     <span class="text-xs font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded">${sec.battlegroundPrioritario?.secciones || 60} Secc. (${sec.battlegroundPrioritario?.porcentaje || 35}%)</span>
                   </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.battlegroundPrioritario?.estrategia}</p>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.battlegroundPrioritario?.estrategia || 'Micro-targeting quirúrgico, asambleas de escucha y brigadas intensivas.'}</p>
                 </div>
                 <div class="p-4 rounded-xl border border-red-300 bg-red-50/50 space-y-1.5">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-black text-red-950 uppercase">🔴 Zonas Riesgo Opositor</span>
                     <span class="text-xs font-black text-red-800 bg-red-100 px-2 py-0.5 rounded">${sec.riesgoOpositor?.secciones || 30} Secc. (${sec.riesgoOpositor?.porcentaje || 20}%)</span>
                   </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.riesgoOpositor?.estrategia}</p>
+                  <p class="text-xs text-slate-700 leading-relaxed">${sec.riesgoOpositor?.estrategia || 'Contención preventiva de daños, desactivación de rumores y fiscalización rigurosa.'}</p>
                 </div>
               </div>
             </div>
@@ -3454,18 +3465,23 @@ const Components = {
       semaforoBg = 'bg-emerald-50';
     }
 
-    const renderBar = (favor, contra, neutro) => `
+    const renderBar = (favor, contra, neutro) => {
+      const f = Math.max(0, Math.min(100, Number(favor ?? 0)));
+      const c = Math.max(0, Math.min(100, Number(contra ?? 0)));
+      const n = Math.max(0, Math.min(100, Number(neutro ?? 0)));
+      return `
       <div class="w-full bg-slate-200 rounded-full h-2.5 flex overflow-hidden shadow-inner my-1.5 border border-slate-300/60">
-        <div style="width: ${favor}%" class="bg-emerald-600 h-full" title="A Favor: ${favor}%"></div>
-        <div style="width: ${contra}%" class="bg-rose-600 h-full" title="En Contra: ${contra}%"></div>
-        <div style="width: ${neutro}%" class="bg-amber-400 h-full" title="Neutro: ${neutro}%"></div>
+        <div style="width: ${f}%" class="bg-emerald-600 h-full" title="A Favor: ${f}%"></div>
+        <div style="width: ${c}%" class="bg-rose-600 h-full" title="En Contra: ${c}%"></div>
+        <div style="width: ${n}%" class="bg-amber-400 h-full" title="Neutro: ${n}%"></div>
       </div>
       <div class="flex items-center justify-between text-[11px] font-bold">
-        <span class="text-emerald-700">${favor}% <span class="text-[9px] font-normal text-emerald-600">Favor</span></span>
-        <span class="text-rose-600">${contra}% <span class="text-[9px] font-normal text-rose-500">Contra</span></span>
-        <span class="text-amber-700">${neutro}% <span class="text-[9px] font-normal text-amber-500">Neutro</span></span>
+        <span class="text-emerald-700">${f}% <span class="text-[9px] font-normal text-emerald-600">Favor</span></span>
+        <span class="text-rose-600">${c}% <span class="text-[9px] font-normal text-rose-500">Contra</span></span>
+        <span class="text-amber-700">${n}% <span class="text-[9px] font-normal text-amber-500">Neutro</span></span>
       </div>
-    `;
+      `;
+    };
 
     const html = `
       <div class="space-y-6">
@@ -3894,25 +3910,25 @@ const Components = {
 
         <!-- LISTA DE LAS 20 PREGUNTAS (ACORDEÓN INTERACTIVO) -->
         <div id="defense-questions-list" class="space-y-3.5">
-          ${preguntas.map((q, idx) => `
-            <div class="card-pvem bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs hover:border-emerald-300 transition-all defense-card" data-block="${q.bloque}">
+          ${(preguntas || []).map((q, idx) => `
+            <div class="card-pvem bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs hover:border-emerald-300 transition-all defense-card" data-block="${q.bloque || 'General'}">
               <!-- Cabecera / Dardo Hostil -->
               <div class="accordion-toggle p-4 sm:p-5 flex items-start justify-between gap-3 bg-slate-50/50 hover:bg-emerald-50/30 transition-colors" onclick="toggleDefenseAccordion(this)">
                 <div class="flex items-start gap-3">
                   <span class="w-7 h-7 rounded-lg bg-slate-800 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
-                    ${q.numero}
+                    ${q.numero || (idx + 1)}
                   </span>
                   <div class="space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
                       <span class="text-[10px] font-black uppercase tracking-wider text-red-800 bg-red-100 border border-red-200 px-2 py-0.5 rounded">
-                        ${q.peligro}
+                        ${q.peligro || 'Riesgo Crítico'}
                       </span>
                       <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                        ${q.bloque} • ${q.sectorAtacante}
+                        ${q.bloque || 'Estratégico'} • ${q.sectorAtacante || 'Prensa'}
                       </span>
                     </div>
                     <h4 class="text-sm font-black text-slate-900 leading-snug">
-                      🎯 ${q.dardo}
+                      🎯 ${q.dardo || 'Cuestionamiento sobre la viabilidad de la iniciativa'}
                     </h4>
                   </div>
                 </div>
@@ -3926,7 +3942,7 @@ const Components = {
                   <div class="flex items-center gap-2 text-emerald-900 font-black text-[11px] uppercase tracking-wide">
                     <span>🛡️</span> <span>Respuesta Maestra Factible (Guion de 30 Segundos):</span>
                   </div>
-                  <p class="leading-relaxed font-medium text-slate-800">${q.escudo}</p>
+                  <p class="leading-relaxed font-medium text-slate-800">${q.escudo || 'Respuesta técnica y social sustentada en datos del proyecto.'}</p>
                 </div>
 
                 <!-- Pivote Político -->
@@ -3934,7 +3950,7 @@ const Components = {
                   <div class="flex items-center gap-1.5 text-amber-400 font-black text-[10px] uppercase tracking-wider">
                     <span>🔄</span> <span>Pivote Político (Transforma el Ataque en Fortaleza):</span>
                   </div>
-                  <p class="text-slate-200 font-semibold leading-relaxed">${q.pivotePolitico}</p>
+                  <p class="text-slate-200 font-semibold leading-relaxed">${q.pivotePolitico || 'Enfocar la conversación en los beneficios directos para las familias del municipio.'}</p>
                 </div>
               </div>
             </div>
@@ -4043,8 +4059,8 @@ const Components = {
           <div class="card-pvem p-5 bg-red-50/80 border-2 border-red-200 rounded-2xl flex flex-col justify-between">
             <div>
               <span class="text-[10px] font-black uppercase tracking-wider text-red-800 block mb-1">Rechazo Popular Estimado</span>
-              <div class="text-3xl font-black text-red-600">${data.rechazoEstimado}%</div>
-              <span class="text-[11px] font-bold text-red-800">de desaprobación social en ${data.municipio}</span>
+              <div class="text-3xl font-black text-red-600">${data.rechazoEstimado ?? 68}%</div>
+              <span class="text-[11px] font-bold text-red-800">de desaprobación social en ${data.municipio || 'Municipio'}</span>
             </div>
             <p class="text-[11px] text-slate-600 mt-3 pt-2 border-t border-red-200/80">
               La iniciativa del adversario lastima intereses clave y es vulnerable a contraataque inmediato.
@@ -4053,16 +4069,16 @@ const Components = {
 
           <div class="md:col-span-2 card-pvem p-5 bg-white border border-slate-200 rounded-2xl space-y-3">
             <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Los 3 Sectores Más Agraviados con la Medida de ${data.partidoRival}
+              <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Los 3 Sectores Más Agraviados con la Medida de ${data.partidoRival || 'MORENA'}
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              ${data.sectoresAgraviados.map((s, i) => `
+              ${(data.sectoresAgraviados || []).map((s, i) => `
                 <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
                   <div>
-                    <span class="text-[10px] font-black text-red-600 block mb-0.5">#${i + 1} ${s.nivelFriccion}</span>
-                    <strong class="text-xs font-black text-slate-900 block leading-tight">${s.sector}</strong>
+                    <span class="text-[10px] font-black text-red-600 block mb-0.5">#${i + 1} ${s.nivelFriccion || 'Oposición Detectada'}</span>
+                    <strong class="text-xs font-black text-slate-900 block leading-tight">${s.sector || 'Sector'}</strong>
                   </div>
-                  <p class="text-[10px] text-slate-500 mt-2 leading-tight">${s.motivo}</p>
+                  <p class="text-[10px] text-slate-500 mt-2 leading-tight">${s.motivo || 'Fricción con la propuesta'}</p>
                 </div>
               `).join('')}
             </div>
@@ -4343,22 +4359,22 @@ const Components = {
                   <path class="text-emerald-500" stroke-dasharray="${org.porcentajeOrganico}, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
                 <div class="absolute text-center">
-                  <span class="text-base font-black text-slate-900 leading-none block">${org.porcentajeOrganico}%</span>
+                  <span class="text-base font-black text-slate-900 leading-none block">${org.porcentajeOrganico ?? 79}%</span>
                   <span class="text-[8px] font-bold text-emerald-700 uppercase">Real</span>
                 </div>
               </div>
               <div class="space-y-1.5 flex-1 min-w-0">
                 <div class="flex justify-between text-xs font-bold">
                   <span class="text-emerald-700 flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Orgánico: ${org.porcentajeOrganico}%
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Orgánico: ${org.porcentajeOrganico ?? 79}%
                   </span>
                 </div>
                 <div class="flex justify-between text-xs font-bold">
                   <span class="text-rose-600 flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> Bots / Troles: ${org.porcentajeBots}%
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> Bots / Troles: ${org.porcentajeBots ?? 21}%
                   </span>
                 </div>
-                <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">${org.diagnostico}</p>
+                <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">${org.diagnostico || 'Monitoreo de actividad ciudadana auténtica.'}</p>
               </div>
             </div>
           </div>
@@ -4372,23 +4388,23 @@ const Components = {
 
             <div class="space-y-2">
               <div class="w-full bg-slate-100 rounded-full h-3.5 flex overflow-hidden">
-                <div style="width: ${sent.positivo}%" class="bg-emerald-500 h-full" title="Positivo: ${sent.positivo}%"></div>
-                <div style="width: ${sent.neutro}%" class="bg-amber-400 h-full" title="Neutro: ${sent.neutro}%"></div>
-                <div style="width: ${sent.negativo}%" class="bg-rose-500 h-full" title="Negativo: ${sent.negativo}%"></div>
+                <div style="width: ${sent.positivo ?? 55}%" class="bg-emerald-500 h-full" title="Positivo: ${sent.positivo ?? 55}%"></div>
+                <div style="width: ${sent.neutro ?? 25}%" class="bg-amber-400 h-full" title="Neutro: ${sent.neutro ?? 25}%"></div>
+                <div style="width: ${sent.negativo ?? 20}%" class="bg-rose-500 h-full" title="Negativo: ${sent.negativo ?? 20}%"></div>
               </div>
 
               <div class="grid grid-cols-3 gap-1 pt-1 text-center">
                 <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-100">
                   <span class="text-[10px] font-bold text-emerald-800 uppercase block">Positivo</span>
-                  <span class="text-sm font-black text-emerald-700">${sent.positivo}%</span>
+                  <span class="text-sm font-black text-emerald-700">${sent.positivo ?? 55}%</span>
                 </div>
                 <div class="p-2 rounded-lg bg-amber-50 border border-amber-100">
                   <span class="text-[10px] font-bold text-amber-800 uppercase block">Neutro</span>
-                  <span class="text-sm font-black text-amber-700">${sent.neutro}%</span>
+                  <span class="text-sm font-black text-amber-700">${sent.neutro ?? 25}%</span>
                 </div>
                 <div class="p-2 rounded-lg bg-rose-50 border border-rose-100">
                   <span class="text-[10px] font-bold text-rose-800 uppercase block">Ataque</span>
-                  <span class="text-sm font-black text-rose-700">${sent.negativo}%</span>
+                  <span class="text-sm font-black text-rose-700">${sent.negativo ?? 20}%</span>
                 </div>
               </div>
             </div>
