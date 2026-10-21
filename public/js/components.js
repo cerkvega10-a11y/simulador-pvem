@@ -2648,6 +2648,10 @@ const Components = {
   /**
    * PESTAÑA 2: MAPA POR COLONIAS Y DISEÑO DE CAMPAÑA (MICRO-TARGETING TERRITORIAL Y RADAR ELECTORAL 2027-2030)
    */
+  /**
+   * PESTAÑA 2: MAPA POR COLONIAS REALES Y MICRO-TARGETING (CUADRÍCULA COMPACTA HORIZONTAL)
+   * Cero texto vertical, layout responsive optimizado de alta densidad informativa.
+   */
   renderTab2ColoniasYCampana(containerId, coloniasInput, manualInput, statsInput, partyInput, reportInput = null) {
     const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
     const container = document.getElementById(containerId);
@@ -2666,109 +2670,77 @@ const Components = {
       colonias = appState.radarAnalysis.microTargetingColonias.colonias;
     }
 
-    // Fallback enriquecido si no hay colonias cargadas
     if (!colonias || colonias.length === 0) {
       colonias = [
         {
           nombre: 'Ciudad Azteca (1ra a 3ra Sección)',
           ageb: '094-1',
-          carenciaPrincipal: 'Déficit severo de agua potable por tandeo (CONAGUA/CAEM)',
+          carenciaPrincipal: 'Déficit de agua potable por tandeo (CONAGUA/CAEM)',
+          carenciaFuente: 'CONAGUA / CAEM',
           estratoSocioeconomico: 'C / D+',
           poblacionElectoral: 48500,
-          listaNominal: 46200,
           porcentajeApoyoProyectado: 51.2,
-          prioridadBrigada: 'Zona Indecisa / Swarm Battleground',
-          propuestasClaveRecomendadas: ['Cosecha Hídrica y Pozos Inteligentes', 'Sendero Seguro Metro Línea B'],
-          sindicatoDominante: 'Transporte Colectivo y Rutas Concesionadas'
+          prioridadBrigada: 'Swarm Battleground',
+          propuestasClaveRecomendadas: ['Cosecha Hídrica y Pozos Inteligentes']
         },
         {
-          nombre: 'Jardines de Morelos (Secc. Bosques y Elementos)',
+          nombre: 'Jardines de Morelos',
           ageb: '108-3',
-          carenciaPrincipal: 'Inseguridad urbana y robo en transporte (SESNSP/ENSU)',
+          carenciaPrincipal: 'Inseguridad urbana y robo en transporte (SESNSP)',
+          carenciaFuente: 'SESNSP / ENSU',
           estratoSocioeconomico: 'C',
           poblacionElectoral: 53200,
-          listaNominal: 50800,
           porcentajeApoyoProyectado: 56.4,
           prioridadBrigada: 'Bastión Electoral',
-          propuestasClaveRecomendadas: ['Corredores Seguros Sendero Verde', 'Botón de Pánico C5 en Paraderos'],
-          sindicatoDominante: 'Comerciantes, Tianguis y Mercados Públicos'
+          propuestasClaveRecomendadas: ['Corredores Seguros Sendero Verde']
         },
         {
-          nombre: 'San Cristóbal Centro (Cabecera)',
+          nombre: 'San Cristóbal Centro',
           ageb: '012-4',
-          carenciaPrincipal: 'Carestía de productos básicos e inflación (PROFECO/PACIC)',
+          carenciaPrincipal: 'Carestía de productos básicos e inflación local',
+          carenciaFuente: 'PROFECO / PACIC',
           estratoSocioeconomico: 'C+',
           poblacionElectoral: 39800,
-          listaNominal: 38100,
           porcentajeApoyoProyectado: 45.8,
-          prioridadBrigada: 'Zona Indecisa / Swarm Battleground',
-          propuestasClaveRecomendadas: ['Ventanilla Única Digital y Cero Moches', 'Feria de Abasto Comunitario'],
-          sindicatoDominante: 'Burócratas y Servidores Públicos (SUTEYM)'
+          prioridadBrigada: 'Swarm Battleground',
+          propuestasClaveRecomendadas: ['Feria de Abasto Comunitario y Cero Moches']
         },
         {
-          nombre: 'Las Américas (Fraccionamiento)',
+          nombre: 'Las Américas',
           ageb: '204-7',
-          carenciaPrincipal: 'Saturación vial y falta de conectividad (ENUT/SEDATU)',
+          carenciaPrincipal: 'Saturación vial y falta de conectividad',
+          carenciaFuente: 'ENUT / SEDATU',
           estratoSocioeconomico: 'B / C+',
           poblacionElectoral: 44100,
-          listaNominal: 42500,
           porcentajeApoyoProyectado: 53.0,
-          prioridadBrigada: 'Zona Indecisa / Swarm Battleground',
-          propuestasClaveRecomendadas: ['Mexibús Exprés y Biciestacionamientos', 'Vigilancia con Drones en Accesos'],
-          sindicatoDominante: 'Sector Automotriz y Logística'
+          prioridadBrigada: 'Swarm Battleground',
+          propuestasClaveRecomendadas: ['Mexibús Exprés y Biciestacionamientos']
         },
         {
-          nombre: 'Santa María Tulpetlac',
-          ageb: '077-2',
-          carenciaPrincipal: 'Venta ilegal de agua por pipas y fugas (CONAGUA/CAEM)',
+          nombre: 'Valle de Aragón (3ra Sección)',
+          ageb: '312-5',
+          carenciaPrincipal: 'Falta de luminarias y baches profundos',
+          carenciaFuente: 'Servicios Públicos',
+          estratoSocioeconomico: 'C',
+          poblacionElectoral: 37500,
+          porcentajeApoyoProyectado: 58.0,
+          prioridadBrigada: 'Bastión Electoral',
+          propuestasClaveRecomendadas: ['Red de Iluminación LED Solar Barrial']
+        },
+        {
+          nombre: 'Santa María Chiconautla',
+          ageb: '045-2',
+          carenciaPrincipal: 'Rezago en pavimentación y drenaje pluvial',
+          carenciaFuente: 'CONEVAL / SEDESOL',
           estratoSocioeconomico: 'D+ / D',
           poblacionElectoral: 41200,
-          listaNominal: 39400,
-          porcentajeApoyoProyectado: 58.7,
-          prioridadBrigada: 'Bastión Electoral',
-          propuestasClaveRecomendadas: ['Línea de Agua Directa y Tarifa Solidaria', 'Clínica Barrial 24/7'],
-          sindicatoDominante: 'Comercio Popular y Tianguis'
-        },
-        {
-          nombre: 'Chiconautla / Ciudad Cuauhtémoc',
-          ageb: '315-9',
-          carenciaPrincipal: 'Calles sin pavimentar y rezago en drenaje (CONEVAL/SEDATU)',
-          estratoSocioeconomico: 'D / E',
-          poblacionElectoral: 49800,
-          listaNominal: 47100,
-          porcentajeApoyoProyectado: 57.3,
-          prioridadBrigada: 'Bastión Electoral',
-          propuestasClaveRecomendadas: ['Pavimentación Hidráulica Ramo 33', 'Red de Drenaje Pluvial'],
-          sindicatoDominante: 'Trabajadores de la Construcción y Oficios'
-        },
-        {
-          nombre: 'San Agustín (1ra y 2da Sección)',
-          ageb: '088-5',
-          carenciaPrincipal: 'Inundaciones recurrentes por aguas negras (CENAPRED)',
-          estratoSocioeconomico: 'D+ / D',
-          poblacionElectoral: 36700,
-          listaNominal: 35100,
-          porcentajeApoyoProyectado: 42.1,
-          prioridadBrigada: 'Zona Crítica / Alta Resistencia',
-          propuestasClaveRecomendadas: ['Cárcamo de Bombeo y Desazolve Mayor', 'Seguro Vecinal contra Inundaciones'],
-          sindicatoDominante: 'Transporte Concesionado Colectivo'
-        },
-        {
-          nombre: 'Polígonos 1, 2 y 3 (5ta Zona)',
-          ageb: '162-8',
-          carenciaPrincipal: 'Desabasto crítico de agua potable (CONAGUA)',
-          estratoSocioeconomico: 'D+ / D',
-          poblacionElectoral: 42900,
-          listaNominal: 41000,
-          porcentajeApoyoProyectado: 43.8,
-          prioridadBrigada: 'Zona Crítica / Alta Resistencia',
-          propuestasClaveRecomendadas: ['Plan Emergente de Acuífero y Pipas Gratuitas', 'Monitoreo de Red'],
-          sindicatoDominante: 'Pipas y Transporte Comunitario'
+          porcentajeApoyoProyectado: 41.5,
+          prioridadBrigada: 'Zona Crítica',
+          propuestasClaveRecomendadas: ['Brigada de Reencarpetamiento Asfáltico']
         }
       ];
     }
 
-    // Estadísticas
     const totalColonias = colonias.length;
     const bastiones = colonias.filter(c => (c.prioridadBrigada || '').toLowerCase().includes('bastión')).length;
     const battlegrounds = colonias.filter(c => (c.prioridadBrigada || '').toLowerCase().includes('indecisa') || (c.prioridadBrigada || '').toLowerCase().includes('battleground')).length;
@@ -2776,635 +2748,155 @@ const Components = {
     const padronTotal = colonias.reduce((acc, c) => acc + (c.poblacionElectoral || 35000), 0);
     const apoyoProm = (colonias.reduce((acc, c) => acc + (c.porcentajeApoyoProyectado || 50), 0) / (totalColonias || 1)).toFixed(1);
 
-    // Resolver manual de campaña
-    const manual = manualInput || (typeof appState !== 'undefined' && appState.radarAnalysis?.manualCampanaEstrategico) || {
-      namingEstrategico: `Fuerza Territorial Verde por ${municipio}`,
-      sloganOficial: `Justicia, Seguridad y Agua para Nuestras Familias • ${party} 2027-2030`,
-      banderazoSalida: {
-        colonia: colonias[0]?.nombre || 'Cabecera Municipal',
-        horario: 'Domingo 08:30 AM (Banderazo Masivo)',
-        justificacion: 'Punto neurálgico con alto flujo de familias trabajadoras, donde el contraste con la falta de agua y alumbrado del gobierno actual permite fijar la agenda mediática desde el día 1.'
-      },
-      discursosSegmentados: {
-        jovenes: {
-          rango: '18 a 29 años (Voto Joven y Primer Votante)',
-          enfoque: 'Causas verdes, conectividad digital, transporte gratuito estudiantil y primer empleo.',
-          soundbite: '"No venimos a pedirles paciencia, venimos a darles transporte gratuito al Mexibús, internet en todos los parques y créditos para emprender sin moches."',
-          riesgoEvitar: 'Discurso acartonado o promesas de burocracia tradicional.'
-        },
-        adultos: {
-          rango: '30 a 49 años (Comerciantes, Jefas de Familia y Empleados)',
-          enfoque: 'Cero cobro de piso, agua por red sin sobreprecio, seguridad en transporte y clínicas barriales.',
-          soundbite: '"A cada comerciante y jefa de familia: se acabaron las extorsiones y el pagar pipas a 1,200 pesos. El agua es un derecho y la seguridad la garantizamos con patrullaje real."',
-          riesgoEvitar: 'Minimizar el gasto diario que enfrentan en pipas y transporte.'
-        },
-        mayores: {
-          rango: '65+ años (Adultos Mayores y Pensionados)',
-          enfoque: 'Red de farmacias barriales gratuitas, suministro regular de agua y espacios de recreación dignos.',
-          soundbite: '"A nuestros abuelos y abuelas: medicina gratuita garantizada en su colonia, agua a la puerta de su casa y respeto total a toda una vida de trabajo."',
-          riesgoEvitar: 'Prometer trámites digitales complejos que requieran traslados innecesarios.'
-        }
-      },
-      curvaCrecimiento: {
-        fase1: 'Día 1-20: Movilización de Bastiones (+4.5% intención)',
-        fase2: 'Día 21-40: Ofensiva Territorial en Swarm Battlegrounds (+6.2% intención)',
-        fase3: 'Día 41-60: Cierre con Testigos Sociales y Operativo Victoria (+3.8% blindaje)'
-      }
-    };
-
-    // Almacenar en window para filtros interactivos
     window._currentColoniasCache = colonias;
 
-    const html = `
-      <div class="space-y-6">
-
-        <!-- HEADER BANNER DE LA PESTAÑA -->
-        <div class="card-pvem p-6 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-2xl shadow-xl relative overflow-hidden border border-emerald-500/40">
-          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="space-y-1.5 max-w-2xl">
-              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-black uppercase tracking-wider border border-emerald-400/40">
-                <span>🏘️</span> Radar Territorial GovTech & Micro-Targeting AGEB 2027-2030
-              </div>
-              <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Mapa por Colonias Reales y Manual de Campaña — ${municipio}
+    let html = `
+      <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
+        <!-- Encabezado de la Sección -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></span>
+              <h3 class="text-base font-black text-slate-900">
+                Mapa por Colonias Reales y Micro-Targeting — ${municipio}
               </h3>
-              <p class="text-xs text-slate-300 leading-relaxed font-normal">
-                Segmentación electoral micro-territorial mediante <strong>enjambres sintéticos y modelos de micro-targeting</strong>, matriz de brigadas (Bastiones, Indecisas y Críticas) y argumentario de media training por grupo etario.
-              </p>
             </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Micro-segmentación por AGEB censal y colonias georreferenciadas con inferencia de IA en tiempo real.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-bold bg-emerald-50 text-emerald-950 px-3 py-1.5 rounded-lg border border-emerald-200 shrink-0">
+            <span>🗳️ Apoyo Promedio Proyectado:</span>
+            <span class="text-emerald-700 font-black">${apoyoProm}%</span>
+          </div>
+        </div>
 
-            <!-- Botón de descarga rápida del Plan Maestro -->
-            <button type="button" onclick="descargarPlanMaestroPdf()"
-              class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 shrink-0"
-              title="Descargar Plan Maestro de Victoria Electoral en PDF">
-              <svg class="w-4 h-4 text-emerald-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              <span>📥 Descargar Plan Maestro (PDF)</span>
+        <!-- TARJETAS KPI DE COLONIAS (HORIZONTAL RESUMIDO) -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">AGEBs Auditados</span>
+            <div class="text-xl font-black text-slate-900 my-0.5">${totalColonias} Colonias</div>
+            <span class="text-[9px] text-slate-500">INEGI / Cartografía</span>
+          </div>
+          <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
+            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Bastiones Seguros</span>
+            <div class="text-xl font-black text-emerald-700 my-0.5">${bastiones} Zonas</div>
+            <span class="text-[9px] text-emerald-700">Movilización prioritaria</span>
+          </div>
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
+            <span class="text-[10px] font-bold text-amber-800 uppercase block">Battlegrounds</span>
+            <div class="text-xl font-black text-amber-700 my-0.5">${battlegrounds} Zonas</div>
+            <span class="text-[9px] text-amber-700">Persuasión clave</span>
+          </div>
+          <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 text-center">
+            <span class="text-[10px] font-bold text-rose-800 uppercase block">Zonas Críticas</span>
+            <div class="text-xl font-black text-rose-700 my-0.5">${criticas} Zonas</div>
+            <span class="text-[9px] text-rose-700">Contención de fricción</span>
+          </div>
+          <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 text-center col-span-2 sm:col-span-1">
+            <span class="text-[10px] font-bold text-sky-800 uppercase block">Padrón Total</span>
+            <div class="text-xl font-black text-sky-700 my-0.5">${padronTotal.toLocaleString()}</div>
+            <span class="text-[9px] text-sky-700">Electores en el mapa</span>
+          </div>
+        </div>
+
+        <!-- BUSCADOR EN VIVO Y FILTROS INTERACTIVOS -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <div class="relative flex-1">
+            <input type="text" id="input-search-colonias" oninput="searchColoniasTable(this.value)"
+              placeholder="🔍 Buscar colonia, AGEB, carencia o acción táctica..."
+              class="w-full px-3.5 py-2 pl-9 rounded-xl border border-slate-300 text-xs text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0 overflow-x-auto">
+            <button type="button" onclick="filterColoniasTable('todos')" class="btn-colonia-filter active px-3 py-1.5 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs transition-all" data-filter="todos">
+              Todas (${totalColonias})
+            </button>
+            <button type="button" onclick="filterColoniasTable('bastion')" class="btn-colonia-filter px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="bastion">
+              Bastiones (${bastiones})
+            </button>
+            <button type="button" onclick="filterColoniasTable('battleground')" class="btn-colonia-filter px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="battleground">
+              Battlegrounds (${battlegrounds})
+            </button>
+            <button type="button" onclick="filterColoniasTable('critica')" class="btn-colonia-filter px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="critica">
+              Críticas (${criticas})
             </button>
           </div>
         </div>
 
-        <!-- 5 TARJETAS KPI DE INTELIGENCIA TERRITORIAL -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          <div class="card-pvem p-4 bg-white border-l-4 border-slate-700 shadow-xs">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Colonias Auditadas</span>
-            <div class="text-2xl font-black text-slate-900 my-1">${totalColonias} AGEBs</div>
-            <span class="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-semibold block truncate">Padrón: ${padronTotal.toLocaleString()}</span>
-          </div>
-
-          <div class="card-pvem p-4 bg-white border-l-4 border-emerald-600 shadow-xs">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Bastiones Electorales</span>
-            <div class="text-2xl font-black text-emerald-700 my-1">${bastiones}</div>
-            <span class="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-semibold block truncate">Prioridad: Puerta por Puerta</span>
-          </div>
-
-          <div class="card-pvem p-4 bg-white border-l-4 border-amber-500 shadow-xs">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Swarm Battlegrounds</span>
-            <div class="text-2xl font-black text-amber-600 my-1">${battlegrounds}</div>
-            <span class="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded font-semibold block truncate">Zonas Indecisas en Disputa</span>
-          </div>
-
-          <div class="card-pvem p-4 bg-white border-l-4 border-red-500 shadow-xs">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Zonas Críticas</span>
-            <div class="text-2xl font-black text-red-600 my-1">${criticas}</div>
-            <span class="text-[10px] text-red-800 bg-red-50 px-2 py-0.5 rounded font-semibold block truncate">Alta Resistencia / Riesgo</span>
-          </div>
-
-          <div class="card-pvem p-4 bg-white border-l-4 border-teal-600 shadow-xs col-span-2 sm:col-span-1">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Apoyo Proyectado</span>
-            <div class="text-2xl font-black text-teal-700 my-1">${apoyoProm}%</div>
-            <span class="text-[10px] text-teal-800 bg-teal-50 px-2 py-0.5 rounded font-semibold block truncate">Potencial Campaña: +12.4%</span>
-          </div>
-        </div>
-
-        <!-- TABLA DE MICRO-TARGETING POR COLONIAS REALES CON BUSCADOR Y FILTROS -->
-        <div class="card-pvem p-6 bg-white shadow-md space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <span>📍</span> Matriz de Micro-Targeting por Colonias y AGEBs (${municipio})
-              </h4>
-              <p class="text-xs text-slate-500">
-                Priorización táctica de brigadas territoriales y detección de necesidades prioritarias por polígono.
-              </p>
-            </div>
-
-            <!-- Filtros de Prioridad de Brigada -->
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <button type="button" onclick="filterColoniasTable('todos')" class="btn-colonia-filter active px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs transition-all" data-filter="todos">
-                Todas (${totalColonias})
-              </button>
-              <button type="button" onclick="filterColoniasTable('bastion')" class="btn-colonia-filter px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="bastion">
-                🟢 Bastiones (${bastiones})
-              </button>
-              <button type="button" onclick="filterColoniasTable('battleground')" class="btn-colonia-filter px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="battleground">
-                🟡 Indecisas (${battlegrounds})
-              </button>
-              <button type="button" onclick="filterColoniasTable('critica')" class="btn-colonia-filter px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all" data-filter="critica">
-                🔴 Críticas (${criticas})
-              </button>
-            </div>
-          </div>
-
-          <!-- Buscador en Vivo de Colonias -->
-          <div class="relative">
-            <input type="text" id="input-search-colonias" oninput="searchColoniasTable(this.value)"
-              placeholder="🔍 Buscar colonia por nombre, carencia, estrato NSE o sindicato dominante..."
-              class="w-full px-3.5 py-2 pl-9 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50 focus:bg-white transition-all">
-            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          </div>
-
-          <!-- Contenedor con Scroll de la Tabla -->
-          <div class="overflow-x-auto rounded-xl border border-slate-200">
-            <table class="w-full text-left text-xs" id="table-colonias-microtargeting">
-              <thead class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
-                <tr>
-                  <th class="px-3.5 py-2.5">Colonia / Barrio</th>
-                  <th class="px-3.5 py-2.5">AGEB</th>
-                  <th class="px-3.5 py-2.5">Carencia Principal Detectada</th>
-                  <th class="px-2.5 py-2.5 text-center">NSE</th>
-                  <th class="px-3 py-2.5 text-right">Padrón Est.</th>
-                  <th class="px-3 py-2.5 text-center">Apoyo Base</th>
-                  <th class="px-3.5 py-2.5">Prioridad de Brigada</th>
-                  <th class="px-3.5 py-2.5">Acción Recomendada</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 text-slate-700" id="tbody-colonias">
-                ${colonias.map((c, idx) => {
-                  const isBastion = (c.prioridadBrigada || '').toLowerCase().includes('bastión');
-                  const isCritica = (c.prioridadBrigada || '').toLowerCase().includes('crítica') || (c.prioridadBrigada || '').toLowerCase().includes('resistencia');
-                  let badgePrio = 'bg-amber-100 text-amber-900 border-amber-300';
-                  let prioTag = 'battleground';
-                  if (isBastion) {
-                    badgePrio = 'bg-emerald-100 text-emerald-900 border-emerald-300';
-                    prioTag = 'bastion';
-                  } else if (isCritica) {
-                    badgePrio = 'bg-red-100 text-red-900 border-red-300';
-                    prioTag = 'critica';
-                  }
-
-                  const acc = (c.propuestasClaveRecomendadas && c.propuestasClaveRecomendadas[0]) || 'Módulos de escucha vecinal';
-
-                  return `
-                    <tr class="hover:bg-slate-50 transition-colors fila-colonia" data-priority="${prioTag}">
-                      <td class="px-3.5 py-2.5 font-bold text-slate-900 whitespace-nowrap">
-                        ${c.nombre}
-                      </td>
-                      <td class="px-3.5 py-2.5 font-mono text-slate-500 text-[11px] whitespace-nowrap">
-                        ${c.ageb || '0' + (idx + 1) * 12 + '-1'}
-                      </td>
-                      <td class="px-3.5 py-2.5 text-slate-600 max-w-xs">
-                        <span class="text-[11px] font-semibold text-slate-800 block">${c.carenciaPrincipal || 'Servicios públicos y bacheo'}</span>
-                        <span class="text-[10px] text-slate-400 font-mono">${c.carenciaFuente || 'CONAGUA / SESNSP'}</span>
-                      </td>
-                      <td class="px-2.5 py-2.5 text-center font-bold text-slate-800 whitespace-nowrap">
-                        ${c.estratoSocioeconomico || 'C'}
-                      </td>
-                      <td class="px-3 py-2.5 text-right font-mono font-semibold text-slate-800 whitespace-nowrap">
-                        ${(c.poblacionElectoral || 35000).toLocaleString()}
-                      </td>
-                      <td class="px-3 py-2.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
-                        ${c.porcentajeApoyoProyectado || 50}%
-                      </td>
-                      <td class="px-3.5 py-2.5 whitespace-nowrap">
-                        <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${badgePrio}">
-                          ${c.prioridadBrigada || 'Zona Indecisa'}
-                        </span>
-                      </td>
-                      <td class="px-3.5 py-2.5 text-slate-700 text-[11px] max-w-xs truncate" title="${acc}">
-                        ${acc}
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- MANUAL DE DISEÑO DE CAMPAÑA TERRITORIAL (MEDIA TRAINING Y SOUNDBITES) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          <!-- COLUMNA IZQUIERDA: NAMING, SLOGAN Y BANDERAZO DE SALIDA (5 COLS) -->
-          <div class="lg:col-span-5 space-y-4">
-            <!-- Naming y Slogan -->
-            <div class="card-pvem p-5 bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 rounded-2xl space-y-3">
-              <div class="flex items-center gap-2 text-emerald-900 font-black text-xs uppercase tracking-wider">
-                <span>🏷️</span> Naming Ganador & Slogan de Campaña
-              </div>
-              <div class="space-y-1.5">
-                <h5 class="text-base font-black text-slate-900 leading-tight">
-                  "${manual.namingEstrategico}"
-                </h5>
-                <p class="text-xs text-emerald-800 font-bold italic">
-                  "${manual.sloganOficial}"
-                </p>
-              </div>
-              <div class="p-3 bg-white rounded-xl border border-emerald-200 text-slate-700 text-xs space-y-1">
-                <span class="font-bold text-slate-800 block text-[11px] uppercase tracking-wide">Fórmula de Posicionamiento:</span>
-                <p class="text-[11px] text-slate-600 leading-relaxed">
-                  Conexión directa entre el dolor urgente del territorio (agua y seguridad) y el sello institucional del partido, evitando retórica abstracta.
-                </p>
-              </div>
-            </div>
-
-            <!-- Banderazo de Salida Territorial -->
-            <div class="card-pvem p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs">
-              <div class="flex items-center gap-2 text-slate-900 font-black text-xs uppercase tracking-wider">
-                <span>🚩</span> Banderazo de Salida Territorial (Día 1)
-              </div>
-              <div class="space-y-2 text-xs">
-                <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-200">
-                  <span class="font-bold text-emerald-950">Punto de Arranque:</span>
-                  <span class="font-black text-emerald-800">${manual.banderazoSalida?.colonia || colonias[0]?.nombre}</span>
-                </div>
-                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
-                  <span class="font-bold">Horario Estratégico:</span>
-                  <span class="font-semibold">${manual.banderazoSalida?.horario || '08:30 AM'}</span>
-                </div>
-                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-[11px] leading-relaxed">
-                  <strong class="text-slate-900 block mb-0.5">Justificación de Inteligencia Territorial:</strong>
-                  ${manual.banderazoSalida?.justificacion || 'Zona de alta visibilidad comunitaria que aglutina tianguistas, choferes y colonos afectados por el desabasto hídrico.'}
-                </div>
-              </div>
-            </div>
-
-            <!-- Curva de Crecimiento Proyectada -->
-            <div class="card-pvem p-5 bg-slate-900 text-white rounded-2xl space-y-3 shadow-md border border-slate-800">
-              <div class="flex items-center gap-2 text-emerald-400 font-black text-xs uppercase tracking-wider">
-                <span>📈</span> Curva de Crecimiento y Meta de Votos
-              </div>
-              <div class="space-y-2 text-xs text-slate-300">
-                <div class="p-2 rounded-lg bg-slate-800/80 border border-slate-700">
-                  <strong class="text-emerald-400 text-[10px] uppercase block">Fase 1 (Día 1-20):</strong>
-                  <span>${manual.curvaCrecimiento?.fase1 || 'Movilización de Bastiones (+4.5% intención)'}</span>
-                </div>
-                <div class="p-2 rounded-lg bg-slate-800/80 border border-slate-700">
-                  <strong class="text-amber-400 text-[10px] uppercase block">Fase 2 (Día 21-40):</strong>
-                  <span>${manual.curvaCrecimiento?.fase2 || 'Ofensiva Territorial en Swarm Battlegrounds (+6.2% intención)'}</span>
-                </div>
-                <div class="p-2 rounded-lg bg-slate-800/80 border border-slate-700">
-                  <strong class="text-teal-300 text-[10px] uppercase block">Fase 3 (Día 41-60):</strong>
-                  <span>${manual.curvaCrecimiento?.fase3 || 'Cierre con Testigos Sociales y Operativo Victoria (+3.8% blindaje)'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-        <!-- ========================================================
-             MÓDULO 4.1: CALCULADORA DE ROI DE CAMPAÑA Y ASIGNACIÓN TERRITORIAL
-             ======================================================== -->
-        ${(() => {
-          const roi = fullReport.calculadoraROICampana || {
-            padronElectoralEstimado: 345000,
-            metaVotosVictoria: 128000,
-            totalSeccionesElectorales: 230,
-            clasificacionSecciones: {
-              bastionesSeguros: { secciones: 110, porcentaje: 48, estrategia: 'Movilización masiva y defensa del voto en casillas.' },
-              battlegroundPrioritario: { secciones: 85, porcentaje: 37, estrategia: 'Micro-targeting quirúrgico y brigadas intensivas.' },
-              riesgoOpositor: { secciones: 35, porcentaje: 15, estrategia: 'Contención de daños y fiscalización rigurosa.' }
-            },
-            asignacionRecursos: {
-              brigadistasRecomendados: 180,
-              lonasPublicidad: 1200,
-              asambleasVecinales: 45
-            },
-            costoPorVotoPersuadido: '$42 a $58 MXN',
-            roiElectoralScore: 84,
-            diagnosticoROI: 'Concentrar los 180 brigadistas en las 85 secciones battleground garantiza el triunfo al menor costo de persuasión.'
-          };
-
-          const sec = roi.clasificacionSecciones || {};
-          const rec = roi.asignacionRecursos || {};
-
-          return `
-          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs uppercase tracking-widest font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">Módulo 4 • Operativa Territorial</span>
-                  <span class="text-xs text-slate-400">•</span>
-                  <span class="text-xs text-emerald-800 font-bold">Cruce Padrón INE vs Enjambre</span>
-                </div>
-                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
-                  <span>📊</span> Calculadora de ROI de Campaña y Asignación por Secciones Electorales
-                </h4>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="text-xs font-black px-3 py-1.5 bg-emerald-600 text-white rounded-xl shadow-xs">
-                  ROI Score: ${roi.roiElectoralScore ?? 84}/100
-                </span>
-              </div>
-            </div>
-
-            <!-- KPIs de Padrón y Meta -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Padrón Electoral</span>
-                <div class="text-xl font-black text-slate-900">${(roi.padronElectoralEstimado || 300000).toLocaleString()}</div>
-                <span class="text-[9px] text-slate-500">Electores registrados</span>
-              </div>
-              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                <span class="text-[10px] text-emerald-800 uppercase tracking-wider block">Meta de Votos Victoria</span>
-                <div class="text-xl font-black text-emerald-700">${(roi.metaVotosVictoria || 100000).toLocaleString()}</div>
-                <span class="text-[9px] text-emerald-700">37% del padrón estimado</span>
-              </div>
-              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                <span class="text-[10px] text-amber-800 uppercase tracking-wider block">Secciones Electorales</span>
-                <div class="text-xl font-black text-amber-700">${roi.totalSeccionesElectorales || 180}</div>
-                <span class="text-[9px] text-amber-700">Casillas de la demarcación</span>
-              </div>
-              <div class="p-3 rounded-xl bg-cyan-50 border border-cyan-200">
-                <span class="text-[10px] text-cyan-800 uppercase tracking-wider block">Costo / Voto Persuadido</span>
-                <div class="text-xl font-black text-cyan-700">${roi.costoPorVotoPersuadido || '$42 a $58 MXN'}</div>
-                <span class="text-[9px] text-cyan-700">Costo operativo optimizado</span>
-              </div>
-            </div>
-
-            <!-- Clasificación de Secciones: Bastión, Battleground, Riesgo -->
-            <div class="space-y-2">
-              <span class="text-xs font-black text-slate-800 uppercase tracking-wide block">
-                Clasificación Estratégica de Secciones Electorales:
-              </span>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-black text-emerald-950 uppercase">🟢 Bastiones Seguros</span>
-                    <span class="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">${sec.bastionesSeguros?.secciones || 90} Secc. (${sec.bastionesSeguros?.porcentaje || 45}%)</span>
-                  </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.bastionesSeguros?.estrategia || 'Consolidar lealtad con presencia vecinal continua y agenda de proximidad.'}</p>
-                </div>
-                <div class="p-4 rounded-xl border border-amber-300 bg-amber-50/60 space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-black text-amber-950 uppercase">🟡 Battleground Prioritario</span>
-                    <span class="text-xs font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded">${sec.battlegroundPrioritario?.secciones || 60} Secc. (${sec.battlegroundPrioritario?.porcentaje || 35}%)</span>
-                  </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.battlegroundPrioritario?.estrategia || 'Micro-targeting quirúrgico, asambleas de escucha y brigadas intensivas.'}</p>
-                </div>
-                <div class="p-4 rounded-xl border border-red-300 bg-red-50/50 space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-black text-red-950 uppercase">🔴 Zonas Riesgo Opositor</span>
-                    <span class="text-xs font-black text-red-800 bg-red-100 px-2 py-0.5 rounded">${sec.riesgoOpositor?.secciones || 30} Secc. (${sec.riesgoOpositor?.porcentaje || 20}%)</span>
-                  </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">${sec.riesgoOpositor?.estrategia || 'Contención preventiva de daños, desactivación de rumores y fiscalización rigurosa.'}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Asignación de Recursos -->
-            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="text-base">🚶</span>
-                <span class="text-slate-700">Brigadistas Óptimos: <strong class="text-slate-900">${rec.brigadistasRecomendados || 150} promotores</strong></span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-base">🪧</span>
-                <span class="text-slate-700">Lonas y Material Exterior: <strong class="text-slate-900">${rec.lonasPublicidad || 1000} unidades</strong></span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-base">📢</span>
-                <span class="text-slate-700">Asambleas Territoriales: <strong class="text-slate-900">${rec.asambleasVecinales || 35} eventos</strong></span>
-              </div>
-            </div>
-          </div>
-          `;
-        })()}
-
-        <!-- ========================================================
-             MÓDULO 4.2: RADIOGRAFÍA DE DESGASTE DE PROMESAS (ÍNDICE DE ESCEPTICISMO)
-             ======================================================== -->
-        ${(() => {
-          const esc = fullReport.indiceEscepticismo || {
-            indiceEscepticismo: 48,
-            nivelDesgaste: 'Moderado',
-            factoresIncredulidad: [
-              'Historial de obras públicas inconclusas en administraciones previas.',
-              'Desconfianza en que los apoyos se condicionen políticamente.',
-              'Temor a aumentos en impuestos prediales o agua.'
-            ],
-            blindajeFinanciero: {
-              fuentesPresupuestales: [
-                'Ramo 33 (FAIS y FORTAMUN): Fondos federales para infraestructura social y seguridad.',
-                'Ramo 28: Participaciones federales no condicionadas de libre disposición.',
-                'Fondo de Infraestructura Social Municipal (FISMDF).'
-              ],
-              sustentoJuridico: 'Artículo 115 Constitucional, Ley Orgánica Municipal del Edomex y Ley de Coordinación Fiscal.',
-              garantiaAnticorrupcion: 'Comité de Adquisiciones con testigos sociales ciudadanos y licitación abierta.'
+        <!-- CUADRÍCULA RESPONSIVE DE TARJETAS DE COLONIAS (LAYOUT COMPACTO HORIZONTAL — CERO TEXTO VERTICAL) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2" id="grid-colonias-cards">
+          ${colonias.map((c, idx) => {
+            const isBastion = (c.prioridadBrigada || '').toLowerCase().includes('bastión');
+            const isCritica = (c.prioridadBrigada || '').toLowerCase().includes('crítica') || (c.prioridadBrigada || '').toLowerCase().includes('resistencia');
+            let badgePrio = 'bg-amber-100 text-amber-900 border-amber-300';
+            let prioTag = 'battleground';
+            if (isBastion) {
+              badgePrio = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+              prioTag = 'bastion';
+            } else if (isCritica) {
+              badgePrio = 'bg-rose-100 text-rose-900 border-rose-300';
+              prioTag = 'critica';
             }
-          };
 
-          const blin = esc.blindajeFinanciero || {};
+            const acc = (c.propuestasClaveRecomendadas && c.propuestasClaveRecomendadas[0]) || 'Módulos de escucha vecinal y asamblea de barrio';
+            const apoyo = Number(c.porcentajeApoyoProyectado || 50).toFixed(1);
+            const indecisos = (100 - Number(apoyo) - 15).toFixed(1);
 
-          return `
-          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs uppercase tracking-widest font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">Fact-Checking Presupuestal</span>
-                  <span class="text-xs text-slate-400">•</span>
-                  <span class="text-xs text-amber-800 font-bold">Blindaje Ramo 33 y Ramo 28</span>
+            return `
+              <div class="card-pvem p-4 bg-white border border-slate-200 rounded-xl hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 fila-colonia" data-priority="${prioTag}">
+                <!-- Header: Nombre + AGEB + Badge Prioridad -->
+                <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div class="min-w-0 flex-1">
+                    <h5 class="text-xs font-black text-slate-900 leading-tight truncate" title="${c.nombre}">
+                      ${c.nombre}
+                    </h5>
+                    <span class="text-[10px] font-mono text-slate-500 block">AGEB: ${c.ageb || '0' + (idx + 1) * 12 + '-1'}</span>
+                  </div>
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded-full border shrink-0 ${badgePrio}">
+                    ${c.prioridadBrigada || 'Battleground'}
+                  </span>
                 </div>
-                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
-                  <span>🛡️</span> Radiografía de Desgaste de Promesas & Sustento Financiero
-                </h4>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="text-xs font-black px-3 py-1.5 bg-amber-100 text-amber-900 rounded-xl border border-amber-300">
-                  Escepticismo: ${esc.indiceEscepticismo}/100 (${esc.nivelDesgaste})
-                </span>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <!-- Factores de Incredulidad Histórica -->
-              <div class="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-2.5">
-                <span class="text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
-                  <span>⚠️</span> Principales Factores de Incredulidad Ciudadana:
-                </span>
-                <ul class="space-y-1.5 text-xs text-slate-700">
-                  ${(esc.factoresIncredulidad || []).map(f => `
-                    <li class="flex items-start gap-2">
-                      <span class="text-amber-600 font-bold shrink-0">•</span>
-                      <span>${f}</span>
-                    </li>
-                  `).join('')}
-                </ul>
-              </div>
-
-              <!-- Blindaje Financiero y Jurídico -->
-              <div class="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2.5">
-                <span class="text-xs font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
-                  <span>🏛️</span> Fuentes de Financiamiento y Blindaje Normativo:
-                </span>
-                <div class="space-y-1 text-xs text-slate-700">
-                  <strong class="text-emerald-900 block text-[11px] uppercase tracking-wider">Partidas Federales Certificadas:</strong>
-                  ${(blin.fuentesPresupuestales || []).map(fuente => `
-                    <div class="text-[11px] text-slate-600 flex items-start gap-1.5">
-                      <span class="text-emerald-600 font-bold">✔</span>
-                      <span>${fuente}</span>
-                    </div>
-                  `).join('')}
-                  <div class="pt-2 border-t border-emerald-200 text-[11px] text-emerald-900">
-                    <strong>Marco Jurídico:</strong> ${blin.sustentoJuridico}
+                <!-- Métricas Horizontales Sintetizadas -->
+                <div class="grid grid-cols-4 gap-1 p-1.5 bg-slate-50 rounded-lg text-center text-xs">
+                  <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">NSE</span>
+                    <span class="font-black text-slate-800 text-[11px]">${c.estratoSocioeconomico || 'C'}</span>
+                  </div>
+                  <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Padrón</span>
+                    <span class="font-black text-slate-800 text-[11px]">${(c.poblacionElectoral || 35000).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Apoyo</span>
+                    <span class="font-black text-emerald-700 text-[11px]">${apoyo}%</span>
+                  </div>
+                  <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Indecisos</span>
+                    <span class="font-black text-amber-700 text-[11px]">${indecisos}%</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          `;
-        })()}
 
-        <!-- ========================================================
-             MÓDULO 4.3: MICRO-SEGMENTACIÓN GENERACIONAL (3 COHORTES CON WHATSAPP 1-CLIC)
-             ======================================================== -->
-        ${(() => {
-          const cohortes = fullReport.microSegmentacionGeneracional || [
-            {
-              id: 'cohorte_jovenes',
-              nombre: 'Centennials y Jóvenes Universitarios',
-              rangoEdad: '18 a 29 años',
-              pesoElectoral: '31% del Padrón',
-              canalPrioritario: 'TikTok, Instagram Reels y Grupos de WhatsApp',
-              propuestaAncla: 'Internet público libre, transporte sustentable y espacios deportivos.',
-              microMensajeWhatsApp: '¡Hola! 🚀 En el municipio vamos por internet libre, ciclovías seguras y transporte digno. Cero promesas vacías. ¿Le entras? Checa la propuesta y compártela: [Enlace]'
-            },
-            {
-              id: 'cohorte_adultos',
-              nombre: 'Familias y Adultos Productivos',
-              rangoEdad: '30 a 64 años',
-              pesoElectoral: '54% del Padrón',
-              canalPrioritario: 'Facebook Comunitario, WhatsApp Vecinal y Comités de Calle',
-              propuestaAncla: 'Agua garantizada por red, seguridad en escuelas y cero nuevos impuestos.',
-              microMensajeWhatsApp: 'Estimados vecinos: Les comparto una propuesta con presupuesto asegurado para blindar el agua, patrullar escuelas y cuidar la economía familiar. Lo platicamos en la próxima junta: [Enlace]'
-            },
-            {
-              id: 'cohorte_mayores',
-              nombre: 'Adultos Mayores y Jubilados',
-              rangoEdad: '65 años en adelante',
-              pesoElectoral: '15% del Padrón',
-              canalPrioritario: 'Comités de Barrio, Radio Local, Volante en Mano y WhatsApp Familiar',
-              propuestaAncla: 'Medicamentos gratuitos, banquetas planas y transporte gratuito preferencial.',
-              microMensajeWhatsApp: 'Apreciadas familias: Les comparto una buena noticia. Se contempla abasto de medicinas garantizado y banquetas seguras para nuestros adultos mayores. Con todo el afecto: [Enlace]'
-            }
-          ];
-
-          return `
-          <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs uppercase tracking-widest font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">Micro-Targeting Generacional</span>
-                  <span class="text-xs text-slate-400">•</span>
-                  <span class="text-xs text-emerald-800 font-bold">Mensajería Quirúrgica de 1 Clic</span>
+                <!-- Carencia Principal Detectada por IA -->
+                <div class="p-2 rounded-lg bg-rose-50/60 border border-rose-200/60 text-[11px] leading-tight text-slate-700">
+                  <strong class="text-rose-900 block font-bold text-[10px] uppercase mb-0.5 flex items-center gap-1">
+                    <span>⚠️</span> Carencia Principal:
+                  </strong>
+                  <span class="text-slate-800 font-medium">${c.carenciaPrincipal || 'Servicios públicos y bacheo'}</span>
                 </div>
-                <h4 class="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
-                  <span>📱</span> Micro-Segmentación Generacional y Botón de WhatsApp
-                </h4>
-              </div>
-              <span class="text-xs font-bold text-slate-500">
-                3 Arquetipos con Micro-Mensajes Listos para Difusión
-              </span>
-            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              ${cohortes.map(c => `
-                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-black text-slate-900">${c.nombre}</span>
-                      <span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">${c.pesoElectoral}</span>
-                    </div>
-                    <div class="text-[11px] text-slate-600">
-                      <strong>Canal Prioritario:</strong> ${c.canalPrioritario}
-                    </div>
-                    <div class="text-[11px] text-slate-600">
-                      <strong>Propuesta Ancla:</strong> ${c.propuestaAncla}
-                    </div>
-
-                    <!-- Caja de Micro-Mensaje -->
-                    <div class="p-3 bg-white rounded-lg border border-slate-200/80 text-[11px] text-slate-700 font-sans leading-relaxed relative group">
-                      <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Micro-Mensaje WhatsApp Sugerido:</div>
-                      <p id="msg-text-${c.id}">${c.microMensajeWhatsApp}</p>
-                    </div>
-                  </div>
-
-                  <!-- Botón de 1 Clic para Copiar -->
-                  <button type="button" onclick="window.copyWhatsAppMicroMessage('${c.id}')" id="btn-copy-${c.id}" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs">
-                    <span>📲</span> Copiar Micro-Mensaje WhatsApp (1 Clic)
-                  </button>
+                <!-- Acción Táctica Recomendada por IA -->
+                <div class="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200/60 text-[11px] leading-tight text-emerald-950">
+                  <strong class="text-emerald-900 block font-bold text-[10px] uppercase mb-0.5 flex items-center gap-1">
+                    <span>🎯</span> Acción Táctica Recomendada:
+                  </strong>
+                  <span class="text-emerald-900 font-semibold">${acc}</span>
                 </div>
-              `).join('')}
-            </div>
-          </div>
-          `;
-        })()}
-
-          <!-- COLUMNA DERECHA: DISCURSOS SEGMENTADOS POR GRUPO ETARIO (7 COLS) -->
-          <div class="lg:col-span-7 space-y-4">
-            <div class="card-pvem p-6 bg-white shadow-md rounded-2xl space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <span>🎙️</span> Manual de Discurso Segmentado por Edad (Media Training)
-                </h4>
-                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">3 Arquetipos Clave</span>
               </div>
-
-              <!-- Segmento 1: Jóvenes 18-29 -->
-              <div class="p-4 rounded-xl border border-sky-200 bg-sky-50/40 space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-sky-950 flex items-center gap-1.5 uppercase">
-                    <span>👶</span> ${manual.discursosSegmentados?.jovenes?.rango || 'Jóvenes (18 a 29 años)'}
-                  </span>
-                  <span class="text-[10px] font-bold bg-sky-200 text-sky-900 px-2 py-0.5 rounded">Primer Votante</span>
-                </div>
-                <p class="text-xs text-slate-700">
-                  <strong>Enfoque Estratégico:</strong> ${manual.discursosSegmentados?.jovenes?.enfoque || 'Causas verdes, movilidad sustentable y becas de conectividad.'}
-                </p>
-                <blockquote class="italic text-xs text-sky-950 bg-white p-2.5 rounded-lg border border-sky-200 leading-relaxed font-medium">
-                  ${manual.discursosSegmentados?.jovenes?.soundbite || '"No venimos a pedirles paciencia, venimos a darles transporte gratuito al Mexibús, internet en parques y créditos para emprender sin moches."'}
-                </blockquote>
-                <span class="text-[10px] text-red-600 font-semibold block">⚠️ Riesgo a evitar: ${manual.discursosSegmentados?.jovenes?.riesgoEvitar || 'Discurso acartonado o promesas de burocracia tradicional.'}</span>
-              </div>
-
-              <!-- Segmento 2: Adultos 30-49 -->
-              <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-emerald-950 flex items-center gap-1.5 uppercase">
-                    <span>🧑</span> ${manual.discursosSegmentados?.adultos?.rango || 'Adultos y Comerciantes (30 a 49 años)'}
-                  </span>
-                  <span class="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">Fuerza Económica</span>
-                </div>
-                <p class="text-xs text-slate-700">
-                  <strong>Enfoque Estratégico:</strong> ${manual.discursosSegmentados?.adultos?.enfoque || 'Cero extorsión a comerciantes, agua por red sin pagar pipas y senderos seguros.'}
-                </p>
-                <blockquote class="italic text-xs text-emerald-950 bg-white p-2.5 rounded-lg border border-emerald-200 leading-relaxed font-medium">
-                  ${manual.discursosSegmentados?.adultos?.soundbite || '"A cada comerciante y jefa de familia: se acabaron las extorsiones y el pagar pipas a 1,200 pesos. El agua es un derecho y la seguridad la garantizamos con patrullaje real."'}
-                </blockquote>
-                <span class="text-[10px] text-red-600 font-semibold block">⚠️ Riesgo a evitar: ${manual.discursosSegmentados?.adultos?.riesgoEvitar || 'Minimizar el gasto diario que enfrentan en pipas y transporte.'}</span>
-              </div>
-
-              <!-- Segmento 3: Adultos Mayores 65+ -->
-              <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/40 space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-purple-950 flex items-center gap-1.5 uppercase">
-                    <span>👵</span> ${manual.discursosSegmentados?.mayores?.rango || 'Adultos Mayores (65+ años)'}
-                  </span>
-                  <span class="text-[10px] font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded">Voto Cautivo</span>
-                </div>
-                <p class="text-xs text-slate-700">
-                  <strong>Enfoque Estratégico:</strong> ${manual.discursosSegmentados?.mayores?.enfoque || 'Red de farmacias de barrio gratuitas, agua garantizada y clínicas móviles.'}
-                </p>
-                <blockquote class="italic text-xs text-purple-950 bg-white p-2.5 rounded-lg border border-purple-200 leading-relaxed font-medium">
-                  ${manual.discursosSegmentados?.mayores?.soundbite || '"A nuestros abuelos y abuelas: medicina gratuita garantizada en su colonia, agua a la puerta de su casa y respeto total a toda una vida de trabajo."'}
-                </blockquote>
-                <span class="text-[10px] text-red-600 font-semibold block">⚠️ Riesgo a evitar: ${manual.discursosSegmentados?.mayores?.riesgoEvitar || 'Prometer trámites digitales complejos que requieran traslados innecesarios.'}</span>
-              </div>
-
-            </div>
-          </div>
-
+            `;
+          }).join('')}
         </div>
-
       </div>
     `;
 
@@ -3412,8 +2904,401 @@ const Components = {
   },
 
   /**
-   * PESTAÑA 3: INTELIGENCIA SINDICAL Y RIESGO DE PARO (12 FUERZAS GREMIALES)
+   * PESTAÑA 3: GANADOR DE ESLOGAN DE CAMPAÑA Y NAMING ESTRATÉGICO (INDEPENDIENTE)
    */
+  renderTabEslogan(containerId, manualInput, reportInput = null) {
+    const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const manual = manualInput || fullReport.manualCampanaEstrategico || {
+      namingEstrategico: 'Fuerza Territorial Verde',
+      sloganOficial: 'Resultados Reales y Futuro Seguro para tu Familia',
+      banderazoSalida: { colonia: 'Cabecera Municipal', horario: 'Domingo 08:30 AM', justificacion: 'Zona de alta visibilidad barrial.' },
+      discursosSegmentados: {
+        jovenes: { rango: '18 a 29 años', enfoque: 'Sustentabilidad y empleo juvenil', soundbite: '"No venimos a prometer, venimos a modernizar con hechos."', riesgoEvitar: 'Discurso acartonado' },
+        adultos: { rango: '30 a 49 años', enfoque: 'Seguridad y agua sin sobreprecio', soundbite: '"A cada jefa de familia: servicios reales sin cobros injustos."', riesgoEvitar: 'Minimizar gastos familiares' },
+        mayores: { rango: '65+ años', enfoque: 'Salud barrial y trato digno', soundbite: '"A nuestros abuelos: respeto total y medicamentos garantizados."', riesgoEvitar: 'Trámites digitales engorrosos' }
+      },
+      curvaCrecimiento: { fase1: 'Movilización de Bastiones', fase2: 'Ofensiva en Battlegrounds', fase3: 'Cierre con Testigos Sociales' }
+    };
+
+    let html = `
+      <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
+        <!-- Encabezado -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+              <h3 class="text-base font-black text-slate-900">
+                Ganador de Eslogan de Campaña, Naming & Media Training
+              </h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Inferencia neuronal de alto impacto: fórmulas de posicionamiento y soundbites segmentados.
+            </p>
+          </div>
+          <span class="text-xs font-black text-emerald-900 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-lg shrink-0">
+            🏷️ Slogan Calibrado por IA
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Tarjeta Naming & Slogan -->
+          <div class="card-pvem p-5 bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 rounded-2xl space-y-4">
+            <span class="text-xs font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🏆</span> Naming Ganador & Slogan Oficial
+            </span>
+            <div class="space-y-2">
+              <h4 class="text-lg font-black text-slate-900 leading-tight">
+                ${manual.namingEstrategico}
+              </h4>
+              <p class="text-sm text-emerald-800 font-bold italic leading-relaxed">
+                ${manual.sloganOficial}
+              </p>
+            </div>
+            <div class="p-3 bg-white rounded-xl border border-emerald-200 text-xs text-slate-700 leading-relaxed">
+              <strong class="text-slate-900 block font-bold text-[10px] uppercase mb-0.5">Fórmula de Posicionamiento:</strong>
+              Conexión directa entre la propuesta y la solución tangible de las tres carencias prioritarias del territorio sin retórica abstracta.
+            </div>
+          </div>
+
+          <!-- Banderazo de Salida Territorial -->
+          <div class="card-pvem p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs">
+            <span class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🚩</span> Banderazo de Salida Territorial (Día 1)
+            </span>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+                <span class="font-bold text-emerald-950">Colonia de Arranque:</span>
+                <span class="font-black text-emerald-800">${manual.banderazoSalida?.colonia || 'Zona Centro'}</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                <span class="font-bold">Horario Táctico:</span>
+                <span class="font-semibold">${manual.banderazoSalida?.horario || '08:30 AM'}</span>
+              </div>
+              <p class="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-relaxed">
+                <strong class="text-slate-900 block mb-0.5">Justificación de IA:</strong>
+                ${manual.banderazoSalida?.justificacion || 'Punto neurálgico con alto flujo de familias y trabajadores.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discursos Segmentados por Grupo de Edad (Soundbites) -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span>🎙️</span> Soundbites y Discursos de Media Training por Audiencia
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-4 rounded-xl border border-cyan-200 bg-cyan-50/40 space-y-2 text-xs">
+              <span class="font-black text-cyan-950 uppercase text-[11px] block">🎓 ${manual.discursosSegmentados?.jovenes?.rango || 'Jóvenes (18-29 años)'}</span>
+              <blockquote class="italic text-cyan-950 bg-white p-2.5 rounded-lg border border-cyan-200 leading-relaxed font-medium">
+                ${manual.discursosSegmentados?.jovenes?.soundbite || '"Modernización con hechos reales."'}
+              </blockquote>
+              <span class="text-[10px] text-rose-600 font-semibold block">⚠️ Evitar: ${manual.discursosSegmentados?.jovenes?.riesgoEvitar || 'Discursos acartonados'}</span>
+            </div>
+            <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-2 text-xs">
+              <span class="font-black text-emerald-950 uppercase text-[11px] block">🏡 ${manual.discursosSegmentados?.adultos?.rango || 'Adultos y Hogares (30-49 años)'}</span>
+              <blockquote class="italic text-emerald-950 bg-white p-2.5 rounded-lg border border-emerald-200 leading-relaxed font-medium">
+                ${manual.discursosSegmentados?.adultos?.soundbite || '"Servicios dignos y seguridad para tu patrimonio."'}
+              </blockquote>
+              <span class="text-[10px] text-rose-600 font-semibold block">⚠️ Evitar: ${manual.discursosSegmentados?.adultos?.riesgoEvitar || 'Minimizar gastos diarios'}</span>
+            </div>
+            <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/40 space-y-2 text-xs">
+              <span class="font-black text-purple-950 uppercase text-[11px] block">👴 ${manual.discursosSegmentados?.mayores?.rango || 'Adultos Mayores (65+ años)'}</span>
+              <blockquote class="italic text-purple-950 bg-white p-2.5 rounded-lg border border-purple-200 leading-relaxed font-medium">
+                ${manual.discursosSegmentados?.mayores?.soundbite || '"Respeto a toda una vida de esfuerzo y salud barrial."'}
+              </blockquote>
+              <span class="text-[10px] text-rose-600 font-semibold block">⚠️ Evitar: ${manual.discursosSegmentados?.mayores?.riesgoEvitar || 'Trámites digitales complejos'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 4: CALCULADORA DE ROI DE CAMPAÑA (INDEPENDIENTE)
+   */
+  renderTabROI(containerId, roiInput, reportInput = null) {
+    const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const roi = roiInput || fullReport.calculadoraROICampana || {
+      padronElectoralEstimado: 345000,
+      metaVotosVictoria: 128000,
+      totalSeccionesElectorales: 230,
+      clasificacionSecciones: {
+        bastionesSeguros: { secciones: 110, porcentaje: 48, estrategia: 'Movilización masiva y defensa del voto en casillas.' },
+        battlegroundPrioritario: { secciones: 85, porcentaje: 37, estrategia: 'Micro-targeting quirúrgico y brigadas intensivas.' },
+        riesgoOpositor: { secciones: 35, porcentaje: 15, estrategia: 'Contención de daños y fiscalización rigurosa.' }
+      },
+      asignacionRecursos: { brigadistasRecomendados: 180, lonasPublicidad: 1200, asambleasVecinales: 45 },
+      costoPorVotoPersuadido: '$42 a $58 MXN',
+      roiElectoralScore: 84,
+      diagnosticoROI: 'Concentrar los 180 brigadistas en las 85 secciones battleground garantiza el triunfo al menor costo de persuasión.'
+    };
+
+    const sec = roi.clasificacionSecciones || {};
+    const rec = roi.asignacionRecursos || {};
+
+    let html = `
+      <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
+        <!-- Encabezado -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+              <h3 class="text-base font-black text-slate-900">
+                Calculadora de ROI de Campaña y Asignación de Recursos
+              </h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Optimización algorítmica de presupuesto, brigadistas y secciones electorales críticas.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-black bg-emerald-100 text-emerald-950 px-3 py-1.5 rounded-lg border border-emerald-300 shrink-0">
+            <span>Score Eficiencia:</span>
+            <span class="text-emerald-700 text-sm font-black">${roi.roiElectoralScore || 85}/100</span>
+          </div>
+        </div>
+
+        <!-- Tarjetas KPI -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Padrón Electoral</span>
+            <div class="text-xl font-black text-slate-900 my-1">${(roi.padronElectoralEstimado || 345000).toLocaleString()}</div>
+            <span class="text-[10px] text-slate-500">INE Lista Nominal</span>
+          </div>
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Meta de Votos (Victoria)</span>
+            <div class="text-xl font-black text-emerald-700 my-1">${(roi.metaVotosVictoria || 128000).toLocaleString()}</div>
+            <span class="text-[10px] text-emerald-700">Umbral de Triunfo</span>
+          </div>
+          <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center">
+            <span class="text-[10px] font-bold text-amber-800 uppercase block">Costo / Voto Persuadido</span>
+            <div class="text-xl font-black text-amber-700 my-1">${roi.costoPorVotoPersuadido || '$45 MXN'}</div>
+            <span class="text-[10px] text-amber-700">Eficiencia Máxima</span>
+          </div>
+          <div class="p-4 rounded-xl bg-cyan-50 border border-cyan-200 text-center">
+            <span class="text-[10px] font-bold text-cyan-800 uppercase block">Total Secciones</span>
+            <div class="text-xl font-black text-cyan-700 my-1">${roi.totalSeccionesElectorales || 230}</div>
+            <span class="text-[10px] text-cyan-700">Casillas Territoriales</span>
+          </div>
+        </div>
+
+        <!-- Clasificación de Secciones -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span>🗺️</span> Clasificación Estratégica de Secciones
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+              <div class="flex items-center justify-between font-bold text-emerald-950">
+                <span>Bastiones Seguros</span>
+                <span class="font-black">${sec.bastionesSeguros?.secciones || 110} secc. (${sec.bastionesSeguros?.porcentaje || 48}%)</span>
+              </div>
+              <p class="text-[11px] text-emerald-800">${sec.bastionesSeguros?.estrategia || 'Defensa activa del voto.'}</p>
+            </div>
+            <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 space-y-1">
+              <div class="flex items-center justify-between font-bold text-amber-950">
+                <span>Battleground Prioritario</span>
+                <span class="font-black">${sec.battlegroundPrioritario?.secciones || 85} secc. (${sec.battlegroundPrioritario?.porcentaje || 37}%)</span>
+              </div>
+              <p class="text-[11px] text-amber-800">${sec.battlegroundPrioritario?.estrategia || 'Micro-targeting quirúrgico.'}</p>
+            </div>
+            <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/50 space-y-1">
+              <div class="flex items-center justify-between font-bold text-rose-950">
+                <span>Riesgo Opositor</span>
+                <span class="font-black">${sec.riesgoOpositor?.secciones || 35} secc. (${sec.riesgoOpositor?.porcentaje || 15}%)</span>
+              </div>
+              <p class="text-[11px] text-rose-800">${sec.riesgoOpositor?.estrategia || 'Contención y fiscalización.'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnóstico ROI -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+          <strong class="text-slate-900 block font-bold uppercase text-[10px]">Diagnóstico Táctico de Asignación:</strong>
+          <p class="leading-relaxed">${roi.diagnosticoROI || 'Concentrar brigadistas en secciones battleground garantiza la mayor tasa de retorno electoral.'}</p>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 5: RADIOGRAFÍA DE DESGASTE POR PROMESA (ESCEPTICISMO — INDEPENDIENTE)
+   */
+  renderTabRadiografiaDesgaste(containerId, escepticismoInput, reportInput = null) {
+    const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const esc = escepticismoInput || fullReport.indiceEscepticismo || {
+      nivelEscepticismo: 'Moderado',
+      scoreEscepticismo: 48,
+      promesasMayorRiesgo: [
+        { promesa: 'Conclusión en menos de 90 días', escepticismo: 78, motivo: 'Antecedente de obras inconclusas en el municipio.' },
+        { promesa: 'Cero cobro a los vecinos', escepticismo: 62, motivo: 'Temor a cuotas de mantenimiento o impuestos ocultos.' },
+        { promesa: 'Mantenimiento continuo y vigilancia', escepticismo: 54, motivo: 'Falta histórica de patrullaje en colonias altas.' }
+      ],
+      mecanismoMitigacion: 'Firma de compromiso notariado con comités vecinales y contraloría ciudadana.',
+      estrategiaBlindaje: 'Evitar plazos absolutos de inauguración; presentar calendario quincenal verificable.'
+    };
+
+    let html = `
+      <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
+        <!-- Encabezado -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <h3 class="text-base font-black text-slate-900">
+                Radiografía de Desgaste por Promesa & Índice de Escepticismo
+              </h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Auditoría estocástica del enjambre sobre promesas con mayor riesgo de fatiga ciudadana.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-black bg-amber-100 text-amber-950 px-3 py-1.5 rounded-lg border border-amber-300 shrink-0">
+            <span>Índice Escepticismo:</span>
+            <span class="text-amber-800 text-sm font-black">${esc.scoreEscepticismo || 48}/100</span>
+          </div>
+        </div>
+
+        <!-- Lista de Promesas en Riesgo -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span>⚠️</span> Promesas Auditadas con Mayor Riesgo de Fricción
+          </h4>
+          <div class="space-y-2.5">
+            ${(esc.promesasMayorRiesgo || []).map(p => `
+              <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div class="space-y-0.5 min-w-0">
+                  <span class="font-black text-slate-900 block truncate">${p.promesa}</span>
+                  <span class="text-[11px] text-slate-600">${p.motivo}</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-[10px] font-bold uppercase text-slate-400">Desgaste:</span>
+                  <span class="px-2.5 py-1 rounded-full text-xs font-black ${p.escepticismo >= 70 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                    ${p.escepticismo}%
+                  </span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Protocolo de Blindaje -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 text-xs space-y-1">
+            <strong class="text-emerald-950 block font-bold text-[11px] uppercase">🛡️ Mecanismo de Mitigación Recomendado:</strong>
+            <p class="text-emerald-900 leading-relaxed">${esc.mecanismoMitigacion || 'Presentar cronograma de obra firmado con comités vecinales.'}</p>
+          </div>
+          <div class="p-4 rounded-xl bg-cyan-50/60 border border-cyan-200 text-xs space-y-1">
+            <strong class="text-cyan-950 block font-bold text-[11px] uppercase">🎯 Estrategia de Blindaje Discursivo:</strong>
+            <p class="text-cyan-900 leading-relaxed">${esc.estrategiaBlindaje || 'Fijar metas quincenales auditables en lugar de plazos cerrados.'}</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
+  /**
+   * PESTAÑA 6: MICRO-SEGMENTACIÓN PSICOGRÁFICA Y WHATSAPP (INDEPENDIENTE)
+   */
+  renderTabMicroSegmentacion(containerId, microDataInput, reportInput = null) {
+    const fullReport = reportInput || (typeof appState !== 'undefined' ? appState.currentReport : null) || {};
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const micro = microDataInput || fullReport.microSegmentacionGeneracional || {
+      segmentos: [
+        {
+          cohorte: 'Gen Z (18 a 24 años)',
+          canalPrincipal: 'TikTok / WhatsApp Stories',
+          disparadorEmocional: 'Indignación por falta de espacios y empleo digno',
+          mensajeClaveWhatsApp: '🚨 Amig@: no es normal que gastes 4 horas al día en combis y no haya internet en tu colonia. Conoce el plan para transformar nuestra movilidad sin aumentos de pasaje ➡️ [Link]'
+        },
+        {
+          cohorte: 'Millennials (25 a 39 años)',
+          canalPrincipal: 'WhatsApp Grupos Vecinales / Instagram',
+          disparadorEmocional: 'Hartazgo por el costo de pipas de agua y delincuencia en el trayecto',
+          mensajeClaveWhatsApp: '💧 Vecin@s de la colonia: se acabó pagar 1,200 pesos por pipa. El proyecto contempla pozos inteligentes y agua por red. Súmate a la asamblea este sábado.'
+        },
+        {
+          cohorte: 'Adultos Productivos (40 a 59 años)',
+          canalPrincipal: 'WhatsApp Directo / Reuniones Comunitarias',
+          disparadorEmocional: 'Protección del patrimonio familiar y apoyo a comerciantes',
+          mensajeClaveWhatsApp: '🏪 Estimad@ compañer@: cero cobro de piso y certeza para nuestros negocios. Consulta los 5 compromisos firmados para nuestro municipio.'
+        },
+        {
+          cohorte: 'Adultos Mayores (60+ años)',
+          canalPrincipal: 'WhatsApp Familiar / Volanteo Mano a Mano',
+          disparadorEmocional: 'Búsqueda de tranquilidad, salud barrial y respeto',
+          mensajeClaveWhatsApp: '👵 Familia: farmacias de barrio gratuitas y agua segura para nuestros adultos mayores. Un proyecto con rostro humano para nuestras familias.'
+        }
+      ]
+    };
+
+    let html = `
+      <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
+        <!-- Encabezado -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+              <h3 class="text-base font-black text-slate-900">
+                Micro-Segmentación Psicográfica & Campaña de WhatsApp Táctico
+              </h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Mensajes persuasivos hiper-segmentados por cohorte y canal para difusión territorial inmediata.
+            </p>
+          </div>
+          <span class="text-xs font-black text-emerald-900 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-lg shrink-0">
+            📲 WhatsApp Direct Ready
+          </span>
+        </div>
+
+        <!-- Cuadrícula de Cohortes -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${(micro.segmentos || []).map((seg, sIdx) => `
+            <div class="card-pvem p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 flex flex-col justify-between">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h5 class="text-xs font-black text-slate-900 uppercase tracking-wide">${seg.cohorte}</h5>
+                  <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">${seg.canalPrincipal}</span>
+                </div>
+                <div class="text-[11px] text-slate-600">
+                  <strong class="text-slate-800">Disparador Emocional:</strong> ${seg.disparadorEmocional}
+                </div>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-800 font-mono leading-relaxed relative">
+                  ${seg.mensajeClaveWhatsApp}
+                </div>
+              </div>
+              <button type="button" onclick="navigator.clipboard.writeText('${seg.mensajeClaveWhatsApp.replace(/'/g, "\\\'")}'); if(typeof showToast==='function') showToast('Mensaje de WhatsApp copiado al portapapeles');"
+                class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
+                <span>📲</span><span>Copiar Mensaje para WhatsApp</span>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  },
+
   renderTab2InteligenciaSindical(containerId, unionData) {
     const container = document.getElementById(containerId);
     if (!container) return;

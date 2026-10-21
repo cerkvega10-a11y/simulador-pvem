@@ -66,6 +66,7 @@ class PoliticalStrategistAgent {
     const calculadoraROICampana = this.generateCampaignROICalculator(votosFinales, municipalResearch, realSwarmSize);
     const indiceEscepticismo = this.generatePromiseSkepticismIndex(votosFinales, municipalResearch);
     const microSegmentacionGeneracional = this.generateGenerationalMicroSegmentation(votosFinales, municipalResearch, tituloProyecto);
+    const manualCampanaEstrategico = this.generateStrategicCampaignManual(votosFinales, municipalResearch, tituloProyecto, propuestaTexto, orchestratorState.semanticResult);
 
     return {
       fechaGeneracion: new Date().toISOString(),

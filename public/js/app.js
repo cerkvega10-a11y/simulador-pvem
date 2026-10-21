@@ -2108,6 +2108,18 @@ function onSimulationFinished(report) {
             appState.activeParty,
             report
           );
+          if (typeof Components.renderTabEslogan === 'function') {
+            Components.renderTabEslogan('eslogan-naming-container', d.radar.manualCampanaEstrategico, report);
+          }
+          if (typeof Components.renderTabROI === 'function') {
+            Components.renderTabROI('roi-calculadora-container', d.radar.calculadoraROICampana, report);
+          }
+          if (typeof Components.renderTabRadiografiaDesgaste === 'function') {
+            Components.renderTabRadiografiaDesgaste('radiografia-desgaste-container', d.radar.indiceEscepticismo, report);
+          }
+          if (typeof Components.renderTabMicroSegmentacion === 'function') {
+            Components.renderTabMicroSegmentacion('micro-segmentacion-container', d.radar.microSegmentacionGeneracional, report);
+          }
         }
       })
       .catch(err => console.warn('Radar async fetch:', err));
@@ -2117,7 +2129,67 @@ function onSimulationFinished(report) {
   }
 
   // ========================================================
-  // PESTAÑA 3: INTELIGENCIA SINDICAL Y RIESGO DE PARO (12 FUERZAS)
+  // PESTAÑA 3: GANADOR DE ESLOGAN DE CAMPAÑA Y NAMING
+  // ========================================================
+  try {
+    if (typeof Components.renderTabEslogan === 'function') {
+      Components.renderTabEslogan(
+        'eslogan-naming-container',
+        report.manualCampanaEstrategico || appState.radarAnalysis?.manualCampanaEstrategico,
+        report
+      );
+    }
+  } catch (e) {
+    console.warn('Advertencia en Eslogan de Campaña:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 4: CALCULADORA DE RETORNO DE INVERSIÓN (ROI) DE CAMPAÑA
+  // ========================================================
+  try {
+    if (typeof Components.renderTabROI === 'function') {
+      Components.renderTabROI(
+        'roi-calculadora-container',
+        report.calculadoraROICampana || appState.radarAnalysis?.calculadoraROICampana,
+        report
+      );
+    }
+  } catch (e) {
+    console.warn('Advertencia en Calculadora ROI:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 5: RADIOGRAFÍA DE DESGASTE POR PROMESA (ÍNDICE DE ESCEPTICISMO)
+  // ========================================================
+  try {
+    if (typeof Components.renderTabRadiografiaDesgaste === 'function') {
+      Components.renderTabRadiografiaDesgaste(
+        'radiografia-desgaste-container',
+        report.indiceEscepticismo || appState.radarAnalysis?.indiceEscepticismo,
+        report
+      );
+    }
+  } catch (e) {
+    console.warn('Advertencia en Radiografía de Desgaste:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 6: MICRO-SEGMENTACIÓN PSICOGRÁFICA Y WHATSAPP
+  // ========================================================
+  try {
+    if (typeof Components.renderTabMicroSegmentacion === 'function') {
+      Components.renderTabMicroSegmentacion(
+        'micro-segmentacion-container',
+        report.microSegmentacionGeneracional || appState.radarAnalysis?.microSegmentacionGeneracional,
+        report
+      );
+    }
+  } catch (e) {
+    console.warn('Advertencia en Micro-Segmentación Psicográfica:', e);
+  }
+
+  // ========================================================
+  // PESTAÑA 7: INTELIGENCIA SINDICAL Y RIESGO DE PARO (12 FUERZAS)
   // ========================================================
   try {
     if (report.inteligenciaSindical) {
