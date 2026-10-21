@@ -1,0 +1,351 @@
+[
+  {
+    "id": "master-admin-erick-vega",
+    "clienteNombre": "Erick Vega — Administrador Maestro (Neural Media House)",
+    "username": "Cerkvega92",
+    "passwordHash": "$2a$12$VKl1ahE5.vdmaLWSjF4H4O/9nRP42aiPgBVBskk5lf1YqFbnFKytm",
+    "tokenSeguridad": "TK-CERKVEGA-MASTER-2026",
+    "partido": "PVEM",
+    "allowed_parties": [
+      "PVEM",
+      "MORENA",
+      "PAN",
+      "PRI",
+      "MC",
+      "PT",
+      "CANDIDATURA INDEPENDIENTE",
+      "COALICIÓN / ALIANZA"
+    ],
+    "can_select_any_party": true,
+    "login_count": 4,
+    "last_login_at": "2026-10-21T08:07:19.927Z",
+    "simulations_count": 0,
+    "max_simulations": 999999,
+    "isDemo": false,
+    "nivelGeografico": "Nacional / Estatal",
+    "etiquetaRegion": "Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados",
+    "estadosAutorizados": [
+      "TODOS"
+    ],
+    "can_select_all_states": true,
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde",
+      "Regidor",
+      "Diputado Local",
+      "Diputado Federal",
+      "Senador",
+      "Gobernador"
+    ],
+    "municipiosAutorizados": [
+      "TODOS"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": true,
+    "role": "MASTER_ADMIN",
+    "tipoUsuario": "MASTER_ADMIN",
+    "licenseTier": "ENTERPRISE_MASTER",
+    "rolPerfil": "ADMINISTRADOR_MAESTRO",
+    "permisosGranulares": {
+      "crearLicencias": true,
+      "killSwitch": true,
+      "tokensSeguridad": true,
+      "simulador": true,
+      "radar": true,
+      "descargaReportes": true,
+      "soloLectura": false
+    },
+    "aiModel": "groq-llama-3.3-70b",
+    "customApiKeyEncrypted": null,
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2099-12-31",
+    "activo": true,
+    "creadoEn": "2025-01-01T00:00:00.000Z",
+    "updatedAt": 1792569299527,
+    "password": "Clave2027*"
+  },
+  {
+    "id": "lic-1792464597883",
+    "clienteNombre": "Cliente Multi-Dispositivo Test",
+    "username": "SocioMultiNav2027",
+    "partido": "PVEM",
+    "allowed_parties": [
+      "PVEM"
+    ],
+    "can_select_any_party": false,
+    "login_count": 1,
+    "last_login_at": "2026-10-20T02:49:57.902Z",
+    "tokenSeguridad": "tk-multi-nav-99",
+    "nivelGeografico": "Municipal / Alcaldía",
+    "etiquetaRegion": "Estado de México — Ecatepec de Morelos",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "can_select_all_states": false,
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde"
+    ],
+    "municipiosAutorizados": [
+      "Ecatepec de Morelos"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": false,
+    "tipoUsuario": "CLIENT",
+    "permisosGranulares": {
+      "crearLicencias": false,
+      "killSwitch": false,
+      "tokens": false,
+      "tokensSeguridad": false,
+      "simulador": true,
+      "radar": true,
+      "descargaReportes": true,
+      "soloLectura": false
+    },
+    "aiModel": "gemini-default",
+    "customApiKeyEncrypted": "",
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2027-12-31",
+    "activo": true,
+    "isDemo": false,
+    "licenseTier": "ALCALDIA_A",
+    "rolPerfil": "Operador",
+    "simulations_count": 0,
+    "max_simulations": 999999,
+    "creadoEn": "2026-10-20",
+    "updatedAt": 1792464597883,
+    "passwordHash": "$2a$12$LYPZ2FJEY37O9gOfD/90F.gEpF37E0C7AP/y/HBjA1hyOjriS613O",
+    "password": "Clave2027*"
+  },
+  {
+    "id": "lic-1792458228645",
+    "clienteNombre": "Demo PV",
+    "username": "usuario20262",
+    "partido": "PVEM",
+    "allowed_parties": [
+      "PVEM"
+    ],
+    "can_select_any_party": false,
+    "login_count": 0,
+    "last_login_at": null,
+    "tokenSeguridad": "TK-PVEM-1337-1JRS",
+    "nivelGeografico": "Municipal / Alcaldía",
+    "etiquetaRegion": "Estado de Estado de México",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "can_select_all_states": false,
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde",
+      "Regidor",
+      "Diputado Local",
+      "Diputado Federal",
+      "Senador",
+      "Gobernador"
+    ],
+    "municipiosAutorizados": [
+      "TODOS"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": false,
+    "tipoUsuario": "SOCIO",
+    "rolPerfil": "Operador",
+    "licenseTier": "ALCALDIA_A",
+    "permisosGranulares": {
+      "crearLicencias": false,
+      "killSwitch": false,
+      "tokens": false,
+      "tokensSeguridad": false,
+      "simulador": true,
+      "radar": true,
+      "descargaReportes": true,
+      "soloLectura": false
+    },
+    "aiModel": "gemini-default",
+    "customApiKeyEncrypted": "",
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2027-12-31",
+    "activo": true,
+    "isDemo": false,
+    "simulations_count": 0,
+    "max_simulations": 999999,
+    "creadoEn": "2026-10-20",
+    "updatedAt": 1792459120119,
+    "passwordHash": "$2a$12$676gu/3AYnCsX0i4j2mh8uYRUcARBroAdhlszFVnOtRf7xAzP0.kq",
+    "password": "Clave2027*"
+  },
+  {
+    "id": "lic-demo-pvem-01",
+    "clienteNombre": "Candidatura Alcaldía Ecatepec (PVEM)",
+    "username": "ecatepec2027",
+    "partido": "PVEM",
+    "allowed_parties": [
+      "PVEM"
+    ],
+    "can_select_any_party": false,
+    "login_count": 0,
+    "last_login_at": null,
+    "simulations_count": 0,
+    "max_simulations": 100000,
+    "isDemo": false,
+    "tokenSeguridad": "TK-PVEM-8472-ECA1",
+    "nivelGeografico": "Municipal / Alcaldía",
+    "etiquetaRegion": "Alcaldía — Municipio de Ecatepec de Morelos",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "can_select_all_states": false,
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde",
+      "Regidor",
+      "Diputado Local"
+    ],
+    "municipiosAutorizados": [
+      "Ecatepec de Morelos"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": false,
+    "tipoUsuario": "SOCIO",
+    "rolPerfil": "Candidato",
+    "licenseTier": "ALCALDIA_A",
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2027-12-31",
+    "activo": true,
+    "creadoEn": "2026-10-15",
+    "updatedAt": 1792459120119,
+    "aiModel": "gemini-default",
+    "customApiKeyEncrypted": "",
+    "passwordHash": "$2a$12$nzZr2mJpu871ojeBsbGo8O0cQBfQzaJeFGtK7CM3/4vBgXiH8hfM.",
+    "password": "Verde2027*"
+  },
+  {
+    "id": "lic-demo-morena-02",
+    "clienteNombre": "Coordinación Distrital Naucalpan - Tlalnepantla",
+    "username": "distrito04",
+    "partido": "MORENA",
+    "allowed_parties": [
+      "MORENA"
+    ],
+    "can_select_any_party": false,
+    "login_count": 0,
+    "last_login_at": null,
+    "simulations_count": 0,
+    "max_simulations": 50000,
+    "isDemo": false,
+    "tokenSeguridad": "TK-MORENA-3921-DF04",
+    "nivelGeografico": "Federal",
+    "etiquetaRegion": "Distrito Electoral Federal 04 — Naucalpan / Tlalnepantla",
+    "estadosAutorizados": [
+      "Estado de México"
+    ],
+    "can_select_all_states": false,
+    "cargosAutorizados": [
+      "Diputado Federal",
+      "Senador"
+    ],
+    "municipiosAutorizados": [
+      "Naucalpan de Juárez",
+      "Tlalnepantla de Baz"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": false,
+    "tipoUsuario": "SOCIO",
+    "rolPerfil": "Operador",
+    "licenseTier": "DIPUTACION",
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 50000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2027-08-31",
+    "activo": true,
+    "creadoEn": "2026-10-15",
+    "updatedAt": 1792459120119,
+    "aiModel": "gemini-default",
+    "customApiKeyEncrypted": "",
+    "passwordHash": "$2a$12$O.Xk5F9.f63RKzm/y.aRT.iUqfS1JvI/BKFKfkb91HriaVVS654LK",
+    "password": "Morena2027*"
+  },
+  {
+    "id": "master-admin-aland",
+    "clienteNombre": "Aland — Administrador Maestro",
+    "username": "Aland",
+    "passwordHash": "$2a$12$qrNFLxYYCaY5tKQNT8O7WuEBYPaoLBk98wFpjJ48lZI0R0hfpnbDG",
+    "tokenSeguridad": "TK-ALAND-MASTER-2026",
+    "partido": "PVEM",
+    "allowed_parties": [
+      "PVEM",
+      "MORENA",
+      "PAN",
+      "PRI",
+      "MC",
+      "PT",
+      "CANDIDATURA INDEPENDIENTE",
+      "COALICIÓN / ALIANZA"
+    ],
+    "can_select_any_party": true,
+    "login_count": 3,
+    "last_login_at": "2026-10-21T08:04:54.781Z",
+    "simulations_count": 0,
+    "max_simulations": 999999,
+    "isDemo": false,
+    "nivelGeografico": "Nacional / Estatal",
+    "etiquetaRegion": "Control Maestro Nacional (32 Estados) — Todos los Territorios Autorizados",
+    "estadosAutorizados": [
+      "TODOS"
+    ],
+    "can_select_all_states": true,
+    "cargosAutorizados": [
+      "Presidente Municipal / Alcalde",
+      "Regidor",
+      "Diputado Local",
+      "Diputado Federal",
+      "Senador",
+      "Gobernador"
+    ],
+    "municipiosAutorizados": [
+      "TODOS"
+    ],
+    "permisoRadar": true,
+    "permisoSimulador": true,
+    "esAdministradorTotal": true,
+    "role": "MASTER_ADMIN",
+    "tipoUsuario": "MASTER_ADMIN",
+    "licenseTier": "ENTERPRISE_MASTER",
+    "rolPerfil": "ADMINISTRADOR_MAESTRO",
+    "permisosGranulares": {
+      "crearLicencias": true,
+      "killSwitch": true,
+      "tokensSeguridad": true,
+      "simulador": true,
+      "radar": true,
+      "descargaReportes": true,
+      "soloLectura": false
+    },
+    "aiModel": "groq-llama-3.3-70b",
+    "customApiKeyEncrypted": null,
+    "propuestaFijaTitulo": "",
+    "propuestaFijaTexto": "",
+    "maxSwarmSize": 100000,
+    "fechaInicio": "2025-01-01",
+    "fechaExpiracion": "2099-12-31",
+    "activo": true,
+    "creadoEn": "2025-01-01T00:00:00.000Z",
+    "updatedAt": 1792569299866,
+    "password": "Clave2027*"
+  }
+]

@@ -16,8 +16,7 @@ yarn-error.log*
 .system_generated/
 scratch/
 
-# Bases de datos JSON locales con credenciales y telemetria
-src/data/licensesStore.json
+# Bases de datos JSON locales con telemetria temporal
 src/data/accessLogs.json
 *.json.bak
 

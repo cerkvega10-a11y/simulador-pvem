@@ -61,9 +61,13 @@ const semanticAnalyzer = require('./src/agents/semanticAnalyzer');
 const aiIntegrityAuditorAgent = require('./src/agents/aiIntegrityAuditorAgent');
 const codeExecutionAuditAgent = require('./src/agents/codeExecutionAuditAgent');
 const selfHealingAgent = require('./src/agents/selfHealingAgent');
+const persistentDatabase = require('./src/services/persistentDatabase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Inicialización asíncrona de base de datos relacional (PostgreSQL / Supabase / Neon)
+persistentDatabase.initDatabaseSchema().catch(e => console.warn('[PersistentDB] Schema init:', e.message));
 
 // Configuración de multer para manejo en memoria de archivos subidos
 const upload = multer({
@@ -1246,6 +1250,88 @@ const MASTER_ADMIN_ACCOUNTS = [
 
 const DEFAULT_LICENSES = [
   {
+    id: 'lic-1792464597883',
+    clienteNombre: 'Cliente Multi-Dispositivo Test',
+    username: 'SocioMultiNav2027',
+    password: 'PassExacta2027!',
+    partido: 'PVEM',
+    allowed_parties: ['PVEM'],
+    can_select_any_party: false,
+    login_count: 1,
+    last_login_at: '2026-10-20T02:49:57.902Z',
+    tokenSeguridad: 'tk-multi-nav-99',
+    nivelGeografico: 'Municipal / Alcaldía',
+    etiquetaRegion: 'Estado de México — Ecatepec de Morelos',
+    estadosAutorizados: ['Estado de México'],
+    cargosAutorizados: ['Presidente Municipal / Alcalde'],
+    municipiosAutorizados: ['Ecatepec de Morelos'],
+    permisoRadar: true,
+    permisoSimulador: true,
+    esAdministradorTotal: false,
+    tipoUsuario: 'CLIENT',
+    permisosGranulares: {
+      crearLicencias: false,
+      killSwitch: false,
+      tokens: false,
+      tokensSeguridad: false,
+      simulador: true,
+      radar: true,
+      descargaReportes: true,
+      soloLectura: false
+    },
+    maxSwarmSize: 100000,
+    fechaInicio: '2025-01-01',
+    fechaExpiracion: '2027-12-31',
+    activo: true,
+    isDemo: false,
+    licenseTier: 'ALCALDIA_A',
+    rolPerfil: 'Operador',
+    simulations_count: 0,
+    max_simulations: 999999,
+    creadoEn: '2026-10-20'
+  },
+  {
+    id: 'lic-1792458228645',
+    clienteNombre: 'Demo PV',
+    username: 'usuario20262',
+    password: 'PVEdomex21',
+    partido: 'PVEM',
+    allowed_parties: ['PVEM'],
+    can_select_any_party: false,
+    login_count: 0,
+    last_login_at: null,
+    tokenSeguridad: 'TK-PVEM-1337-1JRS',
+    nivelGeografico: 'Municipal / Alcaldía',
+    etiquetaRegion: 'Estado de Estado de México',
+    estadosAutorizados: ['Estado de México'],
+    cargosAutorizados: ['Presidente Municipal / Alcalde', 'Regidor', 'Diputado Local'],
+    municipiosAutorizados: ['TODOS'],
+    permisoRadar: true,
+    permisoSimulador: true,
+    esAdministradorTotal: false,
+    tipoUsuario: 'SOCIO',
+    rolPerfil: 'Operador',
+    licenseTier: 'ALCALDIA_A',
+    permisosGranulares: {
+      crearLicencias: false,
+      killSwitch: false,
+      tokens: false,
+      tokensSeguridad: false,
+      simulador: true,
+      radar: true,
+      descargaReportes: true,
+      soloLectura: false
+    },
+    maxSwarmSize: 100000,
+    fechaInicio: '2025-01-01',
+    fechaExpiracion: '2027-12-31',
+    activo: true,
+    isDemo: false,
+    simulations_count: 0,
+    max_simulations: 999999,
+    creadoEn: '2026-10-20'
+  },
+  {
     id: 'lic-demo-pvem-01',
     clienteNombre: 'Candidatura Alcaldía Ecatepec (PVEM)',
     username: 'ecatepec2027',
@@ -1308,23 +1394,11 @@ const DEFAULT_LICENSES = [
 const DELETED_LICENSES_FILE = path.join(DATA_DIR, 'deletedLicenses.json');
 
 function loadDeletedLicenseIds() {
-  try {
-    if (fs.existsSync(DELETED_LICENSES_FILE)) {
-      const raw = fs.readFileSync(DELETED_LICENSES_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(String);
-    }
-  } catch (_) {}
-  return [];
+  return persistentDatabase.loadDeletedIds();
 }
 
 function saveDeletedLicenseIds(ids = []) {
-  try {
-    const dir = path.dirname(DELETED_LICENSES_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const unique = Array.from(new Set(ids.filter(Boolean).map(String)));
-    fs.writeFileSync(DELETED_LICENSES_FILE, JSON.stringify(unique, null, 2), 'utf8');
-  } catch (_) {}
+  return persistentDatabase.saveDeletedIds(ids);
 }
 
 function resolveValidPassword(candidatePassword, fallbackPassword = '', username = '') {
@@ -1381,8 +1455,6 @@ function normalizeLicenseRecord(lic) {
 function loadLicensesStore() {
   const deletedIds = loadDeletedLicenseIds();
   try {
-    // 1. Leer tanto la base de datos en repositorio (users_db.json / licensesStore.json) como la de runtime (/tmp en Vercel)
-    // Esto garantiza que en arranques en frío (Serverless) o entre distintos navegadores/dispositivos siempre estén todos los usuarios.
     const candidateFiles = [
       USERS_DB_FILE,
       LICENSES_FILE,
@@ -1398,10 +1470,11 @@ function loadLicensesStore() {
         try {
           const raw = fs.readFileSync(filePath, 'utf8');
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             foundAnyFile = true;
             for (const lic of parsed) {
-              if (!lic || !lic.id || deletedIds.includes(String(lic.id))) continue;
+              if (!lic || !lic.id) continue;
+              if (deletedIds.includes(String(lic.id)) || lic.isDeleted || lic.eliminado) continue;
               if (!lic.password || lic.password === 'undefined' || lic.password === 'null') {
                 hadCorruptedPassword = true;
               }
@@ -1418,14 +1491,26 @@ function loadLicensesStore() {
       }
     }
 
-    if (foundAnyFile) {
-      const cleaned = Array.from(mergedMap.values());
+    const cleaned = Array.from(mergedMap.values());
+    const userCount = cleaned.length;
+
+    // CONDICIÓN ESTRICTA (REGLA INVIOLABLE):
+    // Si ya existen usuarios registrados (userCount > 0), NUNCA ejecutar el seeder
+    if (userCount > 0) {
       if (hadCorruptedPassword || !fs.existsSync(USERS_DB_FILE)) {
         saveLicensesStore(cleaned);
       }
       return cleaned;
     }
 
+    // Si no hay usuarios pero hay historial de eliminaciones previas, NO re-crear cuentas por defecto
+    if (deletedIds.length > 0) {
+      console.log(`[PersistentDB] Seeder omitido: Base de datos protegida por historial de ${deletedIds.length} eliminaciones.`);
+      return [];
+    }
+
+    // ÚNICAMENTE si la base de datos está completamente vacía (userCount === 0 y cero eliminaciones previas)
+    console.log('[PersistentDB] Base de datos vacía detectada (userCount === 0). Inicializando registros base.');
     const initial = DEFAULT_LICENSES
       .filter(lic => !deletedIds.includes(String(lic.id)))
       .map(lic => normalizeLicenseRecord(lic));
@@ -1434,13 +1519,13 @@ function loadLicensesStore() {
   } catch (e) {
     console.error('Error crítico leyendo users_db.json / licensesStore.json:', e.message);
   }
-  return DEFAULT_LICENSES
-    .filter(lic => !deletedIds.includes(String(lic.id)))
-    .map(lic => normalizeLicenseRecord(lic));
+  return [];
 }
 
 function saveLicensesStore(list) {
   const normalizedList = Array.isArray(list) ? list.map(lic => normalizeLicenseRecord(lic)) : [];
+  persistentDatabase.saveUsers(normalizedList).catch(e => console.warn('[PersistentDB] saveUsers error:', e.message));
+
   const jsonPayload = JSON.stringify(normalizedList, null, 2);
 
   const targetFiles = new Set([USERS_DB_FILE, LICENSES_FILE]);
@@ -2370,14 +2455,19 @@ app.post('/api/licenses/:id/reset-simulations', requireMasterAdmin, (req, res) =
 });
 
 // 9.5. Eliminar Usuario / Licencia (Persistencia Definitiva Anti-Reaparición en users_db.json)
-const handleDeleteUserOrLicense = (req, res) => {
+const handleDeleteUserOrLicense = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'ID de usuario o licencia requerido para eliminar.' });
+    }
     const currentDeleted = loadDeletedLicenseIds();
     if (!currentDeleted.includes(String(id))) {
       currentDeleted.push(String(id));
       saveDeletedLicenseIds(currentDeleted);
     }
+    // Soft-delete permanente en la base de datos (isDeleted: true para que jamás reviva en despliegues)
+    await persistentDatabase.deleteUser(id);
     licensesStore = loadLicensesStore();
     licensesStore = licensesStore.filter(l => String(l.id) !== String(id));
     saveLicensesStore(licensesStore);
