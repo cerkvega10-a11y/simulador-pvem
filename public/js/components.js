@@ -733,7 +733,9 @@ const Components = {
     };
 
     let html = `
-      <div class="card-pvem p-6 space-y-6 bg-white shadow-md">
+      <div class="flex flex-col gap-6 w-full">
+        <!-- MÓDULO 1: DEMOGRAFÍA Y 11 SECTORES (TITANIUM PLATINUM) -->
+        <div class="card-pvem card-platinum p-6 space-y-6 bg-white rounded-2xl shadow-md border border-slate-200">
         <!-- Encabezado de la Sección Demográfica -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div>
@@ -950,6 +952,7 @@ const Components = {
             </div>
           </div>
         ` : ''}
+        </div><!-- Fin Módulo 1: Demografía y 11 Sectores -->
 
         <!-- ========================================================
              MÓDULO 2.2: CURVA DE MOMENTUM POLÍTICO (ESTILO BOLSA DE VALORES)
@@ -971,8 +974,8 @@ const Components = {
 
           const isBull = (mom.variacionDiariaNum || 0) >= 0;
           return `
-          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
-            <div class="card-pvem p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white rounded-2xl shadow-xl border border-emerald-500/30 space-y-5">
+          <!-- MÓDULO 2: CURVA DE MOMENTUM POLÍTICO (MIDNIGHT NAVY) -->
+          <div class="card-pvem card-midnight-navy p-6 bg-slate-900 text-white rounded-2xl shadow-xl border border-slate-800 space-y-5">
               <!-- Header Ticker -->
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div class="space-y-1">
@@ -1038,8 +1041,7 @@ const Components = {
                   "${mom.diagnosticoTicker}"
                 </p>
               </div>
-            </div>
-          </div>
+          </div><!-- Fin Módulo 2: Momentum Político -->
           `;
         })()}
 
@@ -1061,7 +1063,8 @@ const Components = {
 
           const items = elast.matriz || [];
           return `
-          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
+          <!-- MÓDULO 3: ELASTICIDAD DEL ELECTORADO Y EFECTO COLATERAL (TITANIUM PLATINUM) -->
+          <div class="card-pvem card-platinum p-6 bg-white rounded-2xl shadow-md border border-slate-200 space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -1121,7 +1124,7 @@ const Components = {
                 </div>
               </div>
             </div>
-          </div>
+          </div><!-- Fin Módulo 3 -->
           `;
         })()}
 
@@ -1145,7 +1148,8 @@ const Components = {
           };
 
           return `
-          <div class="pt-6 border-t-2 border-slate-200 space-y-4">
+          <!-- MÓDULO 4: MATRIZ DE POLARIZACIÓN Y SEGMENTACIÓN TÁCTICA (TITANIUM PLATINUM) -->
+          <div class="card-pvem card-platinum p-6 bg-white rounded-2xl shadow-md border border-slate-200 space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -1215,11 +1219,11 @@ const Components = {
                 </div>
               </div>
             </div>
-          </div>
+          </div><!-- Fin Módulo 4 -->
           `;
         })()}
 
-      </div>
+      </div><!-- Fin Contenedor Flex Principal -->
     `;
 
     container.innerHTML = html;

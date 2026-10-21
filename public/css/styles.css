@@ -552,3 +552,118 @@ input:focus, select:focus, textarea:focus {
 }
 
 
+
+
+/* ========================================================
+   GOVTECH WAR ROOM — CORPORATE PALETTE & INDUSTRIAL LAYOUT
+   (Midnight Navy / Titanium Platinum Theme Engine)
+   Previene colapsos, amontonamientos y textos encimados
+   ======================================================== */
+:root {
+  --corp-midnight-navy: #0b1329;
+  --corp-midnight-navy-card: #0f1c3f;
+  --corp-midnight-navy-surface: #1e293b;
+  --corp-titanium-platinum: #ffffff;
+  --corp-titanium-platinum-card: #ffffff;
+  --corp-titanium-platinum-surface: #f8fafc;
+  --corp-border-light: #e2e8f0;
+  --corp-border-dark: #1e3a8a;
+}
+
+/* Contenedor Principal de Resultados: flujo vertical estricto sin solapamientos */
+#results-dashboard-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative !important;
+  clear: both !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 3rem !important;
+}
+
+#results-dashboard-section.hidden {
+  display: none !important;
+}
+
+/* Vistas de Pestañas: espaciado vertical limpio entre módulos hermanos */
+.tab-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative !important;
+  clear: both !important;
+}
+
+.tab-content.hidden {
+  display: none !important;
+}
+
+/* Tarjetas Corporativas: sin position absolute flotante, aislamiento estricto */
+.card-pvem,
+.war-room-card {
+  position: relative !important;
+  float: none !important;
+  background-color: var(--corp-titanium-platinum-card) !important;
+  border: 1px solid var(--corp-border-light) !important;
+  border-radius: 1rem !important;
+  padding: 1.5rem !important;
+  margin: 0 !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05) !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  isolation: isolate !important;
+}
+
+/* Tarjeta Corporativa Oscura (Midnight Navy) */
+.card-pvem.card-midnight-navy,
+.card-pvem.bg-slate-900,
+.card-pvem[class*="from-slate-900"],
+.card-pvem[class*="from-slate-950"],
+.card-pvem[class*="from-emerald-900"],
+.card-pvem[class*="from-indigo-950"],
+.card-pvem[class*="from-red-950"] {
+  background-color: var(--corp-midnight-navy) !important;
+  background: var(--corp-midnight-navy) !important;
+  border: 1px solid #1e293b !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 25px -5px rgba(11, 19, 43, 0.4), 0 8px 10px -6px rgba(11, 19, 43, 0.4) !important;
+}
+
+/* Tarjeta Corporativa Clara (Titanium Platinum) */
+.card-pvem.card-platinum,
+.card-pvem.bg-white,
+.card-pvem.bg-slate-50 {
+  background-color: #ffffff !important;
+  border: 1px solid var(--corp-border-light) !important;
+  color: #0f172a !important;
+}
+
+/* Prevención universal de desbordamiento de textos en todo el panel */
+#results-dashboard-section *,
+.tab-content *,
+.card-pvem * {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Cuadrículas adaptativas industriales auto-fit */
+.war-room-grid-autofit {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+
+/* Ajuste responsive de canvas Chart.js para evitar distorsión o colapso vertical */
+canvas {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
