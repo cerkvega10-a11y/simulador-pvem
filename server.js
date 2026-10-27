@@ -60,6 +60,13 @@ const freeLLMService = require('./src/services/freeLLMService');
 const semanticAnalyzer = require('./src/agents/semanticAnalyzer');
 const aiIntegrityAuditorAgent = require('./src/agents/aiIntegrityAuditorAgent');
 const codeExecutionAuditAgent = require('./src/agents/codeExecutionAuditAgent');
+const aiConnectionAuditorAgent = require('./src/agents/aiConnectionAuditorAgent');
+const codeHealthInspectorAgent = require('./src/agents/codeHealthInspectorAgent');
+const {
+  OPLES_NATIONAL_CATALOG,
+  getOpleByState,
+  getOfficialVerifiableLinksForState
+} = require('./src/data/oplesNationalCatalog');
 const selfHealingAgent = require('./src/agents/selfHealingAgent');
 const persistentDatabase = require('./src/services/persistentDatabase');
 
@@ -1134,6 +1141,343 @@ app.post('/api/crisis-test', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en POST /api/crisis-test:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.5. CATÁLOGO DINÁMICO DE LOS 32 OPLEs + INE Y ENLACES VERIFICABLES
+// =========================================================================
+app.get('/api/oples', (req, res) => {
+  try {
+    const { estado = 'Estado de México', municipio = '' } = req.query || {};
+    const ople = getOpleByState(estado);
+    const verifiableLinks = getOfficialVerifiableLinksForState(estado, municipio);
+    res.json({
+      success: true,
+      estado: ople.estado,
+      ople,
+      verifiableLinks,
+      catalog: OPLES_NATIONAL_CATALOG
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.6. MÓDULO DE REDES SOCIALES MULTIPLATAFORMA (FB, IG, TIKTOK + HASHTAGS + RADAR BOTS)
+// =========================================================================
+app.post('/api/ai/social-media-pulse', async (req, res) => {
+  try {
+    const {
+      propuestaTexto = '',
+      candidato = '',
+      municipio = 'Texcoco',
+      estado = 'Estado de México',
+      partido = 'PVEM',
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const result = await freeLLMService.generateDigitalTrendsWithLLM({
+      propuestaTexto: propuestaTexto || `Estrategia territorial de campaña en ${municipio}, ${estado}`,
+      candidato,
+      municipio,
+      estado,
+      partido,
+      aiConfig
+    });
+
+    if (!result) {
+      return res.status(503).json({
+        success: false,
+        error: 'El motor de IA en tiempo real no devolvió respuesta. Verifica la conexión o API Key activa.'
+      });
+    }
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      ople: opleInfo,
+      socialPulse: result,
+      fuentesVerificables: getOfficialVerifiableLinksForState(estado, municipio)
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/social-media-pulse:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.7. MÓDULO DE LEY ELECTORAL Y ADAPTACIÓN DINÁMICA DE OPLEs (INE + 32 OPLEs)
+// =========================================================================
+app.post('/api/ai/electoral-law-audit', async (req, res) => {
+  try {
+    const {
+      propuestaTexto = '',
+      tituloProyecto = '',
+      candidato = '',
+      partido = 'PVEM',
+      municipio = 'Texcoco',
+      estado = 'Estado de México',
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const auditResult = await freeLLMService.generateElectoralLawAuditWithLLM({
+      propuestaTexto: propuestaTexto || `Propuesta de campaña en ${municipio}, ${estado}`,
+      tituloProyecto: tituloProyecto || `Iniciativa Electoral en ${municipio}`,
+      candidato,
+      partido,
+      municipio,
+      estado,
+      opleInfo,
+      aiConfig
+    });
+
+    if (!auditResult) {
+      return res.status(503).json({
+        success: false,
+        error: 'No se pudo completar la auditoría jurídica con IA en tiempo real.'
+      });
+    }
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      ople: opleInfo,
+      legalAudit: auditResult
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/electoral-law-audit:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.8. HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE AÑO Y SECCIÓN ELECTORAL
+// =========================================================================
+app.post('/api/ai/electoral-history', async (req, res) => {
+  try {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      anioEleccion = '2024',
+      partidoFiltro = 'TODOS',
+      seccionFiltro = '',
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const historyResult = await freeLLMService.generateElectoralHistoryWithLLM({
+      estado,
+      municipio,
+      anioEleccion,
+      partidoFiltro,
+      seccionFiltro,
+      opleInfo,
+      aiConfig
+    });
+
+    if (!historyResult) {
+      return res.status(503).json({
+        success: false,
+        error: 'No se pudo generar el historial electoral seccional con IA en tiempo real.'
+      });
+    }
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      anioEleccion,
+      ople: opleInfo,
+      history: historyResult,
+      fuentesVerificables: getOfficialVerifiableLinksForState(estado, municipio)
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/electoral-history:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.9. AUDITORÍA DE PERSONAL INSACULADO VS VOLUNTARIOS DE CASILLA (BOTÓN 3)
+// =========================================================================
+app.post('/api/ai/insaculados-audit', async (req, res) => {
+  try {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      casillaSeccion = 'Sección 4310 - Casilla Básica 01',
+      funcionarios = [],
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const auditResult = await freeLLMService.generateInsaculadosAuditWithLLM({
+      estado,
+      municipio,
+      casillaSeccion,
+      funcionarios,
+      opleInfo,
+      aiConfig
+    });
+
+    if (!auditResult) {
+      return res.status(503).json({
+        success: false,
+        error: 'No se pudo completar la auditoría legal de insaculados con IA en tiempo real.'
+      });
+    }
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      ople: opleInfo,
+      insaculadosAudit: auditResult
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/insaculados-audit:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.10. MANUAL DE CAPACITACIÓN OPERATIVA Y LIDERAZGO PARA COORDINADORES (BOTÓN 4)
+// =========================================================================
+app.post('/api/ai/training-manual', async (req, res) => {
+  try {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      partido = 'PVEM',
+      rolCoordinador = 'Coordinador General y Territorial de Campaña',
+      enfoqueEspecial = 'Liderazgo, trato humano al equipo, qué sí y qué no hacer legalmente',
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const manualResult = await freeLLMService.generateTrainingManualWithLLM({
+      estado,
+      municipio,
+      partido,
+      rolCoordinador,
+      enfoqueEspecial,
+      opleInfo,
+      aiConfig
+    });
+
+    if (!manualResult) {
+      return res.status(503).json({
+        success: false,
+        error: 'No se pudo generar el Manual de Capacitación con IA en tiempo real.'
+      });
+    }
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      ople: opleInfo,
+      manual: manualResult
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/training-manual:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.11. MODO ATAQUE DIRECTO EN TIEMPO REAL CON IA (BOTÓN 2)
+// =========================================================================
+app.post('/api/ai/attack-mode', async (req, res) => {
+  try {
+    const {
+      propuestaRivalTexto = '',
+      partidoRival = 'MORENA / Coalición Rival',
+      municipio = 'Texcoco',
+      estado = 'Estado de México',
+      aiConfig = {}
+    } = req.body || {};
+
+    const opleInfo = getOpleByState(estado);
+    const [attackDossier, defenseMatrix] = await Promise.all([
+      freeLLMService.generateAttackDossierWithLLM({
+        propuestaRivalTexto: propuestaRivalTexto || `Gestión y promesas incumplidas de ${partidoRival} en ${municipio}`,
+        partidoRival,
+        municipio,
+        estado,
+        aiConfig
+      }),
+      freeLLMService.generateDefenseMatrixWithLLM({
+        propuestaTexto: propuestaRivalTexto || `Estrategia de contraste y defensa en ${municipio}`,
+        municipio,
+        estado,
+        aiConfig
+      })
+    ]);
+
+    res.json({
+      success: true,
+      aiGenerated: true,
+      estado,
+      municipio,
+      partidoRival,
+      ople: opleInfo,
+      attackDossier,
+      defenseQuestions: defenseMatrix
+    });
+  } catch (error) {
+    console.error('Error en POST /api/ai/attack-mode:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =========================================================================
+// 8.12. AGENTES INSPECTORES INTERNOS (QA & AI AUDITORS)
+// =========================================================================
+app.get('/api/audit/ai-connection', async (req, res) => {
+  try {
+    const ping = req.query.ping !== 'false';
+    const report = await aiConnectionAuditorAgent.inspectAllModules({}, ping);
+    res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/audit/code-health', (req, res) => {
+  try {
+    const report = codeHealthInspectorAgent.inspectCodeHealth();
+    res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/audit/full-inspectors', async (req, res) => {
+  try {
+    const [aiConnection, codeHealth] = await Promise.all([
+      aiConnectionAuditorAgent.inspectAllModules({}, req.query.ping !== 'false'),
+      Promise.resolve(codeHealthInspectorAgent.inspectCodeHealth())
+    ]);
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      aiConnectionAuditor: aiConnection,
+      codeHealthInspector: codeHealth
+    });
+  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });

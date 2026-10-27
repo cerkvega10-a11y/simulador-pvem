@@ -191,7 +191,158 @@
   <!-- CONTENIDO PRINCIPAL (OCULTO HASTA AUTENTICACIÓN VÁLIDA) -->
   <main id="app-main-workspace" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
-    <!-- SECCIÓN HERO / INTRODUCCIÓN (OBLIGATORIA) -->
+    <!-- =====================================================================
+         NUEVA PANTALLA PRINCIPAL (HOME DASHBOARD): 4 BOTONES VISUALES DE MANDO
+         ===================================================================== -->
+    <section id="command-center-4-hubs" class="bg-slate-950 rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-800 relative overflow-hidden">
+      <!-- Resplandor Táctico de Fondo -->
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-900/25 via-slate-950 to-slate-950 pointer-events-none"></div>
+
+      <div class="relative z-10 space-y-5">
+        <!-- Barra Superior de Telemetría e Inspectores Internos -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800/90 pb-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-widest border border-emerald-500/40 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> GOVTECH WAR ROOM • NEURAL MEDIA HOUSE
+              </span>
+              <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase tracking-wider border border-indigo-500/30">
+                INE + IEEM (Instituto Electoral del Estado de México)
+              </span>
+            </div>
+            <h2 class="text-lg sm:text-2xl font-black text-white tracking-tight">
+              Centro de Mando Estratégico — Selecciona tu Módulo Táctico de IA en Tiempo Real
+            </h2>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <a href="https://www.ieem.org.mx" target="_blank" rel="noopener noreferrer" class="dynamic-ople-link px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-sky-300 border border-slate-700 text-[11px] font-black transition-all flex items-center gap-1.5">
+              🔗 Portal Oficial IEEM ↗
+            </a>
+            <button type="button" onclick="runInternalInspectorsAudit()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+              <span>🤖</span>
+              <span>Auditoría IA & Salud de Código (2 Inspectores)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 GRANDES BOTONES / TARJETAS VISUALES DEL HOME DASHBOARD -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- BOTÓN 1: WAR ROOM -->
+          <button type="button" data-hub="war-room" onclick="switchCommandHub('war-room')"
+            class="command-hub-card group text-left rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/80 border border-emerald-500/40 ring-4 ring-emerald-500 shadow-2xl scale-[1.01] transition-all duration-200 hover:border-emerald-400 cursor-pointer flex flex-col justify-between relative overflow-hidden">
+            <div class="space-y-3 relative z-10">
+              <div class="h-28 w-full rounded-xl bg-slate-950/90 border border-emerald-500/30 p-3 flex items-center justify-between relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:10px_10px]"></div>
+                <div class="space-y-1 relative z-10">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-widest border border-emerald-500/30">MÓDULO CENTRAL 01</span>
+                  <div class="text-white font-black text-base leading-tight">1. War Room</div>
+                  <div class="text-[10px] text-emerald-300 font-bold">100,000 Ciudadanos • IA Real</div>
+                </div>
+                <svg class="w-16 h-16 text-emerald-400 shrink-0 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-transform" viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+                  <circle cx="32" cy="32" r="18" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+                  <path d="M32 6V58M6 32H58" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+                  <path d="M32 32L48 18" stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+                  <circle cx="44" cy="22" r="3.5" fill="#10b981"/>
+                  <circle cx="22" cy="40" r="2.5" fill="#38bdf8"/>
+                  <circle cx="38" cy="44" r="3" fill="#f59e0b"/>
+                </svg>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed font-medium">
+                Simulación demográfica, mapa por colonias, ROI, inteligencia sindical, <strong class="text-emerald-300">ley electoral (32 OPLEs)</strong>, <strong class="text-emerald-300">historial electoral</strong> y <strong class="text-emerald-300">redes sociales (FB/IG/TikTok + Anti-Bots)</strong>.
+              </p>
+            </div>
+            <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-black text-emerald-400">
+              <span>ABRIR CUARTO DE GUERRA</span>
+              <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </button>
+
+          <!-- BOTÓN 2: MODO ATAQUE -->
+          <button type="button" data-hub="modo-ataque" onclick="switchCommandHub('modo-ataque')"
+            class="command-hub-card group text-left rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950/70 border border-rose-500/30 opacity-90 hover:opacity-100 transition-all duration-200 hover:border-rose-400 cursor-pointer flex flex-col justify-between relative overflow-hidden">
+            <div class="space-y-3 relative z-10">
+              <div class="h-28 w-full rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 flex items-center justify-between relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#f43f5e_1px,transparent_1px)] [background-size:10px_10px]"></div>
+                <div class="space-y-1 relative z-10">
+                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-black uppercase tracking-widest border border-rose-500/30">MÓDULO TÁCTICO 02</span>
+                  <div class="text-white font-black text-base leading-tight">2. Modo Ataque</div>
+                  <div class="text-[10px] text-rose-300 font-bold">Contraste & Crisis IA</div>
+                </div>
+                <svg class="w-16 h-16 text-rose-400 shrink-0 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)] group-hover:scale-110 transition-transform" viewBox="0 0 64 64" fill="none">
+                  <path d="M32 8L52 16V30C52 44 43 53 32 58C21 53 12 44 12 30V16L32 8Z" stroke="currentColor" stroke-width="2.2"/>
+                  <path d="M24 38L40 22M40 22H28M40 22V34" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed font-medium">
+                Contra-narrativas de alto impacto, <strong class="text-rose-300">escudo de las 20 preguntas</strong>, matriz de vulnerabilidades del adversario y contención quirúrgica de crisis en vivo.
+              </p>
+            </div>
+            <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-black text-rose-400">
+              <span>DESPLEGAR MODO ATAQUE</span>
+              <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </button>
+
+          <!-- BOTÓN 3: AUDITORÍA DE PERSONAL INSACULADO -->
+          <button type="button" data-hub="insaculados" onclick="switchCommandHub('insaculados')"
+            class="command-hub-card group text-left rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/70 border border-amber-500/30 opacity-90 hover:opacity-100 transition-all duration-200 hover:border-amber-400 cursor-pointer flex flex-col justify-between relative overflow-hidden">
+            <div class="space-y-3 relative z-10">
+              <div class="h-28 w-full rounded-xl bg-slate-950/90 border border-amber-500/30 p-3 flex items-center justify-between relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:10px_10px]"></div>
+                <div class="space-y-1 relative z-10">
+                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-widest border border-amber-500/30">MÓDULO JURÍDICO 03</span>
+                  <div class="text-white font-black text-base leading-tight">3. Auditoría de Personal Insaculado</div>
+                  <div class="text-[10px] text-amber-300 font-bold">Art. 83 LGIPE • Casillas</div>
+                </div>
+                <svg class="w-16 h-16 text-amber-400 shrink-0 drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] group-hover:scale-110 transition-transform" viewBox="0 0 64 64" fill="none">
+                  <rect x="12" y="10" width="32" height="44" rx="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M20 22H36M20 30H36M20 38H28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="44" cy="42" r="10" fill="#1e293b" stroke="#fbbf24" stroke-width="2.5"/>
+                  <path d="M40 42L43 45L49 39" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed font-medium">
+                Verificación legal en tiempo real de funcionarios de casilla (<strong class="text-amber-300">Presidente, Secretario 1, Secretario 2, Escrutadores</strong>) con <strong class="text-amber-300">Alerta Legal</strong> de incompatibilidad.
+              </p>
+            </div>
+            <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-black text-amber-400">
+              <span>AUDITAR FUNCIONARIOS</span>
+              <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </button>
+
+          <!-- BOTÓN 4: MANUAL DE CAPACITACIÓN -->
+          <button type="button" data-hub="manual-capacitacion" onclick="switchCommandHub('manual-capacitacion')"
+            class="command-hub-card group text-left rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/70 border border-indigo-500/30 opacity-90 hover:opacity-100 transition-all duration-200 hover:border-indigo-400 cursor-pointer flex flex-col justify-between relative overflow-hidden">
+            <div class="space-y-3 relative z-10">
+              <div class="h-28 w-full rounded-xl bg-slate-950/90 border border-indigo-500/30 p-3 flex items-center justify-between relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:10px_10px]"></div>
+                <div class="space-y-1 relative z-10">
+                  <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-black uppercase tracking-widest border border-indigo-500/30">MÓDULO OPERATIVO 04</span>
+                  <div class="text-white font-black text-base leading-tight">4. Manual de Capacitación</div>
+                  <div class="text-[10px] text-indigo-300 font-bold">Liderazgo + INE / OPLE</div>
+                </div>
+                <svg class="w-16 h-16 text-indigo-400 shrink-0 drop-shadow-[0_0_12px_rgba(99,102,241,0.4)] group-hover:scale-110 transition-transform" viewBox="0 0 64 64" fill="none">
+                  <path d="M12 16C12 13.7909 13.7909 12 16 12H30V50H16C13.7909 50 12 48.2091 12 46V16Z" stroke="currentColor" stroke-width="2"/>
+                  <path d="M52 16C52 13.7909 50.2091 12 48 12H34V50H48C50.2091 50 52 48.2091 52 46V16Z" stroke="currentColor" stroke-width="2"/>
+                  <path d="M18 22H26M18 29H26M38 22H46M38 29H46" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed font-medium">
+                Generador de protocolos operativos y liderazgo para coordinadores (<strong class="text-indigo-300">cómo dirigir y tratar a su gente + qué sí y qué no hacer</strong> según LGIPE, INE y OPLE).
+              </p>
+            </div>
+            <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-black text-indigo-400">
+              <span>GENERAR MANUAL IA</span>
+              <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section id="hero-section" class="bg-gradient-hero rounded-2xl p-6 sm:p-10 shadow-sm border border-emerald-100 relative overflow-hidden">
       <div class="relative z-10 max-w-4xl space-y-4">
         <div id="hero-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase tracking-wide border border-emerald-200">
@@ -644,7 +795,7 @@
       </div>
 
       <!-- BARRA DE NAVEGACIÓN TÁCTICA POR BOTONES INDEPENDIENTES (ARQUITECTURA MODULAR IA) -->
-      <div class="border border-slate-200 bg-white rounded-2xl shadow-sm p-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-10 gap-1.5 md:sticky md:top-16 z-30 max-w-full overflow-hidden">
+      <div class="border border-slate-200 bg-white rounded-2xl shadow-sm p-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-1.5 md:sticky md:top-16 z-30 max-w-full overflow-hidden">
         <button type="button" onclick="switchWarRoomTab('tab-resumen-demografia')" class="tab-btn active px-2.5 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center sm:justify-start gap-1.5 bg-emerald-600 text-white shadow-xs w-full text-left" data-tab="tab-resumen-demografia">
           <span class="shrink-0">📊</span> <span class="truncate">1. Demografía (11)</span>
         </button>
@@ -674,6 +825,15 @@
         </button>
         <button type="button" onclick="switchWarRoomTab('tab-modo-ataque')" class="tab-btn px-2.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-modo-ataque">
           <span class="shrink-0">⚔️</span> <span class="truncate">10. Modo Ataque</span>
+        </button>
+        <button type="button" onclick="switchWarRoomTab('tab-tendencias-digitales')" class="tab-btn px-2.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-tendencias-digitales">
+          <span class="shrink-0">📱</span> <span class="truncate">11. Redes & Anti-Bots</span>
+        </button>
+        <button type="button" onclick="switchWarRoomTab('tab-ley-electoral')" class="tab-btn px-2.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-ley-electoral">
+          <span class="shrink-0">⚖️</span> <span class="truncate">12. Ley Electoral & OPLE</span>
+        </button>
+        <button type="button" onclick="switchWarRoomTab('tab-historial-electoral')" class="tab-btn px-2.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center sm:justify-start gap-1.5 w-full text-left" data-tab="tab-historial-electoral">
+          <span class="shrink-0">🗳️</span> <span class="truncate">13. Historial Electoral</span>
         </button>
       </div>
 
@@ -872,6 +1032,199 @@
         </div>
       </div>
 
+      <!-- ========================================================
+           PESTAÑA 12: AUDITORÍA DE LEY ELECTORAL Y ADAPTACIÓN DINÁMICA OPLE (32 ESTADOS)
+           ======================================================== -->
+      <div id="tab-ley-electoral" class="tab-content hidden space-y-6">
+        <div class="card-pvem p-6 bg-white border-2 border-indigo-200 shadow-lg space-y-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
+                  ⚖️ AUDITORÍA JURÍDICA ELECTORAL EN TIEMPO REAL
+                </span>
+                <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider border border-emerald-300">
+                  INE + IEEM (Instituto Electoral del Estado de México)
+                </span>
+              </div>
+              <h3 class="text-lg font-black text-slate-900">
+                Módulo de Ley Electoral y Adaptación Dinámica de OPLEs por Estado (INE + 32 OPLEs)
+              </h3>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Analiza con IA en tiempo real si la propuesta o estrategia del candidato cumple o infringe la legislación electoral federal (CPEUM, LGIPE) y el código local del OPLE correspondiente al estado seleccionado.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <a href="https://www.ieem.org.mx" target="_blank" rel="noopener noreferrer" class="dynamic-ople-link px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-indigo-800 text-xs font-black border border-slate-300 transition-all">
+                🔗 Portal Oficial IEEM ↗
+              </a>
+              <button type="button" id="btn-run-electoral-law-ai" onclick="runLiveElectoralLawAudit()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
+                ⚖️ Ejecutar Auditoría Legal IA
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Estado (Adaptación Dinámica OPLE - 32 Entidades)</label>
+              <select id="law-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                <option value="Estado de México">Estado de México (IEEM)</option>
+                <option value="Ciudad de México">Ciudad de México (IECM)</option>
+                <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
+                <option value="Nuevo León">Nuevo León (IEEPCNL)</option>
+                <option value="Puebla">Puebla (IEE Puebla)</option>
+                <option value="Hidalgo">Hidalgo (IEEH)</option>
+                <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
+                <option value="Guanajuato">Guanajuato (IEEG)</option>
+                <option value="Chiapas">Chiapas (IEPC Chiapas)</option>
+                <option value="Oaxaca">Oaxaca (IEEPCO)</option>
+                <option value="Michoacán">Michoacán (IEM)</option>
+                <option value="Guerrero">Guerrero (IEPC Guerrero)</option>
+                <option value="Baja California">Baja California (IEEBC)</option>
+                <option value="Chihuahua">Chihuahua (IEE Chihuahua)</option>
+                <option value="Tamaulipas">Tamaulipas (IETAM)</option>
+                <option value="Coahuila">Coahuila (IEC Coahuila)</option>
+                <option value="Sinaloa">Sinaloa (IEES)</option>
+                <option value="Sonora">Sonora (IEE Sonora)</option>
+                <option value="Yucatán">Yucatán (IEPAC)</option>
+                <option value="Querétaro">Querétaro (IEEQ)</option>
+                <option value="Morelos">Morelos (IMPEPAC)</option>
+                <option value="San Luis Potosí">San Luis Potosí (CEEPAC)</option>
+                <option value="Quintana Roo">Quintana Roo (IEQROO)</option>
+                <option value="Tabasco">Tabasco (IEPCT)</option>
+                <option value="Aguascalientes">Aguascalientes (IEE Aguascalientes)</option>
+                <option value="Baja California Sur">Baja California Sur (IEEBCS)</option>
+                <option value="Campeche">Campeche (IEEC)</option>
+                <option value="Colima">Colima (IEE Colima)</option>
+                <option value="Durango">Durango (IEPC Durango)</option>
+                <option value="Nayarit">Nayarit (IEEN)</option>
+                <option value="Tlaxcala">Tlaxcala (ITE Tlaxcala)</option>
+                <option value="Zacatecas">Zacatecas (IEEZ)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Municipio / Alcaldía</label>
+              <input type="text" id="law-input-municipio" value="Texcoco" placeholder="Ej. Texcoco, Ecatepec, Guadalajara..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            </div>
+            <div>
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Propuesta o Estrategia a Auditar (Opcional: toma la activa)</label>
+              <input type="text" id="law-input-propuesta" placeholder="Ej. Entrega de tarjetas de apoyo o pinta de bardas..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
+            </div>
+          </div>
+
+          <div id="electoral-law-ai-results">
+            <div class="p-6 rounded-xl bg-indigo-50/60 border border-indigo-200 text-center space-y-2">
+              <p class="text-xs font-bold text-indigo-950">Haz clic en "⚖️ Ejecutar Auditoría Legal IA" para analizar tu propuesta bajo la LGIPE, el INE y el OPLE del Estado seleccionado.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           PESTAÑA 13: HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE AÑO Y SECCIÓN
+           ======================================================== -->
+      <div id="tab-historial-electoral" class="tab-content hidden space-y-6">
+        <div class="card-pvem p-6 bg-white border-2 border-emerald-200 shadow-lg space-y-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider border border-emerald-300">
+                  🗳️ CÓMPUTOS HISTÓRICOS INE + OPLE EN TIEMPO REAL
+                </span>
+                <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
+                  INE + IEEM (Instituto Electoral del Estado de México)
+                </span>
+              </div>
+              <h3 class="text-lg font-black text-slate-900">
+                Historial de Elecciones Pasadas (Presidencia Municipal / Alcaldía, Diputaciones, Senadurías y Secciones)
+              </h3>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Selecciona obligatoriamente el Año de Elección y filtra por Estado, Municipio, Partido Político y Sección Electoral para consultar el desglose histórico con IA en tiempo real.
+              </p>
+            </div>
+            <button type="button" id="btn-run-electoral-history-ai" onclick="runLiveElectoralHistoryQuery()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95 shrink-0">
+              🗳️ Consultar Historial Electoral IA
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">1. Estado (INE + OPLE)</label>
+              <select id="hist-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                <option value="Estado de México">Estado de México (IEEM)</option>
+                <option value="Ciudad de México">Ciudad de México (IECM)</option>
+                <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
+                <option value="Nuevo León">Nuevo León (IEEPCNL)</option>
+                <option value="Puebla">Puebla (IEE Puebla)</option>
+                <option value="Hidalgo">Hidalgo (IEEH)</option>
+                <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
+                <option value="Guanajuato">Guanajuato (IEEG)</option>
+                <option value="Chiapas">Chiapas (IEPC Chiapas)</option>
+                <option value="Oaxaca">Oaxaca (IEEPCO)</option>
+                <option value="Michoacán">Michoacán (IEM)</option>
+                <option value="Guerrero">Guerrero (IEPC Guerrero)</option>
+                <option value="Baja California">Baja California (IEEBC)</option>
+                <option value="Chihuahua">Chihuahua (IEE Chihuahua)</option>
+                <option value="Tamaulipas">Tamaulipas (IETAM)</option>
+                <option value="Coahuila">Coahuila (IEC Coahuila)</option>
+                <option value="Sinaloa">Sinaloa (IEES)</option>
+                <option value="Sonora">Sonora (IEE Sonora)</option>
+                <option value="Yucatán">Yucatán (IEPAC)</option>
+                <option value="Querétaro">Querétaro (IEEQ)</option>
+                <option value="Morelos">Morelos (IMPEPAC)</option>
+                <option value="San Luis Potosí">San Luis Potosí (CEEPAC)</option>
+                <option value="Quintana Roo">Quintana Roo (IEQROO)</option>
+                <option value="Tabasco">Tabasco (IEPCT)</option>
+                <option value="Aguascalientes">Aguascalientes (IEE Aguascalientes)</option>
+                <option value="Baja California Sur">Baja California Sur (IEEBCS)</option>
+                <option value="Campeche">Campeche (IEEC)</option>
+                <option value="Colima">Colima (IEE Colima)</option>
+                <option value="Durango">Durango (IEPC Durango)</option>
+                <option value="Nayarit">Nayarit (IEEN)</option>
+                <option value="Tlaxcala">Tlaxcala (ITE Tlaxcala)</option>
+                <option value="Zacatecas">Zacatecas (IEEZ)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">2. Municipio / Alcaldía</label>
+              <input type="text" id="hist-input-municipio" value="Texcoco" placeholder="Ej. Texcoco, Toluca..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-emerald-800 uppercase mb-1">3. Año de Elección (Obligatorio)</label>
+              <select id="hist-select-anio" class="w-full px-3 py-2 rounded-lg border-2 border-emerald-500 text-xs font-black bg-emerald-50 text-emerald-950">
+                <option value="2024">Elección 2024 (Concurrente)</option>
+                <option value="2023">Elección 2023 (Gubernatura / Local)</option>
+                <option value="2021">Elección 2021 (Intermedia)</option>
+                <option value="2018">Elección 2018 (Federal / Municipal)</option>
+                <option value="2017">Elección 2017 (Estatal)</option>
+                <option value="2015">Elección 2015 (Intermedia)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">4. Partido / Coalición</label>
+              <select id="hist-select-partido" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                <option value="PVEM">PVEM (Partido Verde)</option>
+                <option value="MORENA">MORENA</option>
+                <option value="PAN">PAN</option>
+                <option value="PRI">PRI</option>
+                <option value="MC">Movimiento Ciudadano (MC)</option>
+                <option value="PT">Partido del Trabajo (PT)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">5. Sección Electoral (Opcional)</label>
+              <input type="text" id="hist-input-seccion" placeholder="Ej. 4612 o TODAS..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            </div>
+          </div>
+
+          <div id="electoral-history-ai-results">
+            <div class="p-6 rounded-xl bg-emerald-50/60 border border-emerald-200 text-center space-y-2">
+              <p class="text-xs font-bold text-emerald-950">Selecciona el Año de Elección y haz clic en "🗳️ Consultar Historial Electoral IA" para desplegar Presidencia Municipal, Diputaciones, Senadurías y el desglose por Sección Electoral.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Contenedor auxiliar de contexto web -->
       <div id="web-context-container" class="hidden"></div>
       <div id="swarm-voices-container" class="hidden"></div>
@@ -882,6 +1235,363 @@
       <div id="pvem-strategy-container" class="hidden"></div>
 
     </section>
+
+    <!-- =====================================================================
+         VISTA DEDICADA BOTÓN 2: MODO ATAQUE (CONTRA-NARRATIVAS, ESCUDO 20 PREGUNTAS, CONTENCIÓN DE CRISIS)
+         ===================================================================== -->
+    <section id="hub-view-modo-ataque" class="hidden space-y-6">
+      <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-rose-500/40">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-black uppercase tracking-widest border border-rose-500/40">
+                ⚔️ CENTRO DE OPERACIONES OFENSIVAS Y DEFENSIVAS • IA EN TIEMPO REAL
+              </span>
+              <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase border border-indigo-500/30">
+                INE + IEEM
+              </span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black tracking-tight">2. Modo Ataque, Contra-Narrativas y Escudo de las 20 Preguntas</h2>
+            <p class="text-xs sm:text-sm text-rose-200 max-w-3xl">
+              Genera en tiempo real vectores de contraste quirúrgico contra el adversario, protocolo de contención de crisis en las primeras 2 horas y el Escudo de las 20 Preguntas más letales de prensa y debates.
+            </p>
+          </div>
+          <button type="button" onclick="switchCommandHub('war-room')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black border border-slate-600 transition-all cursor-pointer shrink-0">
+            ← Volver al War Room
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 bg-slate-900/90 p-4 rounded-2xl border border-rose-500/30">
+          <div>
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Estado (Marco Legal OPLE)</label>
+            <select id="atk-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+              <option value="Estado de México">Estado de México (IEEM)</option>
+              <option value="Ciudad de México">Ciudad de México (IECM)</option>
+              <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
+              <option value="Nuevo León">Nuevo León (IEEPCNL)</option>
+              <option value="Puebla">Puebla (IEE Puebla)</option>
+              <option value="Hidalgo">Hidalgo (IEEH)</option>
+              <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
+              <option value="Guanajuato">Guanajuato (IEEG)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Municipio / Demarcación</label>
+            <input type="text" id="atk-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Partido / Adversario Objetivo</label>
+            <select id="atk-select-rival" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+              <option value="MORENA">MORENA</option>
+              <option value="PAN">PAN</option>
+              <option value="PRI">PRI</option>
+              <option value="MC">Movimiento Ciudadano (MC)</option>
+              <option value="PRIAN">Coalición PRIAN</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button type="button" id="btn-run-standalone-attack-ai" onclick="runLiveStandaloneAttackMode()" class="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider shadow-lg transition-all cursor-pointer active:scale-95">
+              ⚔️ Ejecutar Modo Ataque + Escudo 20 IA
+            </button>
+          </div>
+          <div class="sm:col-span-2 lg:col-span-4">
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Propuesta Propia o Tema de Crisis a Blindar / Contrastar</label>
+            <input type="text" id="atk-input-propuesta" placeholder="Ej. Programa de Seguridad Municipal con Drones, Rehabilitación Hidráulica y Transporte Limpio..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white">
+          </div>
+        </div>
+      </div>
+
+      <div id="standalone-attack-ai-results"></div>
+    </section>
+
+    <!-- =====================================================================
+         VISTA DEDICADA BOTÓN 3: AUDITORÍA DE PERSONAL INSACULADO (VERIFICACIÓN LEGAL DE CASILLA)
+         ===================================================================== -->
+    <section id="hub-view-insaculados" class="hidden space-y-6">
+      <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-amber-300 shadow-xl space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-300">
+                🔍 VERIFICACIÓN JURÍDICA ART. 83 LGIPE • IA EN TIEMPO REAL
+              </span>
+              <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
+                INE + IEEM
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+              3. Auditoría de Personal Insaculado y Funcionarios de Casilla
+            </h2>
+            <p class="text-xs text-slate-600 max-w-3xl">
+              Cruza la información del personal insaculado con los voluntarios de casilla (<strong class="text-slate-900">Presidente, Secretario 1, Secretario 2 y Escrutadores</strong>). La IA dispara una <strong class="text-rose-700">Alerta Legal</strong> inmediata si algún funcionario es servidor público de mando, dirigente partidista o está impedido por ley para ejercer el cargo.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="addInsaculadoCandidateRow()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
+              ➕ Agregar Funcionario
+            </button>
+            <button type="button" id="btn-run-insaculados-ai" onclick="runLiveInsaculadosAudit()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
+              🔍 Auditar Elegibilidad Legal IA
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-amber-50/50 p-4 rounded-xl border border-amber-200">
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Estado (INE + OPLE Local)</label>
+            <select id="ins-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Estado de México">Estado de México (IEEM)</option>
+              <option value="Ciudad de México">Ciudad de México (IECM)</option>
+              <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
+              <option value="Nuevo León">Nuevo León (IEEPCNL)</option>
+              <option value="Puebla">Puebla (IEE Puebla)</option>
+              <option value="Hidalgo">Hidalgo (IEEH)</option>
+              <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
+              <option value="Guanajuato">Guanajuato (IEEG)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Municipio / Alcaldía</label>
+            <input type="text" id="ins-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Sección y Tipo de Casilla</label>
+            <input type="text" id="ins-input-casilla" value="Sección 4612 - Casilla Básica 01" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+          </div>
+        </div>
+
+        <!-- Tabla Editable de Funcionarios Insaculados / Voluntarios -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">
+                <th class="p-2.5">Cargo en Mesa Directiva</th>
+                <th class="p-2.5">Nombre Completo</th>
+                <th class="p-2.5">Ocupación / Empleo Actual</th>
+                <th class="p-2.5">¿Servidor Público con Mando / Programas Sociales?</th>
+                <th class="p-2.5">¿Dirigente o Candidato de Partido?</th>
+                <th class="p-2.5">Origen</th>
+                <th class="p-2.5 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="insaculados-input-tbody" class="text-xs">
+              <tr class="insaculado-row border-b border-slate-200">
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Presidente"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Roberto Carlos Méndez Soto"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Profesor de Secundaria Técnica"></td>
+                <td class="p-2">
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="No" selected>No (Ciudadano sin mando público)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
+                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-partido w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Ninguno" selected>Ninguno (Sin cargo partidista)</option>
+                    <option value="Sí - Dirigente o Representante Partidista">Sí - Dirigente / Comité de Partido Político</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
+                  </select>
+                </td>
+                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+              </tr>
+              <tr class="insaculado-row border-b border-slate-200 bg-rose-50/30">
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario 1"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Héctor Hugo Villalba Gómez"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Subdirector de Desarrollo Social Municipal"></td>
+                <td class="p-2">
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-rose-400 bg-rose-50 text-rose-950 font-bold text-xs">
+                    <option value="No">No (Ciudadano sin mando público)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal" selected>Sí - Director / Mando Superior Gubernamental</option>
+                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-partido w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Ninguno" selected>Ninguno (Sin cargo partidista)</option>
+                    <option value="Sí - Dirigente o Representante Partidista">Sí - Dirigente / Comité de Partido Político</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Insaculado INE (1ra y 2da Insaculación)">Insaculado INE</option>
+                    <option value="Sustituto / Voluntario de Fila" selected>Voluntario de Fila</option>
+                  </select>
+                </td>
+                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Caso Alerta</span></td>
+              </tr>
+              <tr class="insaculado-row border-b border-slate-200">
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario 2"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Laura Elena Domínguez Paz"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Contadora Privada Independiente"></td>
+                <td class="p-2">
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="No" selected>No (Ciudadano sin mando público)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
+                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-partido w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Ninguno" selected>Ninguno (Sin cargo partidista)</option>
+                    <option value="Sí - Dirigente o Representante Partidista">Sí - Dirigente / Comité de Partido Político</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
+                  </select>
+                </td>
+                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+              </tr>
+              <tr class="insaculado-row border-b border-slate-200 bg-rose-50/30">
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Escrutador 1"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Marco Antonio Reyes Lira"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Secretario de Organización del Comité Municipal Partidista"></td>
+                <td class="p-2">
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="No" selected>No (Ciudadano sin mando público)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
+                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-partido w-full px-2 py-1.5 rounded border border-rose-400 bg-rose-50 text-rose-950 font-bold text-xs">
+                    <option value="Ninguno">Ninguno (Sin cargo partidista)</option>
+                    <option value="Sí - Dirigente o Representante Partidista" selected>Sí - Dirigente / Comité de Partido Político</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Insaculado INE (1ra y 2da Insaculación)">Insaculado INE</option>
+                    <option value="Sustituto / Voluntario de Fila" selected>Voluntario de Fila</option>
+                  </select>
+                </td>
+                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Caso Alerta</span></td>
+              </tr>
+              <tr class="insaculado-row border-b border-slate-200">
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Escrutador 2"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Sofía Guadalupe Nava Ortiz"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Comerciante de Papelería"></td>
+                <td class="p-2">
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="No" selected>No (Ciudadano sin mando público)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
+                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-partido w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Ninguno" selected>Ninguno (Sin cargo partidista)</option>
+                    <option value="Sí - Dirigente o Representante Partidista">Sí - Dirigente / Comité de Partido Político</option>
+                  </select>
+                </td>
+                <td class="p-2">
+                  <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
+                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
+                  </select>
+                </td>
+                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="insaculados-audit-ai-results"></div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VISTA DEDICADA BOTÓN 4: MANUAL DE CAPACITACIÓN (COORDINADORES + LEY ELECTORAL INE/OPLE)
+         ===================================================================== -->
+    <section id="hub-view-manual-capacitacion" class="hidden space-y-6">
+      <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-indigo-300 shadow-xl space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
+                📘 MANUAL OPERATIVO Y DE LIDERAZGO HUMANO • IA EN TIEMPO REAL
+              </span>
+              <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider border border-emerald-300">
+                INE + IEEM
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+              4. Manual de Capacitación para Coordinadores de Campaña
+            </h2>
+            <p class="text-xs text-slate-600 max-w-3xl">
+              Genera en tiempo real un manual integral que instruye al Coordinador sobre <strong class="text-indigo-900">cómo dirigir, motivar y tratar con respeto y liderazgo a su gente</strong>, además de <strong class="text-emerald-800">qué SÍ hacer</strong> y <strong class="text-rose-800">qué NO hacer</strong> conforme a la LGIPE, el INE y el OPLE del Estado seleccionado.
+            </p>
+          </div>
+          <button type="button" id="btn-run-training-manual-ai" onclick="runLiveTrainingManualGenerator()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95 shrink-0">
+            📘 Generar Manual de Capacitación IA
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200">
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Estado (Adaptación OPLE Local)</label>
+            <select id="man-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Estado de México">Estado de México (IEEM)</option>
+              <option value="Ciudad de México">Ciudad de México (IECM)</option>
+              <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
+              <option value="Nuevo León">Nuevo León (IEEPCNL)</option>
+              <option value="Puebla">Puebla (IEE Puebla)</option>
+              <option value="Hidalgo">Hidalgo (IEEH)</option>
+              <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
+              <option value="Guanajuato">Guanajuato (IEEG)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Municipio / Demarcación</label>
+            <input type="text" id="man-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Rol del Coordinador Objetivo</label>
+            <select id="man-select-rol" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Coordinador General y de Estructura Territorial">Coordinador General y Territorial</option>
+              <option value="Coordinador de Defensa Jurídica y Representantes Generales (RG / RC)">Coordinador de Defensa del Voto (RG / RC)</option>
+              <option value="Coordinador de Brigadas Jóvenes y Activismo Digital">Coordinador de Brigadas y Tierra</option>
+              <option value="Coordinador de Enlace Vecinal y Líderes Seccionales">Coordinador de Líderes Seccionales</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Enfoque Operativo</label>
+            <input type="text" id="man-input-enfoque" value="Trato humano al brigadista, motivación bajo presión, blindaje legal INE/OPLE y jornada electoral" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
+          </div>
+        </div>
+
+        <div id="training-manual-ai-results"></div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         MODAL DE AUDITORÍA INTERNA (2 AGENTES INSPECTORES QA & AI CONNECTION)
+         ===================================================================== -->
+    <div id="modal-internal-inspectors" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[80] hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border-2 border-indigo-400 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🤖</span>
+            <div>
+              <h3 class="text-base font-black text-slate-900">Reporte en Vivo de los 2 Agentes Inspectores Internos (QA & AI Auditors)</h3>
+              <p class="text-[11px] text-slate-500">Agente 1: AIConnectionAuditorAgent • Agente 2: CodeHealthInspectorAgent</p>
+            </div>
+          </div>
+          <button type="button" onclick="document.getElementById('modal-internal-inspectors').classList.add('hidden')" class="px-3 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black cursor-pointer">
+            ✕ Cerrar
+          </button>
+        </div>
+        <div id="internal-inspectors-modal-body"></div>
+      </div>
+    </div>
 
   </main>
 

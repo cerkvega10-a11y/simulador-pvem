@@ -545,6 +545,41 @@ window.switchWarRoomTab = function(tabId) {
     }
   });
 
+  // 3. Sincronizar Estado, Municipio y OPLE cuando se abren las pestañas de Redes, Ley Electoral o Historial
+  if (typeof window.syncAllOpleBadgesInUI === 'function' && appState.estado) {
+    window.syncAllOpleBadgesInUI(appState.estado);
+  }
+  const cleanMuni = (appState.municipio && !appState.municipio.toLowerCase().includes('todos los municipios'))
+    ? appState.municipio
+    : 'Texcoco';
+
+  if (tabId === 'tab-ley-electoral') {
+    const mIn = document.getElementById('law-input-municipio');
+    if (mIn && (!mIn.value || mIn.value === 'Texcoco')) mIn.value = cleanMuni;
+    const pIn = document.getElementById('law-input-propuesta');
+    if (pIn && !pIn.value && appState.propuestaTexto) pIn.value = appState.propuestaTexto;
+    const resBox = document.getElementById('electoral-law-ai-results');
+    if (resBox && !resBox.dataset.loaded && typeof window.runLiveElectoralLawAudit === 'function') {
+      resBox.dataset.loaded = 'true';
+      window.runLiveElectoralLawAudit();
+    }
+  } else if (tabId === 'tab-historial-electoral') {
+    const mIn = document.getElementById('hist-input-municipio');
+    if (mIn && (!mIn.value || mIn.value === 'Texcoco')) mIn.value = cleanMuni;
+    const pSel = document.getElementById('hist-select-partido');
+    if (pSel && appState.activeParty) pSel.value = appState.activeParty;
+    const resBox = document.getElementById('electoral-history-ai-results');
+    if (resBox && !resBox.dataset.loaded && typeof window.runLiveElectoralHistoryQuery === 'function') {
+      resBox.dataset.loaded = 'true';
+      window.runLiveElectoralHistoryQuery();
+    }
+  } else if (tabId === 'tab-tendencias-digitales') {
+    const dtContainer = document.getElementById('digital-trends-container');
+    if (dtContainer && !dtContainer.innerHTML.trim() && typeof Components?.renderTab7TendenciasDigitales === 'function') {
+      Components.renderTab7TendenciasDigitales('digital-trends-container', appState.currentReport?.tendenciasDigitales || null, appState.activeParty);
+    }
+  }
+
   // Redimensionar automáticamente gráficos de Chart.js al cambiar de pestaña
   requestAnimationFrame(() => {
     window.dispatchEvent(new Event('resize'));
@@ -894,6 +929,9 @@ function setupEventListeners() {
   selectEstado.addEventListener('change', (e) => {
     appState.estado = e.target.value;
     loadMunicipalities(appState.estado);
+    if (typeof window.syncAllOpleBadgesInUI === 'function') {
+      window.syncAllOpleBadgesInUI(appState.estado);
+    }
   });
 
   // Cambio de Municipio

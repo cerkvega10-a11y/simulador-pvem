@@ -755,50 +755,139 @@ Devuelve estrictamente este JSON:
   }
 
   /**
-   * 4. Tendencias Digitales y Pulso de Redes Sociales con IA (Anti-Bots y Viralidad)
+   * 4. Tendencias Digitales y Pulso de Redes Sociales Multiplataforma con IA (Facebook, Instagram, TikTok + Hashtags Positivos/Negativos + Radar de Bots y Guerra Sucia)
    */
   async generateDigitalTrendsWithLLM(params = {}) {
-    const { propuestaTexto = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', aiConfig = {} } = params;
+    const { propuestaTexto = '', candidato = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', partido = 'PVEM', aiConfig = {} } = params;
     const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
     if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
 
-    const systemPrompt = `Eres un experto en inteligencia de datos en redes sociales, algoritmos de viralidad y ciberseguridad política para ${municipio}, ${estado}.
-Analiza la conversación digital real que detonaría esta propuesta en redes sociales (X/Twitter, TikTok, Facebook, WhatsApp vecinal).
-Evalúa el porcentaje orgánico vs granjas de bots, calcula el sentimiento, genera los 5 hashtags virales más probables y el desglose de plataformas.
+    const systemPrompt = `Eres un Director de Inteligencia Digital OSINT, Analista de Redes Sociales Multiplataforma (Facebook, Instagram y TikTok) y Especialista en Ciberdefensa Electoral contra Granjas de Bots y Guerra Sucia para ${municipio}, ${estado} (${partido}${candidato ? ' - Candidato: ' + candidato : ''}).
+Analiza la conversación digital real que detona esta propuesta o campaña simultáneamente en **Facebook, Instagram y TikTok**.
+1. Evalúa el porcentaje de Opinión Ciudadana Real (Orgánico) vs Manipulación Digital (Tráfico Artificial, Granjas de Bots y Ataques Coordinados de Guerra Sucia) en Facebook, Instagram y TikTok.
+2. Genera la lista de **Hashtags Positivos** (apoyo orgánico, tendencias favorables a la propuesta) y **Hashtags Negativos** (críticas, rechazo o tendencias adversas).
+3. Desglosa métricas independientes para Facebook, Instagram y TikTok, manteniendo integración directa con el ecosistema de Facebook.
 
 Devuelve estrictamente este JSON:
 {
   "organicidad": {
-    "porcentajeOrganico": 81,
-    "porcentajeBots": 19,
-    "cuentasAuditadas": 19850,
-    "diagnostico": "Diagnóstico de legitimidad de la conversación digital..."
+    "porcentajeOrganico": 78,
+    "porcentajeBots": 22,
+    "cuentasAuditadas": 24680,
+    "diagnostico": "Diagnóstico detallado separando la opinión ciudadana real de la manipulación digital y granjas de bots en ${municipio}..."
   },
   "sentimiento": {
-    "positivo": 57,
-    "neutro": 23,
+    "positivo": 58,
+    "neutro": 22,
     "negativo": 20
+  },
+  "hashtagsPositivos": [
+    {
+      "hashtag": "#FuturoVerdeEn${municipio.replace(/\s+/g, '')}",
+      "plataformaLider": "Facebook & TikTok",
+      "volumen": "18.5K menciones",
+      "apoyoOrganico": "91% Orgánico",
+      "narrativa": "Respaldo ciudadano real a los beneficios directos de la propuesta en barrios y colonias.",
+      "tacticaAmplificacion": "Pautar micro-segmentación en Facebook Reels y grupos comunitarios."
+    },
+    {
+      "hashtag": "#SolucionesReales${municipio.replace(/\s+/g, '')}",
+      "plataformaLider": "Instagram & Facebook",
+      "volumen": "12.3K menciones",
+      "apoyoOrganico": "88% Orgánico",
+      "narrativa": "Jóvenes y familias destacando la viabilidad técnica del proyecto.",
+      "tacticaAmplificacion": "Activar carruseles comparativos en Instagram y Facebook Live."
+    },
+    {
+      "hashtag": "#ComunidadEnAccion",
+      "plataformaLider": "TikTok",
+      "volumen": "21.4K visualizaciones",
+      "apoyoOrganico": "94% Orgánico",
+      "narrativa": "Testimonios cortos de vecinos apoyando la iniciativa.",
+      "tacticaAmplificacion": "Dúos y retos virales con liderazgos juveniles."
+    }
+  ],
+  "hashtagsNegativos": [
+    {
+      "hashtag": "#PromesasSinPresupuesto",
+      "plataformaLider": "Facebook & TikTok",
+      "volumen": "6.8K menciones",
+      "porcentajeBots": "64% Bots / Guerra Sucia",
+      "motivoRechazo": "Cuestionamiento inducido por cuentas adversarias sobre el origen de los recursos y tiempos de obra.",
+      "contraHashtagNeutralizador": "#TransparenciaTotal${municipio.replace(/\s+/g, '')}"
+    },
+    {
+      "hashtag": "#MasDeLoMismoEn${municipio.replace(/\s+/g, '')}",
+      "plataformaLider": "Instagram & Facebook",
+      "volumen": "4.2K menciones",
+      "porcentajeBots": "72% Granja de Troles",
+      "motivoRechazo": "Ataque coordinado en comentarios de páginas locales para sembrar escepticismo.",
+      "contraHashtagNeutralizador": "#ResultadosAuditables"
+    }
+  ],
+  "radarBotsGuerraSucia": {
+    "indiceManipulacionGlobal": 22,
+    "opinionCiudadanaReal": 78,
+    "nivelAlerta": "MEDIA-ALTA (Ataque Coordinado Detectado)",
+    "plataformasAuditadas": {
+      "facebook": {
+        "traficoOrganicoReal": 76,
+        "traficoArtificialBots": 24,
+        "granjasDetectadas": "Cuentas recién creadas sin foto comentando en grupos vecinales de ${municipio} y páginas de noticias locales.",
+        "vectorGuerraSucia": "Difusión de flyers apócrifos y noticias recortadas en grupos de compra-venta en Facebook.",
+        "alcanceEstimado": "48,500 usuarios locales",
+        "engagementRate": "6.8%",
+        "urlEcosistemaFacebook": "https://www.facebook.com/ads/library/?active_status=all&ad_type=political_and_issue_ads&country=MX"
+      },
+      "instagram": {
+        "traficoOrganicoReal": 83,
+        "traficoArtificialBots": 17,
+        "granjasDetectadas": "Bots automatizados dejando comentarios repetitivos en Reels y publicaciones de campaña.",
+        "vectorGuerraSucia": "Campañas de desinformación visual en Historias pagadas sin descargo de responsabilidad.",
+        "alcanceEstimado": "31,200 cuentas locales",
+        "engagementRate": "8.4%"
+      },
+      "tiktok": {
+        "traficoOrganicoReal": 75,
+        "traficoArtificialBots": 25,
+        "granjasDetectadas": "Cuentas anónimas subiendo clips editados fuera de contexto con audio sintético.",
+        "vectorGuerraSucia": "Manipulación algorítmica mediante ráfagas de comentarios negativos en los primeros 15 minutos del video.",
+        "alcanceEstimado": "64,900 reproducciones locales",
+        "engagementRate": "11.2%"
+      }
+    },
+    "protocoloDesactivacion": "1. Publicar video de verificación en Facebook e Instagram en menos de 30 minutos. 2. Reportar granjas de bots en Meta Ad Library y TikTok Safety Center. 3. Desplegar brigada digital orgánica en grupos de Facebook de ${municipio}."
   },
   "topHashtags": [
     {
-      "hashtag": "#EjemploViral",
-      "descripcion": "Motivo de la tendencia en ${municipio}",
-      "volumen": "16.4K",
-      "sentimiento": "Positivo (74%)",
-      "sentimientoPct": "Positivo (74%)",
-      "organicidad": "88% Orgánico",
-      "accionTactica": "Amplificar con brigadas digitales",
+      "hashtag": "#FuturoVerdeEn${municipio.replace(/\s+/g, '')}",
+      "descripcion": "Tendencia orgánica favorable en Facebook, Instagram y TikTok en ${municipio}",
+      "volumen": "18.5K",
+      "sentimiento": "Positivo (82%)",
+      "sentimientoPct": "Positivo (82%)",
+      "organicidad": "91% Orgánico",
+      "accionTactica": "Amplificar en Facebook Reels e Instagram",
       "accionColor": "emerald"
+    },
+    {
+      "hashtag": "#PromesasSinPresupuesto",
+      "descripcion": "Tendencia adversa impulsada por granjas de bots opositoras",
+      "volumen": "6.8K",
+      "sentimiento": "Negativo (68%)",
+      "sentimientoPct": "Negativo (68%)",
+      "organicidad": "64% Bots Detectados",
+      "accionTactica": "Neutralizar con infografía presupuestal verificable",
+      "accionColor": "rose"
     }
   ],
   "plataformas": {
-    "xTwitter": { "sentimiento": "56% Favorable", "riesgoGuerraSucia": "Moderado", "narrativa": "Debate de líderes de opinión y medios locales." },
-    "tikTok": { "sentimiento": "74% Viral Favorable", "riesgoGuerraSucia": "Bajo", "narrativa": "Jóvenes compartiendo videos sobre impacto verde." },
-    "facebook": { "sentimiento": "62% Favorable", "riesgoGuerraSucia": "Moderado", "narrativa": "Grupos de vecinos debatiendo beneficios en su colonia." },
-    "whatsApp": { "sentimiento": "Debate Activo", "riesgoGuerraSucia": "Alto (Cadenas de audio)", "narrativa": "Grupos vecinales y tianguistas compartiendo audios." }
+    "facebook": { "sentimiento": "66% Favorable", "riesgoGuerraSucia": "Moderado (24% Bots)", "narrativa": "Debate vecinal intenso en grupos comunitarios y páginas de noticias de ${municipio}." },
+    "instagram": { "sentimiento": "71% Favorable", "riesgoGuerraSucia": "Bajo (17% Bots)", "narrativa": "Alta interacción en Reels e Historias sobre el impacto visual y comunitario." },
+    "tikTok": { "sentimiento": "74% Viral Favorable", "riesgoGuerraSucia": "Moderado-Alto (25% Bots)", "narrativa": "Viralidad entre jóvenes de 18 a 34 años con clips cortos de impacto." },
+    "whatsApp": { "sentimiento": "Debate Vecinal Activo", "riesgoGuerraSucia": "Alto (Cadenas de audio)", "narrativa": "Reenvío de enlaces de Facebook y TikTok en chats de comités vecinales." }
   },
   "alertasCrisis": [
-    { "nivel": "Media", "alerta": "Riesgo de campaña negra con bots de la oposición", "accionInmediata": "Publicar infografía oficial en los primeros 45 minutos." }
+    { "nivel": "Alta", "alerta": "Detección de ataque coordinado de bots en Facebook y TikTok contra la propuesta", "accionInmediata": "Activar protocolo de desmentido oficial en Facebook Live y fijar comentarios verificados." }
   ]
 }`;
 
@@ -810,9 +899,9 @@ Devuelve estrictamente este JSON:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Propuesta en ${municipio}: "${propuestaTexto}". Genera las tendencias digitales en JSON.` }
+          { role: 'user', content: `Propuesta en ${municipio}, ${estado}: "${propuestaTexto}". Analiza simultáneamente Facebook, Instagram y TikTok (Hashtags positivos/negativos y radar de bots/guerra sucia) en JSON.` }
         ],
-        temperature: 0.6,
+        temperature: 0.55,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1039,6 +1128,499 @@ Responde EXCLUSIVAMENTE el objeto JSON sin markdown exterior.`;
       return parsed;
     } catch (err) {
       console.warn('[FreeLLMService] generateStrategicCampaignAndMicroSegmentationWithLLM error:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * 7. Auditoría de Ley Electoral y Adaptación Dinámica de OPLEs por Estado (INE + 32 OPLEs)
+   */
+  async generateElectoralLawAuditWithLLM(params = {}) {
+    const {
+      propuestaTexto = '',
+      tituloProyecto = '',
+      candidato = '',
+      partido = 'PVEM',
+      municipio = 'Texcoco',
+      estado = 'Estado de México',
+      opleInfo = {},
+      aiConfig = {}
+    } = params;
+
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
+
+    const opleSiglas = opleInfo.siglas || `OPLE ${estado}`;
+    const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
+    const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
+    const legislacionLocal = opleInfo.legislacionLocal || `Código Electoral del Estado de ${estado}`;
+    const tribunalLocal = opleInfo.tribunalLocal || `Tribunal Electoral del Estado de ${estado}`;
+
+    const systemPrompt = `Eres Magistrado Especialista en Derecho Electoral Mexicano, Fiscalización del INE y Normatividad del ${opleSiglas} (${opleNombre}).
+Tu misión es auditar jurídicamente la siguiente propuesta o estrategia de campaña en ${municipio}, ${estado} (${partido}${candidato ? ' - Candidato: ' + candidato : ''}).
+Debes evaluar rigurosamente si cumple o infringe:
+1. Constitución Política de los Estados Unidos Mexicanos (Artículos 41 y 134).
+2. Ley General de Instituciones y Procedimientos Electorales (LGIPE) y Ley General de Partidos Políticos (LGPP).
+3. Ley General en Materia de Delitos Electorales (FISEL/FEDE).
+4. Normatividad estatal vigente: ${legislacionLocal}, acuerdos del ${opleSiglas} y criterios del ${tribunalLocal} y TEPJF.
+
+Devuelve ESTRICTAMENTE este objeto JSON:
+{
+  "veredictoGeneral": "CUMPLE CON RESERVAS TÁCTICAS" | "CUMPLE ESTRICTAMENTE" | "RIESGO DE INFRACCIÓN ELECTORAL",
+  "scoreCumplimientoLegal": 88,
+  "nivelRiesgoJuridico": "BAJO" | "MEDIO" | "ALTO",
+  "organismosReguladores": {
+    "federal": "INE (Instituto Nacional Electoral) & TEPJF",
+    "estatalSiglas": "${opleSiglas}",
+    "estatalNombre": "${opleNombre}",
+    "legislacionAplicable": "CPEUM Arts. 41 y 134, LGIPE, y ${legislacionLocal}",
+    "urlOpleOficial": "${opleUrl}"
+  },
+  "dictamenJuridico": "Análisis jurídico profundo de cómo la propuesta o estrategia impacta legalmente a la campaña en ${municipio}, ${estado}, ante el INE y el ${opleSiglas}...",
+  "matrizEvaluacionNormativa": [
+    {
+      "rubro": "Actos Anticipados de Campaña / Precampaña y Temporalidad",
+      "estatus": "CUMPLE" | "PRECAUCIÓN" | "ALERTA",
+      "fundamentoLegal": "Art. 3 y 242 LGIPE / ${legislacionLocal}",
+      "impactoEnCampana": "Explicación jurídica detallada..."
+    },
+    {
+      "rubro": "Prohibición de Dádivas, Coacción o Condicionamiento de Programas (Clientelismo)",
+      "estatus": "CUMPLE" | "PRECAUCIÓN" | "ALERTA",
+      "fundamentoLegal": "Art. 209 numeral 5 LGIPE y Art. 134 Constitucional",
+      "impactoEnCampana": "Explicación sobre entrega de beneficios directos o promesas materiales..."
+    },
+    {
+      "rubro": "Fiscalización, Tope de Gastos y Prorrateo (UTF - INE / ${opleSiglas})",
+      "estatus": "CUMPLE" | "PRECAUCIÓN" | "ALERTA",
+      "fundamentoLegal": "Reglamento de Fiscalización del INE",
+      "impactoEnCampana": "Impacto contable y registro ante el SIF..."
+    },
+    {
+      "rubro": "Propaganda Electoral, Sustentabilidad y Reglas del ${opleSiglas}",
+      "estatus": "CUMPLE" | "PRECAUCIÓN" | "ALERTA",
+      "fundamentoLegal": "Art. 209 y 210 LGIPE / Lineamientos de ${opleSiglas}",
+      "impactoEnCampana": "Reglas de materiales reciclables, equipamiento urbano y pauta digital..."
+    }
+  ],
+  "riesgosSancionatorios": [
+    "Riesgo 1 ante Queja o Procedimiento Especial Sancionador (PES) ante ${opleSiglas}...",
+    "Riesgo 2 en materia de fiscalización o impugnación..."
+  ],
+  "redaccionBlindadaLegalmente": "Versión reescrita de la propuesta o discurso para que sea 100% inatacable ante el INE, ${opleSiglas} y tribunales electorales...",
+  "fuentesVerificables": [
+    {
+      "organismo": "INE - Normatividad y Fiscalización",
+      "titulo": "Ley General de Instituciones y Procedimientos Electorales (LGIPE)",
+      "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf"
+    },
+    {
+      "organismo": "${opleSiglas} (${estado})",
+      "titulo": "Portal Oficial del ${opleNombre} - Acuerdos y Lineamientos",
+      "url": "${opleUrl}"
+    },
+    {
+      "organismo": "TEPJF",
+      "titulo": "Sistema de Consulta de Jurisprudencia Electoral (IUS Electoral)",
+      "url": "https://www.te.gob.mx/ius2021/#/"
+    }
+  ]
+}`;
+
+    try {
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Audita legalmente la siguiente propuesta en ${municipio}, ${estado} (${opleSiglas}): Título: "${tituloProyecto}". Contenido: "${propuestaTexto}". Devuelve JSON.` }
+        ],
+        temperature: 0.4,
+        jsonMode: true
+      });
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (err) {
+      console.warn('[FreeLLMService] Error en generateElectoralLawAuditWithLLM:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * 8. Historial de Elecciones Pasadas con Selector de Año y Sección Electoral (INE + 32 OPLEs)
+   */
+  async generateElectoralHistoryWithLLM(params = {}) {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      anioEleccion = '2024',
+      partidoFiltro = 'TODOS',
+      seccionFiltro = '',
+      opleInfo = {},
+      aiConfig = {}
+    } = params;
+
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
+
+    const opleSiglas = opleInfo.siglas || `OPLE ${estado}`;
+    const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
+    const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
+
+    const systemPrompt = `Eres el Director de Estadística y Cartografía Electoral del INE y del ${opleSiglas} (${opleNombre}).
+Genera el informe histórico electoral completo del municipio/alcaldía de **${municipio}, ${estado}** correspondiente al **Año de Elección ${anioEleccion}** (con filtro de partido: ${partidoFiltro}${seccionFiltro ? ' y enfoque en la Sección Electoral: ' + seccionFiltro : ''}).
+
+Debes incluir:
+1. Resultados históricos en **${municipio}** en el año **${anioEleccion}** para los 3 cargos clave:
+   - **Presidencia Municipal / Alcaldía**
+   - **Diputaciones (Local y Federal)**
+   - **Senadurías / Elección Federal o Estatal concurrente**
+2. Un desglose detallado de **8 Secciones Electorales representativas de ${municipio}** (si el usuario especificó la sección "${seccionFiltro}", asegúrate de que la primera sección de la lista sea exactamente la sección "${seccionFiltro}" y las demás sean secciones reales colindantes de ${municipio}), mostrando la votación exacta por partido político (PVEM, MORENA, PAN, PRI, MC, PT, PRD) y coalición en el año ${anioEleccion}.
+
+Devuelve ESTRICTAMENTE este objeto JSON:
+{
+  "metadata": {
+    "estado": "${estado}",
+    "municipio": "${municipio}",
+    "anioEleccion": "${anioEleccion}",
+    "organismoFederal": "INE (Cómputos Distritales)",
+    "organismoLocalSiglas": "${opleSiglas}",
+    "organismoLocalNombre": "${opleNombre}",
+    "urlVerificacionOple": "${opleUrl}",
+    "urlVerificacionIne": "https://computos2024.ine.mx/",
+    "listaNominalMunicipal": 198450,
+    "participacionCiudadanaPct": "61.4%",
+    "totalSeccionesMunicipio": 118
+  },
+  "resumenHistoricoIA": "Análisis político-electoral detallado de lo ocurrido en ${municipio}, ${estado} en la elección de ${anioEleccion}, comportamiento del voto, alianzas y competitividad seccional...",
+  "eleccionesPorCargo": {
+    "presidenciaMunicipal": {
+      "cargo": "Presidencia Municipal / Alcaldía de ${municipio} (${anioEleccion})",
+      "ganador": "Partido o Coalición Ganadora",
+      "votosTotalesEmitidos": 121840,
+      "participacionPct": "61.4%",
+      "margenVictoriaPct": "8.6%",
+      "resultadosPartidos": [
+        { "partido": "MORENA", "coalicion": "Sigamos Haciendo Historia", "votos": 48210, "porcentaje": 39.5 },
+        { "partido": "PVEM", "coalicion": "Sigamos Haciendo Historia / Propio", "votos": 16890, "porcentaje": 13.8 },
+        { "partido": "MC", "coalicion": "Candidatura Común / Propio", "votos": 18420, "porcentaje": 15.1 },
+        { "partido": "PAN", "coalicion": "Fuerza y Corazón", "votos": 15110, "porcentaje": 12.4 },
+        { "partido": "PRI", "coalicion": "Fuerza y Corazón", "votos": 14650, "porcentaje": 12.0 },
+        { "partido": "PT", "coalicion": "Sigamos Haciendo Historia", "votos": 5420, "porcentaje": 4.4 }
+      ]
+    },
+    "diputaciones": {
+      "cargo": "Diputación Local y Federal por el Distrito de ${municipio} (${anioEleccion})",
+      "distritoCabecera": "Distrito Electoral correspondiente a ${municipio}",
+      "fuerzaDominante": "Coalición / Partido puntero en legislativas",
+      "votosTotales": 122310,
+      "resultadosPartidos": [
+        { "partido": "MORENA", "votos": 49100, "porcentaje": 40.1 },
+        { "partido": "PVEM", "votos": 17650, "porcentaje": 14.4 },
+        { "partido": "MC", "votos": 17200, "porcentaje": 14.1 },
+        { "partido": "PAN", "votos": 15800, "porcentaje": 12.9 },
+        { "partido": "PRI", "votos": 14100, "porcentaje": 11.5 },
+        { "partido": "PT", "votos": 5600, "porcentaje": 4.6 }
+      ],
+      "observacionTactica": "Comparativa de voto cruzado entre alcaldía y diputación en ${municipio}..."
+    },
+    "senadurias": {
+      "cargo": "Senaduría de la República / Elección Federal en ${municipio} (${anioEleccion})",
+      "entidad": "${estado}",
+      "votosTotalesMunicipio": 123540,
+      "resultadosPartidos": [
+        { "partido": "MORENA", "votos": 51200, "porcentaje": 41.4 },
+        { "partido": "PVEM", "votos": 18400, "porcentaje": 14.9 },
+        { "partido": "MC", "votos": 16100, "porcentaje": 13.0 },
+        { "partido": "PAN", "votos": 16200, "porcentaje": 13.1 },
+        { "partido": "PRI", "votos": 13400, "porcentaje": 10.8 },
+        { "partido": "PT", "votos": 5900, "porcentaje": 4.8 }
+      ],
+      "observacionTactica": "Comportamiento del voto federal de Senaduría en ${municipio} durante ${anioEleccion}..."
+    }
+  },
+  "seccionesElectorales": [
+    {
+      "seccion": "${seccionFiltro || '4310'}",
+      "coloniaReferencia": "Colonia o Barrio real de ${municipio}",
+      "tipoSeccion": "Urbana" | "Mixta" | "Rural",
+      "listaNominal": 1850,
+      "votosTotales": 1165,
+      "participacionPct": "62.9%",
+      "votosPorPartido": {
+        "PVEM": 195,
+        "MORENA": 440,
+        "PAN": 150,
+        "PRI": 145,
+        "MC": 155,
+        "PT": 52,
+        "COALICION_GANADORA": 687
+      },
+      "ganadorSeccion": "Coalición PVEM-MORENA-PT",
+      "clasificacionTactica": "Bastión Consolidado" | "Sección Swing / Competida" | "Sección de Recuperación Prioritaria"
+    }
+  ]
+}`;
+
+    try {
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Genera el historial electoral completo (Presidencia Municipal, Diputaciones, Senadurías y 8 Secciones Electorales detalladas) para el municipio de ${municipio}, ${estado} en el año ${anioEleccion} (${opleSiglas} + INE). Partido filtro: ${partidoFiltro}. Sección buscada: ${seccionFiltro || 'Todas'}.` }
+        ],
+        temperature: 0.45,
+        jsonMode: true
+      });
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (err) {
+      console.warn('[FreeLLMService] Error en generateElectoralHistoryWithLLM:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * 9. Auditoría Legal de Personal Insaculado vs Voluntarios de Casilla (Art. 83 LGIPE + OPLE)
+   */
+  async generateInsaculadosAuditWithLLM(params = {}) {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      casillaSeccion = 'Sección 4310 - Casilla Básica 01',
+      funcionarios = [],
+      opleInfo = {},
+      aiConfig = {}
+    } = params;
+
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
+
+    const opleSiglas = opleInfo.siglas || `OPLE ${estado}`;
+    const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
+    const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
+    const legislacionLocal = opleInfo.legislacionLocal || `Código Electoral del Estado de ${estado}`;
+
+    const systemPrompt = `Eres el Director Jurídico de Defensa del Voto y Auditoría de Mesas Directivas de Casilla ante el INE y el ${opleSiglas} (${opleNombre}).
+Tu misión es cruzar la lista de personal insaculado y voluntarios propuestos para integrar la Mesa Directiva de Casilla (**Presidente, Secretario 1, Secretario 2, Escrutadores**) en ${municipio}, ${estado} (${casillaSeccion}) y detectar **IMPEDIMENTOS LEGALES** conforme al **Artículo 83 de la LGIPE**, la **LGSMIME (Art. 75 causal de nulidad de votación en casilla)** y el **${legislacionLocal}**.
+
+Causales estrictas de impedimento legal (Art. 83 LGIPE):
+- Tener cargo de dirección partidista de cualquier jerarquía (nacional, estatal, municipal) en los últimos 3 años.
+- Ser servidor público de confianza con mando superior, o tener a su cargo programas sociales, recursos públicos o brigadas gubernamentales.
+- Ser candidato a puesto de elección popular o representante de partido político ante consejo o casilla.
+- No estar inscrito en el Registro Federal de Electores, no contar con credencial para votar vigente o no pertenecer a la sección electoral respectiva.
+- Tener más de 70 años al día de la elección sin exención expresa o no saber leer y escribir.
+
+Para cada persona en la lista recibida, evalúa su elegibilidad y emite una **ALERTA LEGAL CRÍTICA** si está impedida por ley.
+
+Devuelve ESTRICTAMENTE este objeto JSON:
+{
+  "resumenAuditoria": {
+    "estado": "${estado}",
+    "municipio": "${municipio}",
+    "casillaAuditada": "${casillaSeccion}",
+    "organismoAutoridad": "INE & ${opleSiglas}",
+    "totalAuditados": ${funcionarios.length || 6},
+    "totalAptos": number,
+    "totalImpedidosConAlertaLegal": number,
+    "riesgoNulidadCasilla": "ALTO (Riesgo de Nulidad Art. 75 LGSMIME)" | "BAJO (Casilla Blindada Legalmente)",
+    "dictamenEjecutivo": "Explicación jurídica del cruce de padrón de insaculados vs voluntarios..."
+  },
+  "resultadosCruceFuncionarios": [
+    {
+      "nombre": "Nombre completo del funcionario",
+      "cargoCasilla": "Presidente" | "Secretario 1" | "Secretario 2" | "Escrutador 1" | "Escrutador 2" | "Escrutador 3",
+      "seccion": "Sección Electoral",
+      "perfilDetectado": "Ocupación o vínculo detectado en el cruce",
+      "estatusLegal": "IMPEDIDO POR LEY (ALERTA LEGAL)" | "APTO LEGALMENTE",
+      "alertaLegalActiva": true | false,
+      "severidadAlerta": "CRÍTICA" | "PREVENTIVA" | "NINGUNA",
+      "fundamentoLegalInfringido": "Art. 83 inciso e) y f) de la LGIPE / Art. 75 LGSMIME / ${legislacionLocal}",
+      "motivoImpedimento": "Explicación clara de por qué la persona está o no impedida para estar en la casilla...",
+      "accionJuridicaRecomendada": "Presentar escrito de recusación/sustitución inmediata ante el Consejo Distrital del INE y ${opleSiglas} o asentar Escrito de Incidentes."
+    }
+  ],
+  "protocoloImpugnacionCasilla": [
+    "Paso 1 legal ante la Junta Distrital Ejecutiva del INE y Consejo Municipal del ${opleSiglas}...",
+    "Paso 2 para los Representantes de Casilla (RC) y Representantes Generales (RG)..."
+  ],
+  "fuentesLegalesVerificables": [
+    {
+      "organismo": "LGIPE - Artículo 83 (Requisitos para ser Funcionario de Casilla)",
+      "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf"
+    },
+    {
+      "organismo": "INE - Integración de Mesas Directivas de Casilla (Insaculación)",
+      "url": "https://www.ine.mx/voto-y-elecciones/"
+    },
+    {
+      "organismo": "${opleSiglas} (${opleNombre})",
+      "url": "${opleUrl}"
+    }
+  ]
+}`;
+
+    try {
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Audita legalmente esta lista de funcionarios de casilla e insaculados en ${municipio}, ${estado} (${casillaSeccion}):\n${JSON.stringify(funcionarios, null, 2)}` }
+        ],
+        temperature: 0.35,
+        jsonMode: true
+      });
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (err) {
+      console.warn('[FreeLLMService] Error en generateInsaculadosAuditWithLLM:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * 10. Generador de Manual de Capacitación Operativa y Liderazgo para Coordinadores (LGIPE + INE + OPLE)
+   */
+  async generateTrainingManualWithLLM(params = {}) {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      partido = 'PVEM',
+      rolCoordinador = 'Coordinador General y Territorial de Campaña',
+      enfoqueEspecial = 'Liderazgo de brigadas, trato humano al equipo, defensa del voto y blindaje legal',
+      opleInfo = {},
+      aiConfig = {}
+    } = params;
+
+    const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
+    if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
+
+    const opleSiglas = opleInfo.siglas || `OPLE ${estado}`;
+    const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
+    const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
+    const legislacionLocal = opleInfo.legislacionLocal || `Código Electoral del Estado de ${estado}`;
+
+    const systemPrompt = `Eres el Director Nacional de Capacitación Electoral, Doctrina de Liderazgo Político y Cumplimiento Jurídico del Cuarto de Guerra para ${municipio}, ${estado} (${partido}).
+Tu misión es redactar un **Manual Operativo y de Liderazgo para el ${rolCoordinador}**, adaptado específicamente al marco legal de la **Ley Federal Electoral (LGIPE)**, el **INE** y el **${opleSiglas} (${opleNombre} - ${legislacionLocal})**.
+
+El manual debe cubrir de forma magistral y accionable:
+1. **Liderazgo y Trato Humano ("Cómo dirigir, motivar y tratar a su gente"):** Psicología de mando táctico, empatía con brigadistas y voluntarios, resolución de conflictos en campo, comunicación asertiva bajo presión y cohesión del equipo.
+2. **Decálogo Legal Estricto (QUÉ SÍ HACER vs QUÉ NO HACER LEGALMENTE):** Fundamentado en la LGIPE, el INE, la FISEL (Delitos Electorales) y el ${opleSiglas}.
+3. **Protocolo Operativo Diario y para la Jornada Electoral (Día D)** en ${municipio}, ${estado}.
+
+Devuelve ESTRICTAMENTE este objeto JSON:
+{
+  "encabezadoManual": {
+    "titulo": "Manual Maestro de Liderazgo Táctico y Cumplimiento Electoral — ${municipio}, ${estado}",
+    "rolObjetivo": "${rolCoordinador}",
+    "marcoNormativo": "LGIPE + INE + ${opleSiglas} (${legislacionLocal})",
+    "urlOple": "${opleUrl}",
+    "objetivoDoctrinal": "Resumen ejecutivo del propósito del manual para el coordinador..."
+  },
+  "moduloLiderazgoTratoHumano": {
+    "principioRector": "Cómo dirigir y tratar a su gente con firmeza estratégica y calidez humana",
+    "pilaresMando": [
+      {
+        "titulo": "1. Liderazgo por Ejemplo y Respeto Absoluto al Brigadista",
+        "instruccionPractica": "Cómo dirigirse al equipo cada mañana, reconocer el esfuerzo en territorio y escuchar necesidades de campo...",
+        "fraseGuia": "Frase inspiradora y táctica para el coordinador..."
+      },
+      {
+        "titulo": "2. Gestión Emocional bajo Presión y Contención de Conflictos",
+        "instruccionPractica": "Cómo resolver fricciones entre coordinadores seccionales o voluntarios cansados sin fracturar la estructura...",
+        "fraseGuia": "Frase táctica de resolución..."
+      },
+      {
+        "titulo": "3. Comunicación Clara, Metas Medibles y Retroalimentación Positiva",
+        "instruccionPractica": "Cómo asignar metas por sección electoral en ${municipio} manteniendo la moral en alto...",
+        "fraseGuia": "Frase táctica de supervisión..."
+      }
+    ]
+  },
+  "guiaLegalQueSiQueNo": {
+    "autoridadesReguladoras": "INE, ${opleSiglas} (${opleNombre}) y FISEL",
+    "queSiHacerLegalmente": [
+      {
+        "accion": "Acción permitida y recomendada 1",
+        "fundamento": "Art. LGIPE / Lineamiento ${opleSiglas}",
+        "protocolo": "Cómo ejecutarla correctamente con respaldo documental..."
+      },
+      {
+        "accion": "Acción permitida y recomendada 2",
+        "fundamento": "Art. LGIPE / Lineamiento ${opleSiglas}",
+        "protocolo": "Cómo ejecutarla correctamente..."
+      },
+      {
+        "accion": "Acción permitida y recomendada 3",
+        "fundamento": "Art. LGIPE / Lineamiento ${opleSiglas}",
+        "protocolo": "Cómo ejecutarla correctamente..."
+      },
+      {
+        "accion": "Acción permitida y recomendada 4",
+        "fundamento": "Art. LGIPE / Lineamiento ${opleSiglas}",
+        "protocolo": "Cómo ejecutarla correctamente..."
+      }
+    ],
+    "queNoHacerLegalmente": [
+      {
+        "prohibicion": "Conducta estrictamente prohibida 1 (Delito o Infracción Electoral)",
+        "fundamento": "Art. LGIPE / Ley General en Materia de Delitos Electorales / ${legislacionLocal}",
+        "consecuenciaJuridica": "Sanción, multa, pérdida de registro o pena privativa de libertad..."
+      },
+      {
+        "prohibicion": "Conducta estrictamente prohibida 2",
+        "fundamento": "Art. 209 LGIPE / Art. 134 CPEUM",
+        "consecuenciaJuridica": "Consecuencia legal exacta..."
+      },
+      {
+        "prohibicion": "Conducta estrictamente prohibida 3",
+        "fundamento": "Normatividad de Fiscalización INE / ${opleSiglas}",
+        "consecuenciaJuridica": "Consecuencia legal exacta..."
+      },
+      {
+        "prohibicion": "Conducta estrictamente prohibida 4",
+        "fundamento": "Reglas de Veda y Jornada Electoral (${opleSiglas})",
+        "consecuenciaJuridica": "Consecuencia legal exacta..."
+      }
+    ]
+  },
+  "protocoloOperativoCampo": [
+    { "fase": "Fase 1: Briefing Matutino y Despliegue Seccional", "pasos": "Instrucciones operativas precisas..." },
+    { "fase": "Fase 2: Supervisión en Campo y Reporte de Incidencias", "pasos": "Instrucciones operativas precisas..." },
+    { "fase": "Fase 3: Cierre Táctico, Resguardo de Actas y Defensa ante ${opleSiglas}", "pasos": "Instrucciones operativas precisas..." }
+  ],
+  "fuentesVerificables": [
+    { "organismo": "INE - Capacitación y Organización Electoral", "url": "https://www.ine.mx/" },
+    { "organismo": "${opleSiglas} (${opleNombre})", "url": "${opleUrl}" },
+    { "organismo": "Ley General de Instituciones y Procedimientos Electorales (LGIPE)", "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf" }
+  ]
+}`;
+
+    try {
+      const selectedModel = aiConfig?.model || this.providers[effectiveProvider]?.defaultModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      const raw = await this.executeChatCompletion({
+        provider: effectiveProvider,
+        apiKey: effectiveKey,
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Genera el Manual de Capacitación y Liderazgo para ${rolCoordinador} en ${municipio}, ${estado} (${partido}). Enfoque: "${enfoqueEspecial}". Regulador estatal: ${opleSiglas}. Devuelve JSON.` }
+        ],
+        temperature: 0.5,
+        jsonMode: true
+      });
+      const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (err) {
+      console.warn('[FreeLLMService] Error en generateTrainingManualWithLLM:', err.message);
       return null;
     }
   }
