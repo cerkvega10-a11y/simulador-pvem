@@ -1154,7 +1154,7 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div>
               <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">1. Estado (INE + 32 OPLEs)</label>
               <select id="hist-select-estado" onchange="onCascadeEstadoChange('hist', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
@@ -1225,14 +1225,26 @@
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-black text-indigo-800 uppercase mb-1">5. Secciones Electorales del Municipio (En Lista)</label>
+              <label class="block text-[10px] font-black text-indigo-800 uppercase mb-1">5. Sección Electoral (INE)</label>
               <select id="hist-select-seccion" onchange="onHistorySectionDropdownChange(this.value)" class="w-full px-3 py-2 rounded-lg border-2 border-indigo-400 text-xs font-black bg-indigo-50 text-indigo-950">
                 <option value="TODAS">📋 TODAS LAS SECCIONES DEL MUNICIPIO (Desglose Completo)</option>
                 <option value="4608">Sección 4608 — Centro Texcoco de Mora</option>
                 <option value="4609">Sección 4609 — San Mateo Huexotla</option>
                 <option value="4610">Sección 4610 — San Bernardino</option>
                 <option value="4611">Sección 4611 — San Lorenzo</option>
-                <option value="4612">Sección 4612 — Santa Cruz de Arriba</option>
+                <option value="4612" selected>Sección 4612 — Santa Cruz de Arriba</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-amber-900 uppercase mb-1">6. Casilla Específica (Acta INE/OPLE)</label>
+              <select id="hist-select-casilla" onchange="onHistoryCasillaDropdownChange(this.value)" class="w-full px-3 py-2 rounded-lg border-2 border-amber-400 text-xs font-black bg-amber-50 text-amber-950">
+                <option value="Básica" selected>🗳️ Casilla Básica (B1)</option>
+                <option value="Contigua 1">🗳️ Casilla Contigua 1 (C1)</option>
+                <option value="Contigua 2">🗳️ Casilla Contigua 2 (C2)</option>
+                <option value="Contigua 3">🗳️ Casilla Contigua 3 (C3)</option>
+                <option value="Extraordinaria 1">🗳️ Casilla Extraordinaria 1 (E1)</option>
+                <option value="Especial 1">🗳️ Casilla Especial 1 (S1)</option>
+                <option value="TODAS">📊 Consolidado Seccional (Todas las Casillas)</option>
               </select>
             </div>
           </div>
@@ -3170,10 +3182,10 @@
   </div>
 
   <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.2.0) -->
-  <script src="/js/selfHealingAgent.js?v=5.8.0"></script>
-  <script src="/js/components.js?v=5.8.0"></script>
-  <script src="/js/planMaestroPdfExport.js?v=5.8.0"></script>
-  <script src="/js/pdfExport.js?v=5.8.0"></script>
-  <script src="/js/app.js?v=5.8.0"></script>
+  <script src="/js/selfHealingAgent.js?v=5.9.0"></script>
+  <script src="/js/components.js?v=5.9.0"></script>
+  <script src="/js/planMaestroPdfExport.js?v=5.9.0"></script>
+  <script src="/js/pdfExport.js?v=5.9.0"></script>
+  <script src="/js/app.js?v=5.9.0"></script>
 </body>
 </html>

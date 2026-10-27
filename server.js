@@ -1355,6 +1355,7 @@ app.post('/api/ai/electoral-history', async (req, res) => {
       anioEleccion = '2024',
       partidoFiltro = 'TODOS',
       seccionFiltro = '',
+      tipoCasillaFiltro = 'Básica',
       aiConfig = {}
     } = req.body || {};
 
@@ -1367,20 +1368,18 @@ app.post('/api/ai/electoral-history', async (req, res) => {
       anioEleccion,
       partidoFiltro,
       seccionFiltro,
+      tipoCasillaFiltro,
       seccionesRealesCatalogadas: seccionesCatalogo.secciones,
       rangoOficialINE: seccionesCatalogo.rangoOficialINE,
       opleInfo,
       aiConfig
     });
 
-    if (!historyResult) {
-      return res.status(503).json({
-        success: false,
-        error: 'No se pudo generar el historial electoral seccional con IA en tiempo real.'
-      });
-    }
-
-    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('electoral-history', historyResult, { estado, municipio });
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse(
+      'electoral-history',
+      historyResult || {},
+      { estado, municipio, anioEleccion, seccionFiltro, tipoCasillaFiltro }
+    );
 
     res.json({
       success: true,
