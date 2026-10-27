@@ -58,6 +58,7 @@ const electoralRadarEngine = require('./src/agents/electoralRadarEngine');
 const coloniasData = require('./src/data/coloniasData');
 const freeLLMService = require('./src/services/freeLLMService');
 const semanticAnalyzer = require('./src/agents/semanticAnalyzer');
+const defenseAndAttackEngine = require('./src/agents/defenseAndAttackEngine');
 const aiIntegrityAuditorAgent = require('./src/agents/aiIntegrityAuditorAgent');
 const codeExecutionAuditAgent = require('./src/agents/codeExecutionAuditAgent');
 const aiConnectionAuditorAgent = require('./src/agents/aiConnectionAuditorAgent');
@@ -1541,28 +1542,55 @@ app.post('/api/ai/attack-mode', async (req, res) => {
   try {
     const {
       propuestaRivalTexto = '',
+      propuestaTexto = '',
       partidoRival = 'MORENA / Coalición Rival',
       municipio = 'Texcoco',
       estado = 'Estado de México',
       aiConfig = {}
     } = req.body || {};
 
+    const textoEvaluar = (propuestaRivalTexto || propuestaTexto || '').trim() || `Gestión y promesas incumplidas de ${partidoRival} en ${municipio}`;
     const opleInfo = getOpleByState(estado);
-    const [attackDossier, defenseMatrix] = await Promise.all([
+    const municipalResearch = webResearchAgent.conductResearch(municipio, estado);
+    const semanticResult = await semanticAnalyzer.analyze(textoEvaluar, `Análisis Modo Ataque — ${municipio}`, municipalResearch, aiConfig);
+
+    const [aiAttackDossier, aiDefenseMatrix] = await Promise.all([
       freeLLMService.generateAttackDossierWithLLM({
-        propuestaRivalTexto: propuestaRivalTexto || `Gestión y promesas incumplidas de ${partidoRival} en ${municipio}`,
+        propuestaRivalTexto: textoEvaluar,
         partidoRival,
         municipio,
         estado,
         aiConfig
       }),
       freeLLMService.generateDefenseMatrixWithLLM({
-        propuestaTexto: propuestaRivalTexto || `Estrategia de contraste y defensa en ${municipio}`,
+        propuestaTexto: textoEvaluar,
         municipio,
         estado,
         aiConfig
       })
     ]);
+
+    const finalAttackDossier = defenseAndAttackEngine.generateAttackDossier(
+      textoEvaluar,
+      partidoRival,
+      municipio,
+      estado,
+      municipalResearch,
+      aiAttackDossier,
+      semanticResult
+    );
+
+    const finalDefenseMatrix = defenseAndAttackEngine.generateDefenseMatrix(
+      textoEvaluar,
+      municipio,
+      estado,
+      { porcentajeContra: finalAttackDossier.rechazoEstimado || 74, porcentajeFavor: finalAttackDossier.aprobacionRival || 26 },
+      municipalResearch,
+      aiDefenseMatrix,
+      semanticResult
+    );
+
+    const auditedAttack = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('attack-mode', finalAttackDossier, { estado, municipio });
 
     res.json({
       success: true,
@@ -1570,9 +1598,12 @@ app.post('/api/ai/attack-mode', async (req, res) => {
       estado,
       municipio,
       partidoRival,
+      propuestaAnalizada: textoEvaluar,
       ople: opleInfo,
-      attackDossier,
-      defenseQuestions: defenseMatrix
+      attackDossier: auditedAttack,
+      defenseQuestions: finalDefenseMatrix,
+      preguntas20: finalDefenseMatrix.preguntas || [],
+      certificadoAntiAlucinacion: auditedAttack.certificadoAntiAlucinacion
     });
   } catch (error) {
     console.error('Error en POST /api/ai/attack-mode:', error);

@@ -2167,23 +2167,23 @@ function onSimulationFinished(report) {
           appState.radarAnalysis = d.radar;
           Components.renderTab2ColoniasYCampana(
             'colonias-campaign-container',
-            d.radar.microTargetingColonias,
-            d.radar.manualCampanaEstrategico,
-            d.radar.indicadoresClaveElectorales,
+            report.microTargetingColonias || d.radar.microTargetingColonias,
+            report.manualCampanaEstrategico || d.radar.manualCampanaEstrategico,
+            report.indicadoresClaveElectorales || d.radar.indicadoresClaveElectorales,
             appState.activeParty,
             report
           );
           if (typeof Components.renderTabEslogan === 'function') {
-            Components.renderTabEslogan('eslogan-naming-container', d.radar.manualCampanaEstrategico, report);
+            Components.renderTabEslogan('eslogan-naming-container', report.manualCampanaEstrategico || d.radar.manualCampanaEstrategico, report);
           }
           if (typeof Components.renderTabROI === 'function') {
-            Components.renderTabROI('roi-calculadora-container', d.radar.calculadoraROICampana, report);
+            Components.renderTabROI('roi-calculadora-container', report.calculadoraROICampana || d.radar.calculadoraROICampana, report);
           }
           if (typeof Components.renderTabRadiografiaDesgaste === 'function') {
-            Components.renderTabRadiografiaDesgaste('radiografia-desgaste-container', d.radar.indiceEscepticismo, report);
+            Components.renderTabRadiografiaDesgaste('radiografia-desgaste-container', report.indiceEscepticismo || d.radar.indiceEscepticismo, report);
           }
           if (typeof Components.renderTabMicroSegmentacion === 'function') {
-            Components.renderTabMicroSegmentacion('micro-segmentacion-container', d.radar.microSegmentacionGeneracional, report);
+            Components.renderTabMicroSegmentacion('micro-segmentacion-container', report.microSegmentacionGeneracional || d.radar.microSegmentacionGeneracional, report);
           }
         }
       })

@@ -888,24 +888,56 @@ class DefenseAndAttackEngine {
     const actor = (dc.nombresPropios && dc.nombresPropios[0]) ? ` (${dc.nombresPropios[0]})` : '';
     const flags = dc.flagsTematicos || {};
 
-    if (aiAttackData && Array.isArray(aiAttackData.soundbites) && aiAttackData.soundbites.length > 0 && aiAttackData.guionDebate) {
-      return {
-        partidoRival: rival,
-        municipio: muni,
-        estado,
-        temaCentralAnclado: tema,
-        rechazoEstimado: typeof aiAttackData.rechazoEstimado === 'number' ? aiAttackData.rechazoEstimado : 76,
-        aprobacionRival: typeof aiAttackData.aprobacionRival === 'number' ? aiAttackData.aprobacionRival : 24,
-        sectoresAgraviados: aiAttackData.sectoresAgraviados || [],
-        planCaptura: aiAttackData.planCaptura || { focoTerritorial: `Bastiones en ${lugar}`, lugaresVisita: [], promesaCompromiso: '' },
-        soundbites: aiAttackData.soundbites || [],
-        guionDebate: aiAttackData.guionDebate || {},
-        contrapropuestaGanadora: aiAttackData.contrapropuestaGanadora || {},
-        iaGenerada: true
-      };
-    }
-
     let rechazoEstimado = (flags.esTemaExpresidentePolitica || flags.esDestruccionPatrimonio || flags.esTalaEcocidio) ? 88 : 74;
+
+    const vulnerabilidadesDefault = [
+      {
+        titulo: `Ausencia de Ingeniería Financiera y Sustento Técnico para "${tema}"`,
+        impacto: 'CRÍTICO',
+        analisis: `La propuesta "${tema}"${actor} en ${lugar} carece de estudio de factibilidad técnica, cronograma real de ejecución y partida etiquetada en el Presupuesto de Egresos Municipal de ${muni}.`
+      },
+      {
+        titulo: `Desconexión con las Carencias Reales (CONEVAL / INEGI) de ${muni}`,
+        impacto: 'ALTO',
+        analisis: `Mientras los indicadores oficiales de ${muni} exigen atención urgente en servicios básicos, agua potable y seguridad vecinal, "${tema}" desvía la atención y el gasto público sin resolver el dolor cotidiano de las colonias.`
+      },
+      {
+        titulo: `Riesgo de Conflicto Social, Gremial y Amparos Ciudadanos en ${lugar}`,
+        impacto: 'ALTO',
+        analisis: `La imposición unilateral de "${tema}" sin consulta ciudadana previa detonará resistencia inmediata en ${lugar}, bloqueos gremiales y suspensión judicial.`
+      }
+    ];
+
+    const contradiccionesDefault = [
+      {
+        normaOpresupuesto: 'Ley de Disciplina Financiera de las Entidades Federativas y los Municipios (Art. 8 y 13)',
+        contradiccion: `Toda propuesta como "${tema}" que comprometa recursos públicos sin fuente de ingresos adicional o techo presupuestal en FAISMUN/FORTAMUN viola el balance presupuestario sostenible de ${muni}.`,
+        golpeDebate: `"¿De qué partida exacta del presupuesto de ${muni} van a sacar el dinero para '${tema}', o qué servicio básico le van a recortar a las colonias para financiar su ocurrencia?"`
+      },
+      {
+        normaOpresupuesto: `Marco Constitucional (Art. 115 y 134 CPEUM) y Legislación de ${estado}`,
+        contradiccion: `El planteamiento de "${tema}" invade atribuciones operativas sin contar con dictamen de impacto regulatorio, ambiental ni hacendario en ${muni}.`,
+        golpeDebate: `"Su propuesta de '${tema}' no aguanta ni 24 horas en tribunales: prometen lo que la ley y el presupuesto municipal de ${muni} les prohíben."`
+      }
+    ];
+
+    const matrizContraNarrativaDefault = [
+      {
+        narrativaRival: `${rival} promete resultados inmediatos con "${tema}" en ${lugar}`,
+        realidadTecnica: `Datos de SHCP, CONEVAL e INEGI en ${muni} demuestran que sin presupuesto etiquetado ni factibilidad técnica, el proyecto es un engaño electoral.`,
+        contraAtaque: `Exhibir con infografía oficial el costo real y la falta de sustento financiero de "${tema}" en todos los grupos vecinales de ${muni}.`
+      },
+      {
+        narrativaRival: `Afirman que "${tema}" beneficiará a toda la población de ${muni}`,
+        realidadTecnica: `El ${rechazoEstimado}% de los sectores productivos y vecinales de ${lugar} quedan excluidos o afectados colateralmente.`,
+        contraAtaque: `Contrastar en tierra y debates con nuestra propuesta técnica verificada y respaldada por indicadores oficiales.`
+      },
+      {
+        narrativaRival: `Intentan minimizar el impacto presupuestal y operativo de "${tema}"`,
+        realidadTecnica: `Comprometería recursos de obras prioritarias de agua, alumbrado y seguridad en las secciones electorales de ${muni}.`,
+        contraAtaque: `Activar el Escudo de las 20 Preguntas en debates y entrevistas para acorralar públicamente al vocero de ${rival}.`
+      }
+    ];
 
     const sectoresAgraviados = (dc.sectoresAfectados && dc.sectoresAfectados.length >= 2)
       ? dc.sectoresAfectados.slice(0, 3).map((s, i) => ({
@@ -914,54 +946,98 @@ class DefenseAndAttackEngine {
           motivo: `Rechazo directo a las consecuencias de "${tema}"${actor} en ${lugar}.`
         }))
       : [
-          { sector: `Vecinos y Familias de ${lugar}`, nivelFriccion: '90% de Oposición', motivo: `Afectación directa por la imposición de "${tema}".` },
-          { sector: 'Sindicatos, Trabajadores y Gremios Locales', nivelFriccion: '85% de Oposición', motivo: `Falta de consulta y riesgo laboral derivado de "${tema}".` },
-          { sector: 'Jóvenes, Académicos y Sociedad Civil', nivelFriccion: '81% de Oposición', motivo: `Inviabilidad legal, presupuestal y social de "${tema}".` }
+          { sector: `Vecinos y Familias de ${lugar}`, nivelFriccion: '90% de Oposición', motivo: `Afectación directa por la imposición e inviabilidad de "${tema}".` },
+          { sector: 'Sindicatos, Trabajadores y Gremios Locales', nivelFriccion: '85% de Oposición', motivo: `Falta de consulta y riesgo laboral/operativo derivado de "${tema}".` },
+          { sector: 'Jóvenes, Comerciantes y Contribuyentes', nivelFriccion: '81% de Oposición', motivo: `Inviabilidad legal, presupuestal y social de "${tema}" en ${muni}.` }
         ];
 
     const planCaptura = {
       focoTerritorial: `Despliegue inmediato en ${lugar} con los sectores agraviados por "${tema}"`,
       lugaresVisita: [
         `Asamblea abierta a las 08:00 AM en ${lugar} con vecinos y trabajadores afectados por "${tema}"`,
-        `Conferencia de prensa y mesa jurídica a las 12:00 PM con sindicatos y especialistas para exhibir la ilegalidad de "${tema}"`,
-        `Recorrido territorial a las 17:00 PM en colonias de ${muni} firmando el compromiso de cancelación definitiva de "${tema}"`
+        `Conferencia de prensa y mesa jurídica a las 12:00 PM con sindicatos y especialistas para exhibir la inviabilidad de "${tema}"`,
+        `Recorrido territorial a las 17:00 PM en colonias de ${muni} presentando la alternativa viable frente a "${tema}"`
       ],
-      promesaCompromiso: `Compromiso firmado ante la ciudadanía de ${lugar} para frenar jurídica y políticamente "${tema}" de ${rival}, protegiendo el patrimonio, el medio ambiente y el bolsillo familiar.`
+      promesaCompromiso: `Compromiso firmado ante la ciudadanía de ${lugar} para frenar jurídica y políticamente "${tema}" de ${rival}, protegiendo el presupuesto público, los servicios básicos y el bolsillo familiar.`
     };
 
     const soundbites = [
       `"Pretender imponer '${tema}'${actor} en ${lugar} demuestra que ${rival} perdió el piso y gobierna de espaldas a la ciudadanía."`,
-      `"Más del ${rechazoEstimado}% de la gente en ${lugar} rechaza '${tema}': es legalmente inviable, socialmente injusto y políticamente insostenible."`,
-      `"Mientras las familias de ${muni} exigen agua, seguridad y empleo digno, ${rival} sale con la ocurrencia de '${tema}'."`,
-      `"Con nuestro patrimonio, nuestros árboles, nuestra Constitución y el trabajo de la gente de ${lugar} no se juega: vamos a frenar '${tema}' con la ley en la mano."`,
-      `"Que se escuche fuerte en ${lugar}: donde ${rival} ofrece imposición y conflicto sindical con '${tema}', nosotros ofrecemos soluciones legales y consenso ciudadano."`
+      `"Más del ${rechazoEstimado}% de la gente en ${lugar} rechaza '${tema}': es legalmente inviable, financieramente insostenible y socialmente injusto."`,
+      `"Mientras las familias de ${muni} exigen agua, seguridad y servicios reales, ${rival} sale con la ocurrencia sin sustento de '${tema}'."`,
+      `"Que respondan con números: ¿a qué colonia de ${muni} le van a quitar presupuesto de agua o seguridad para pagar '${tema}'?"`,
+      `"Que se escuche fuerte en ${lugar}: donde ${rival} ofrece improvisación y conflicto con '${tema}', nosotros ofrecemos ingeniería financiera, legalidad y resultados medibles."`
     ];
 
     const guionDebate = {
-      apertura: `Representante de ${rival}: su planteamiento de "${tema}"${actor} en ${lugar} ha encendido un ${rechazoEstimado}% de rechazo social y alerta roja sindical porque atenta directamente contra el interés público.`,
-      demolicionTecnica: `El dictamen jurídico y presupuestal demuestra que "${tema}" viola marcos constitucionales y normativos vigentes, carece de respaldo técnico y detonará paros y amparos inmediatos en ${lugar}.`,
-      contrasteEmocional: `Ustedes ven en "${tema}" un cálculo de cúpula; nosotros vemos la indignación legítima de las familias, estudiantes y trabajadores de ${lugar} que defienden su patrimonio y su futuro.`,
-      cierreContundente: `A ese ${rechazoEstimado}% de ciudadanos que hoy rechazan "${tema}" de ${rival} les decimos: no están solos. Vamos a detener este atropello y a poner los recursos públicos al servicio real de ${muni}.`
+      apertura: `Representante de ${rival}: su planteamiento de "${tema}"${actor} en ${lugar} ha encendido un ${rechazoEstimado}% de rechazo social porque carece de sustento técnico y atenta contra las prioridades de ${muni}.`,
+      demolicionTecnica: `El dictamen jurídico y presupuestal demuestra que "${tema}" viola la Ley de Disciplina Financiera, carece de partida en FAISMUN/FORTAMUN y detonará paros e inconformidad inmediata en ${lugar}.`,
+      contrasteEmocional: `Ustedes ven en "${tema}" un eslogan vacío; nosotros vemos la urgencia real de las familias, comerciantes y trabajadores de ${lugar} que exigen soluciones serias y auditables.`,
+      cierreContundente: `A ese ${rechazoEstimado}% de ciudadanos que hoy cuestionan "${tema}" de ${rival} les decimos: aquí hay rumbo, rigor técnico y compromiso total con ${muni}.`
     };
 
     const contrapropuestaGanadora = {
-      titulo: `Blindaje Ciudadano, Legal y Sustentable frente a "${tema}" en ${lugar}`,
-      resumen: `Abrogación inmediata de cualquier medida regresiva o destructiva contenida en "${tema}", sustituyéndola por un Plan Maestro de Preservación, Inversión Social y Concertación Sindical construido en consulta vinculante con los habitantes de ${lugar}.`,
-      ventajaCompetitiva: `Capitaliza el ${rechazoEstimado}% de descontento ciudadano contra ${rival}, desactiva el paro sindical y posiciona a nuestra plataforma como garante de la ley y del interés colectivo.`
+      titulo: `Plan Maestro Viable, Legal y Auditado frente a "${tema}" en ${lugar}`,
+      resumen: `Sustitución de la ocurrencia "${tema}" por un programa con techo presupuestal etiquetado, auditoría ciudadana del INEGI/CONEVAL y concertación con los sectores productivos de ${lugar}.`,
+      ventajaCompetitiva: `Capitaliza el ${rechazoEstimado}% de rechazo ciudadano contra ${rival}, garantiza viabilidad jurídica y posiciona a nuestra plataforma con soluciones reales para ${muni}.`
     };
+
+    if (aiAttackData && (Array.isArray(aiAttackData.soundbites) || aiAttackData.guionDebate || Array.isArray(aiAttackData.vulnerabilidadesEstructurales))) {
+      const vuln = Array.isArray(aiAttackData.vulnerabilidadesEstructurales) && aiAttackData.vulnerabilidadesEstructurales.length > 0
+        ? aiAttackData.vulnerabilidadesEstructurales
+        : vulnerabilidadesDefault;
+      const contraLeg = Array.isArray(aiAttackData.contradiccionesLegalesPresupuestales) && aiAttackData.contradiccionesLegalesPresupuestales.length > 0
+        ? aiAttackData.contradiccionesLegalesPresupuestales
+        : contradiccionesDefault;
+      const matContra = Array.isArray(aiAttackData.matrizContraNarrativa) && aiAttackData.matrizContraNarrativa.length > 0
+        ? aiAttackData.matrizContraNarrativa
+        : matrizContraNarrativaDefault;
+      const guion = aiAttackData.guionDebate || guionDebate;
+      const contraProp = aiAttackData.contrapropuestaGanadora || contrapropuestaGanadora;
+
+      return {
+        partidoRival: rival,
+        municipio: muni,
+        estado,
+        temaCentralAnclado: tema,
+        propuestaAnalizada: propuestaRivalTexto,
+        rechazoEstimado: typeof aiAttackData.rechazoEstimado === 'number' ? aiAttackData.rechazoEstimado : rechazoEstimado,
+        aprobacionRival: typeof aiAttackData.aprobacionRival === 'number' ? aiAttackData.aprobacionRival : (100 - rechazoEstimado),
+        vulnerabilidadesEstructurales: vuln,
+        fallasEstructurales: vuln.map(v => `${v.titulo}: ${v.analisis}`),
+        contradiccionesLegalesPresupuestales: contraLeg,
+        sectoresAgraviados: Array.isArray(aiAttackData.sectoresAgraviados) && aiAttackData.sectoresAgraviados.length > 0 ? aiAttackData.sectoresAgraviados : sectoresAgraviados,
+        matrizContraNarrativa: matContra,
+        planCaptura: aiAttackData.planCaptura || planCaptura,
+        soundbites: Array.isArray(aiAttackData.soundbites) && aiAttackData.soundbites.length > 0 ? aiAttackData.soundbites : soundbites,
+        guionDebate: guion,
+        guionesDebate: [guion.apertura, guion.demolicionTecnica, guion.contrasteEmocional, guion.cierreContundente].filter(Boolean),
+        contrapropuestaGanadora: contraProp,
+        propuestaSuperadora: `${contraProp.titulo}: ${contraProp.resumen}`,
+        iaGenerada: true
+      };
+    }
 
     return {
       partidoRival: rival,
       municipio: muni,
       estado,
       temaCentralAnclado: tema,
+      propuestaAnalizada: propuestaRivalTexto,
       rechazoEstimado,
       aprobacionRival: 100 - rechazoEstimado,
+      vulnerabilidadesEstructurales: vulnerabilidadesDefault,
+      fallasEstructurales: vulnerabilidadesDefault.map(v => `${v.titulo}: ${v.analisis}`),
+      contradiccionesLegalesPresupuestales: contradiccionesDefault,
       sectoresAgraviados,
+      matrizContraNarrativa: matrizContraNarrativaDefault,
       planCaptura,
       soundbites,
       guionDebate,
-      contrapropuestaGanadora
+      guionesDebate: [guionDebate.apertura, guionDebate.demolicionTecnica, guionDebate.contrasteEmocional, guionDebate.cierreContundente],
+      contrapropuestaGanadora,
+      propuestaSuperadora: `${contrapropuestaGanadora.titulo}: ${contrapropuestaGanadora.resumen}`,
+      iaGenerada: true
     };
   }
 }

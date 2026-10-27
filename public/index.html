@@ -1259,10 +1259,10 @@
     <!-- =====================================================================
          VISTA DEDICADA BOTÓN 2: MODO ATAQUE (CONTRA-NARRATIVAS, ESCUDO 20 PREGUNTAS, CONTENCIÓN DE CRISIS)
          ===================================================================== -->
-    <section id="hub-view-modo-ataque" class="hidden space-y-6">
-      <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-rose-500/40">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1.5">
+    <section id="hub-view-modo-ataque" class="hidden space-y-6 w-full max-w-none">
+      <div class="w-full max-w-none bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-rose-500/40">
+        <div class="w-full max-w-none flex flex-col gap-4 border-b border-rose-500/30 pb-5">
+          <div class="w-full max-w-none flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-black uppercase tracking-widest border border-rose-500/40">
                 ⚔️ CENTRO DE OPERACIONES OFENSIVAS Y DEFENSIVAS • IA EN TIEMPO REAL
@@ -1271,14 +1271,18 @@
                 INE + IEEM
               </span>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black tracking-tight">2. Modo Ataque, Contra-Narrativas y Escudo de las 20 Preguntas</h2>
-            <p class="text-xs sm:text-sm text-rose-200 max-w-3xl">
-              Genera en tiempo real vectores de contraste quirúrgico contra el adversario, protocolo de contención de crisis en las primeras 2 horas y el Escudo de las 20 Preguntas más letales de prensa y debates.
+            <button type="button" onclick="switchCommandHub('war-room')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black border border-slate-600 transition-all cursor-pointer">
+              ← Volver al War Room
+            </button>
+          </div>
+          <div class="w-full max-w-none block space-y-2">
+            <h2 class="w-full max-w-none text-2xl sm:text-3xl font-black tracking-tight whitespace-normal leading-tight">
+              2. Modo Ataque Quirúrgico, Contra-Narrativas y Escudo de las 20 Preguntas
+            </h2>
+            <p class="w-full max-w-none text-xs sm:text-sm text-rose-200 whitespace-normal leading-relaxed">
+              Ingresa cualquier propuesta (del candidato o del adversario) para ejecutar un ataque quirúrgico, certero y despiadado con IA en tiempo real: vulnerabilidades estructurales, contradicciones legales/presupuestales, flancos de rechazo social, líneas de golpe mediático para debates, matrices de contra-narrativa y el Escudo de las 20 Preguntas más letales con sus respuestas de blindaje.
             </p>
           </div>
-          <button type="button" onclick="switchCommandHub('war-room')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black border border-slate-600 transition-all cursor-pointer shrink-0">
-            ← Volver al War Room
-          </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 bg-slate-900/90 p-4 rounded-2xl border border-rose-500/30">
@@ -1346,7 +1350,7 @@
           </div>
           <div class="sm:col-span-2 lg:col-span-4">
             <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Propuesta Propia o Tema de Crisis a Blindar / Contrastar</label>
-            <input type="text" id="atk-input-propuesta" placeholder="Ej. Programa de Seguridad Municipal con Drones, Rehabilitación Hidráulica y Transporte Limpio..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white">
+            <input type="text" id="atk-input-propuesta" onkeydown="if(event.key==='Enter'){event.preventDefault();runLiveStandaloneAttackMode();}" placeholder="Ej. Programa de Seguridad Municipal con Drones, Rehabilitación Hidráulica y Transporte Limpio..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white">
           </div>
         </div>
       </div>
@@ -1357,10 +1361,10 @@
     <!-- =====================================================================
          VISTA DEDICADA BOTÓN 3: AUDITORÍA DE PERSONAL INSACULADO (ENCARTE INE + CRUCE DE NÓMINA PÚBLICA PNT)
          ===================================================================== -->
-    <section id="hub-view-insaculados" class="hidden space-y-6">
-      <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-amber-300 shadow-xl space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div class="space-y-1">
+    <section id="hub-view-insaculados" class="hidden space-y-6 w-full max-w-none">
+      <div class="w-full max-w-none card-pvem p-6 sm:p-8 bg-white border-2 border-amber-300 shadow-xl space-y-6">
+        <div class="w-full max-w-none flex flex-col gap-4 border-b border-slate-200 pb-5">
+          <div class="w-full max-w-none flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-300">
                 🔍 PADRÓN ENCARTE INE + CRUCE DE NÓMINA PÚBLICA PNT (ART. 83 LGIPE) • TEMPERATURE 0.0
@@ -1369,21 +1373,28 @@
                 INE + IEEM
               </span>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+            <button type="button" onclick="switchCommandHub('war-room')" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
+              ← Volver al War Room
+            </button>
+          </div>
+          <div class="w-full max-w-none block space-y-2">
+            <h2 class="w-full max-w-none text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 whitespace-normal leading-tight">
               3. Auditoría de Personal Insaculado y Funcionarios de Casilla (Cruce PNT y Programas Sociales)
             </h2>
-            <p class="text-xs text-slate-600 max-w-3xl">
+            <p class="w-full max-w-none text-xs sm:text-sm text-slate-600 whitespace-normal leading-relaxed">
               Selecciona Estado, Municipio, Sección Electoral y Tipo de Casilla desde las listas desplegables oficiales (Cero Escritura Manual). El sistema consulta la estructura del <strong class="text-slate-900">ENCARTE INE</strong> y valida contra la <strong class="text-amber-900">Plataforma Nacional de Transparencia (PNT)</strong>, Nómina Municipal/Estatal y Padrón de Operadores de Programas Sociales (<strong class="text-rose-700">Servidores de la Nación, directores, subdirectores</strong>), disparando una <strong class="text-rose-700">Alerta Legal de Inelegibilidad</strong> con sustento jurídico real.
             </p>
           </div>
-          <div class="flex items-center gap-2 flex-wrap shrink-0">
-            <button type="button" onclick="loadOfficialEncarteForCasilla()" class="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-black border border-amber-300 transition-all cursor-pointer">
-              📋 Cargar Padrón ENCARTE / PNT de Casilla
-            </button>
-            <button type="button" onclick="addInsaculadoCandidateRow()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
-              ➕ Agregar Funcionario
-            </button>
-            <button type="button" id="btn-run-insaculados-ai" onclick="runLiveInsaculadosAudit()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
+          <div class="w-full max-w-none flex flex-wrap items-center justify-between gap-2 pt-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="loadOfficialEncarteForCasilla()" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-black border border-amber-300 transition-all cursor-pointer">
+                📋 Cargar Padrón ENCARTE / PNT de Casilla
+              </button>
+              <button type="button" onclick="addInsaculadoCandidateRow()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
+                ➕ Agregar Funcionario
+              </button>
+            </div>
+            <button type="button" id="btn-run-insaculados-ai" onclick="runLiveInsaculadosAudit()" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
               🔍 Auditar Elegibilidad Legal IA (PNT / LGIPE)
             </button>
           </div>
@@ -1638,10 +1649,10 @@
     <!-- =====================================================================
          VISTA DEDICADA BOTÓN 4: MANUAL DE CAPACITACIÓN (AUTO-ACTUALIZACIÓN CADA 24 HORAS)
          ===================================================================== -->
-    <section id="hub-view-manual-capacitacion" class="hidden space-y-6">
-      <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-indigo-300 shadow-xl space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div class="space-y-1">
+    <section id="hub-view-manual-capacitacion" class="hidden space-y-6 w-full max-w-none">
+      <div class="w-full max-w-none card-pvem p-6 sm:p-8 bg-white border-2 border-indigo-300 shadow-xl space-y-6">
+        <div class="w-full max-w-none flex flex-col gap-4 border-b border-slate-200 pb-5">
+          <div class="w-full max-w-none flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
                 📘 MANUAL OPERATIVO Y DE LIDERAZGO • AUTO-ACTUALIZACIÓN NORMATIVA CADA 24 HORAS
@@ -1650,15 +1661,20 @@
                 INE + IEEM
               </span>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+            <button type="button" onclick="switchCommandHub('war-room')" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
+              ← Volver al War Room
+            </button>
+          </div>
+          <div class="w-full max-w-none block space-y-2">
+            <h2 class="w-full max-w-none text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 whitespace-normal leading-tight">
               4. Manual de Capacitación para Coordinadores (Con Auto-Actualización cada 24h INE / DOF / TEPJF / OPLE)
             </h2>
-            <p class="text-xs text-slate-600 max-w-3xl">
+            <p class="w-full max-w-none text-xs sm:text-sm text-slate-600 whitespace-normal leading-relaxed">
               Genera en tiempo real un manual integral que instruye al Coordinador sobre <strong class="text-indigo-900">cómo dirigir, motivar y tratar con respeto y liderazgo a su gente</strong>, además de <strong class="text-emerald-800">qué SÍ hacer</strong> y <strong class="text-rose-800">qué NO hacer</strong> conforme a la LGIPE, el INE, el DOF, el TEPJF y el OPLE del Estado seleccionado.
             </p>
           </div>
-          <div class="flex items-center gap-2 flex-wrap shrink-0">
-            <button type="button" onclick="forceCheckManualNormativeUpdates24h()" class="px-3.5 py-2.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 text-xs font-black border border-emerald-300 transition-all cursor-pointer">
+          <div class="w-full max-w-none flex flex-wrap items-center justify-between gap-2 pt-2">
+            <button type="button" onclick="forceCheckManualNormativeUpdates24h()" class="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 text-xs font-black border border-emerald-300 transition-all cursor-pointer">
               🔄 Verificar Reformas Ahora (24h Cron)
             </button>
             <button type="button" id="btn-run-training-manual-ai" onclick="runLiveTrainingManualGenerator()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
@@ -3154,10 +3170,10 @@
   </div>
 
   <!-- SCRIPTS DE LA APLICACIÓN (CACHE-BUSTED v5.2.0) -->
-  <script src="/js/selfHealingAgent.js?v=5.2.0"></script>
-  <script src="/js/components.js?v=5.2.0"></script>
-  <script src="/js/planMaestroPdfExport.js?v=5.1.0"></script>
-  <script src="/js/pdfExport.js?v=5.1.0"></script>
-  <script src="/js/app.js?v=5.1.0"></script>
+  <script src="/js/selfHealingAgent.js?v=5.8.0"></script>
+  <script src="/js/components.js?v=5.8.0"></script>
+  <script src="/js/planMaestroPdfExport.js?v=5.8.0"></script>
+  <script src="/js/pdfExport.js?v=5.8.0"></script>
+  <script src="/js/app.js?v=5.8.0"></script>
 </body>
 </html>
