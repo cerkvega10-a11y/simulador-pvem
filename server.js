@@ -62,11 +62,20 @@ const aiIntegrityAuditorAgent = require('./src/agents/aiIntegrityAuditorAgent');
 const codeExecutionAuditAgent = require('./src/agents/codeExecutionAuditAgent');
 const aiConnectionAuditorAgent = require('./src/agents/aiConnectionAuditorAgent');
 const codeHealthInspectorAgent = require('./src/agents/codeHealthInspectorAgent');
+const antiHallucinationFactCheckerAgent = require('./src/agents/antiHallucinationFactCheckerAgent');
+const electoralManualScheduler = require('./src/services/electoralManualScheduler');
+const webResearchAgent = require('./src/agents/webResearchAgent');
 const {
   OPLES_NATIONAL_CATALOG,
   getOpleByState,
   getOfficialVerifiableLinksForState
 } = require('./src/data/oplesNationalCatalog');
+const {
+  TIPOS_CASILLA_INE,
+  getMunicipalitiesListForState,
+  getElectoralSectionsForMunicipality,
+  getEncarteAndPntBaseForCasilla
+} = require('./src/data/ineSectionsAndEncarteCatalog');
 const selfHealingAgent = require('./src/agents/selfHealingAgent');
 const persistentDatabase = require('./src/services/persistentDatabase');
 
@@ -1146,7 +1155,7 @@ app.post('/api/crisis-test', async (req, res) => {
 });
 
 // =========================================================================
-// 8.5. CATÁLOGO DINÁMICO DE LOS 32 OPLEs + INE Y ENLACES VERIFICABLES
+// 8.5. CATÁLOGO DINÁMICO DE LOS 32 OPLEs + INE, MUNICIPIOS, SECCIONES Y ENCARTE / PNT
 // =========================================================================
 app.get('/api/oples', (req, res) => {
   try {
@@ -1165,8 +1174,63 @@ app.get('/api/oples', (req, res) => {
   }
 });
 
+// Lista en cascada de Municipios y Secciones Electorales Reales por Estado/Municipio (Cero Texto Libre)
+app.get('/api/catalog/municipalities', (req, res) => {
+  try {
+    const { estado = 'Estado de México' } = req.query || {};
+    const ople = getOpleByState(estado);
+    const municipios = getMunicipalitiesListForState(estado);
+    const primerMunicipio = municipios[0] || 'Texcoco';
+    const seccionesData = getElectoralSectionsForMunicipality(estado, primerMunicipio);
+    res.json({
+      success: true,
+      estado,
+      ople,
+      municipios,
+      primerMunicipio,
+      seccionesPrimerMunicipio: seccionesData,
+      tiposCasilla: TIPOS_CASILLA_INE
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/catalog/sections', (req, res) => {
+  try {
+    const { estado = 'Estado de México', municipio = 'Texcoco' } = req.query || {};
+    const seccionesData = getElectoralSectionsForMunicipality(estado, municipio);
+    res.json({
+      success: true,
+      ...seccionesData,
+      tiposCasilla: TIPOS_CASILLA_INE
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/catalog/encarte-casilla', (req, res) => {
+  try {
+    const {
+      estado = 'Estado de México',
+      municipio = 'Texcoco',
+      seccion = '4612',
+      tipoCasilla = 'Básica',
+      nombre = ''
+    } = req.query || {};
+    const encarteData = getEncarteAndPntBaseForCasilla(estado, municipio, seccion, tipoCasilla, nombre);
+    res.json({
+      success: true,
+      ...encarteData
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // =========================================================================
-// 8.6. MÓDULO DE REDES SOCIALES MULTIPLATAFORMA (FB, IG, TIKTOK + HASHTAGS + RADAR BOTS)
+// 8.6. MÓDULO DE REDES SOCIALES MULTIPLATAFORMA (FB, IG, TIKTOK + REAL-TIME GROUNDING DEL DÍA)
 // =========================================================================
 app.post('/api/ai/social-media-pulse', async (req, res) => {
   try {
@@ -1180,12 +1244,21 @@ app.post('/api/ai/social-media-pulse', async (req, res) => {
     } = req.body || {};
 
     const opleInfo = getOpleByState(estado);
+    const realTimeWebContext = await webResearchAgent.conductResearch(
+      estado,
+      municipio,
+      '',
+      propuestaTexto || `Coyuntura política y social en ${municipio}, ${estado}`,
+      true
+    );
+
     const result = await freeLLMService.generateDigitalTrendsWithLLM({
       propuestaTexto: propuestaTexto || `Estrategia territorial de campaña en ${municipio}, ${estado}`,
       candidato,
       municipio,
       estado,
       partido,
+      realTimeWebContext,
       aiConfig
     });
 
@@ -1196,14 +1269,22 @@ app.post('/api/ai/social-media-pulse', async (req, res) => {
       });
     }
 
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('social-media-pulse', result, { estado, municipio });
+
     res.json({
       success: true,
       aiGenerated: true,
       estado,
       municipio,
       ople: opleInfo,
-      socialPulse: result,
-      fuentesVerificables: getOfficialVerifiableLinksForState(estado, municipio)
+      realTimeContextSummary: {
+        fechaCorte: realTimeWebContext.fechaCorte,
+        problematicasDelDia: realTimeWebContext.top5Problematicas,
+        coloniasMonitoreadas: realTimeWebContext.coloniasRepresentativas
+      },
+      socialPulse: audited,
+      certificadoAntiAlucinacion: audited.certificadoAntiAlucinacion,
+      fuentesVerificables: audited.fuentesVerificables
     });
   } catch (error) {
     console.error('Error en POST /api/ai/social-media-pulse:', error);
@@ -1245,13 +1326,16 @@ app.post('/api/ai/electoral-law-audit', async (req, res) => {
       });
     }
 
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('electoral-law', auditResult, { estado, municipio });
+
     res.json({
       success: true,
       aiGenerated: true,
       estado,
       municipio,
       ople: opleInfo,
-      legalAudit: auditResult
+      legalAudit: audited,
+      certificadoAntiAlucinacion: audited.certificadoAntiAlucinacion
     });
   } catch (error) {
     console.error('Error en POST /api/ai/electoral-law-audit:', error);
@@ -1260,7 +1344,7 @@ app.post('/api/ai/electoral-law-audit', async (req, res) => {
 });
 
 // =========================================================================
-// 8.8. HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE AÑO Y SECCIÓN ELECTORAL
+// 8.8. HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE MUNICIPIO Y SECCIÓN EN LISTA COMPLETA
 // =========================================================================
 app.post('/api/ai/electoral-history', async (req, res) => {
   try {
@@ -1274,12 +1358,16 @@ app.post('/api/ai/electoral-history', async (req, res) => {
     } = req.body || {};
 
     const opleInfo = getOpleByState(estado);
+    const seccionesCatalogo = getElectoralSectionsForMunicipality(estado, municipio);
+
     const historyResult = await freeLLMService.generateElectoralHistoryWithLLM({
       estado,
       municipio,
       anioEleccion,
       partidoFiltro,
       seccionFiltro,
+      seccionesRealesCatalogadas: seccionesCatalogo.secciones,
+      rangoOficialINE: seccionesCatalogo.rangoOficialINE,
       opleInfo,
       aiConfig
     });
@@ -1291,6 +1379,8 @@ app.post('/api/ai/electoral-history', async (req, res) => {
       });
     }
 
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('electoral-history', historyResult, { estado, municipio });
+
     res.json({
       success: true,
       aiGenerated: true,
@@ -1298,8 +1388,10 @@ app.post('/api/ai/electoral-history', async (req, res) => {
       municipio,
       anioEleccion,
       ople: opleInfo,
-      history: historyResult,
-      fuentesVerificables: getOfficialVerifiableLinksForState(estado, municipio)
+      catalogoSeccionesMunicipio: seccionesCatalogo,
+      history: audited,
+      certificadoAntiAlucinacion: audited.certificadoAntiAlucinacion,
+      fuentesVerificables: audited.fuentesVerificables
     });
   } catch (error) {
     console.error('Error en POST /api/ai/electoral-history:', error);
@@ -1308,24 +1400,36 @@ app.post('/api/ai/electoral-history', async (req, res) => {
 });
 
 // =========================================================================
-// 8.9. AUDITORÍA DE PERSONAL INSACULADO VS VOLUNTARIOS DE CASILLA (BOTÓN 3)
+// 8.9. AUDITORÍA DE PERSONAL INSACULADO (ENCARTE INE + NÓMINA PÚBLICA PNT - BOTÓN 3)
 // =========================================================================
 app.post('/api/ai/insaculados-audit', async (req, res) => {
   try {
     const {
       estado = 'Estado de México',
       municipio = 'Texcoco',
-      casillaSeccion = 'Sección 4310 - Casilla Básica 01',
+      seccion = '4612',
+      tipoCasilla = 'Básica',
+      casillaSeccion = '',
+      nombreBusqueda = '',
       funcionarios = [],
       aiConfig = {}
     } = req.body || {};
 
     const opleInfo = getOpleByState(estado);
+    const encarteBase = getEncarteAndPntBaseForCasilla(estado, municipio, seccion, tipoCasilla, nombreBusqueda);
+    const finalFuncionarios = Array.isArray(funcionarios) && funcionarios.length > 0
+      ? funcionarios
+      : encarteBase.funcionariosCasilla;
+    const labelCasilla = casillaSeccion || `Sección ${seccion} — Casilla ${tipoCasilla} (${encarteBase.coloniaUbicacion})`;
+
     const auditResult = await freeLLMService.generateInsaculadosAuditWithLLM({
       estado,
       municipio,
-      casillaSeccion,
-      funcionarios,
+      seccion,
+      tipoCasilla,
+      casillaSeccion: labelCasilla,
+      nombreBusqueda,
+      funcionarios: finalFuncionarios,
       opleInfo,
       aiConfig
     });
@@ -1337,13 +1441,19 @@ app.post('/api/ai/insaculados-audit', async (req, res) => {
       });
     }
 
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('insaculados-audit', auditResult, { estado, municipio });
+
     res.json({
       success: true,
       aiGenerated: true,
       estado,
       municipio,
+      seccion,
+      tipoCasilla,
       ople: opleInfo,
-      insaculadosAudit: auditResult
+      encarteMetadata: encarteBase,
+      insaculadosAudit: audited,
+      certificadoAntiAlucinacion: audited.certificadoAntiAlucinacion
     });
   } catch (error) {
     console.error('Error en POST /api/ai/insaculados-audit:', error);
@@ -1352,8 +1462,28 @@ app.post('/api/ai/insaculados-audit', async (req, res) => {
 });
 
 // =========================================================================
-// 8.10. MANUAL DE CAPACITACIÓN OPERATIVA Y LIDERAZGO PARA COORDINADORES (BOTÓN 4)
+// 8.10. MANUAL DE CAPACITACIÓN CON AUTO-ACTUALIZACIÓN CADA 24 HORAS (BOTÓN 4)
 // =========================================================================
+app.get('/api/ai/training-manual/auto-update-status', (req, res) => {
+  try {
+    const { estado = 'Estado de México' } = req.query || {};
+    const status = electoralManualScheduler.getStatusForState(estado, 'STATUS_CHECK');
+    res.json({ success: true, status });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/ai/training-manual/check-updates', (req, res) => {
+  try {
+    const { estado = 'Estado de México' } = req.body || {};
+    const status = electoralManualScheduler.runNormativeVerificationCycle('MANUAL_FORCE_SYNC_24H', estado);
+    res.json({ success: true, status });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/ai/training-manual', async (req, res) => {
   try {
     const {
@@ -1366,6 +1496,8 @@ app.post('/api/ai/training-manual', async (req, res) => {
     } = req.body || {};
 
     const opleInfo = getOpleByState(estado);
+    const autoUpdateStatus = electoralManualScheduler.runNormativeVerificationCycle('TRAINING_MANUAL_GENERATION', estado);
+
     const manualResult = await freeLLMService.generateTrainingManualWithLLM({
       estado,
       municipio,
@@ -1373,6 +1505,7 @@ app.post('/api/ai/training-manual', async (req, res) => {
       rolCoordinador,
       enfoqueEspecial,
       opleInfo,
+      autoUpdateStatus,
       aiConfig
     });
 
@@ -1383,13 +1516,17 @@ app.post('/api/ai/training-manual', async (req, res) => {
       });
     }
 
+    const audited = antiHallucinationFactCheckerAgent.auditAndSanitizeResponse('training-manual', manualResult, { estado, municipio });
+
     res.json({
       success: true,
       aiGenerated: true,
       estado,
       municipio,
       ople: opleInfo,
-      manual: manualResult
+      autoUpdate24h: autoUpdateStatus,
+      manual: audited,
+      certificadoAntiAlucinacion: audited.certificadoAntiAlucinacion
     });
   } catch (error) {
     console.error('Error en POST /api/ai/training-manual:', error);
@@ -1444,8 +1581,17 @@ app.post('/api/ai/attack-mode', async (req, res) => {
 });
 
 // =========================================================================
-// 8.12. AGENTES INSPECTORES INTERNOS (QA & AI AUDITORS)
+// 8.12. ARQUITECTURA DE 3 AGENTES INSPECTORES INTERNOS (ANTI-ALUCINACIÓN, IA Y CÓDIGO)
 // =========================================================================
+app.get('/api/audit/anti-hallucination', (req, res) => {
+  try {
+    const report = antiHallucinationFactCheckerAgent.getInspectorReport();
+    res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/audit/ai-connection', async (req, res) => {
   try {
     const ping = req.query.ping !== 'false';
@@ -1471,9 +1617,11 @@ app.get('/api/audit/full-inspectors', async (req, res) => {
       aiConnectionAuditorAgent.inspectAllModules({}, req.query.ping !== 'false'),
       Promise.resolve(codeHealthInspectorAgent.inspectCodeHealth())
     ]);
+    const antiHallucination = antiHallucinationFactCheckerAgent.getInspectorReport();
     res.json({
       success: true,
       timestamp: new Date().toISOString(),
+      antiHallucinationAuditor: antiHallucination,
       aiConnectionAuditor: aiConnection,
       codeHealthInspector: codeHealth
     });

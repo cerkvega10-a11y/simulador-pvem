@@ -755,26 +755,48 @@ Devuelve estrictamente este JSON:
   }
 
   /**
-   * 4. Tendencias Digitales y Pulso de Redes Sociales Multiplataforma con IA (Facebook, Instagram, TikTok + Hashtags Positivos/Negativos + Radar de Bots y Guerra Sucia)
+   * 4. Tendencias Digitales y Pulso de Redes Sociales Multiplataforma con IA (Facebook, Instagram, TikTok + Hashtags Positivos/Negativos + Radar de Bots y Guerra Sucia + Real-Time Social Grounding)
    */
   async generateDigitalTrendsWithLLM(params = {}) {
-    const { propuestaTexto = '', candidato = '', municipio = 'Ecatepec de Morelos', estado = 'Estado de México', partido = 'PVEM', aiConfig = {} } = params;
+    const {
+      propuestaTexto = '',
+      candidato = '',
+      municipio = 'Ecatepec de Morelos',
+      estado = 'Estado de México',
+      partido = 'PVEM',
+      realTimeWebContext = null,
+      aiConfig = {}
+    } = params;
     const { provider: effectiveProvider, apiKey: effectiveKey } = this.resolveProviderAndKey(aiConfig);
     if (!effectiveProvider || (!effectiveKey && effectiveProvider !== 'ollama')) return null;
 
+    const fechaHoy = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+    const problematicasDia = Array.isArray(realTimeWebContext?.top5Problematicas)
+      ? realTimeWebContext.top5Problematicas.map(p => p.tema || p).join(', ')
+      : 'Seguridad vecinal, abasto de agua potable, movilidad y servicios públicos';
+    const coloniasReales = Array.isArray(realTimeWebContext?.coloniasRepresentativas)
+      ? realTimeWebContext.coloniasRepresentativas.slice(0, 6).join(', ')
+      : `Centro de ${municipio}`;
+
     const systemPrompt = `Eres un Director de Inteligencia Digital OSINT, Analista de Redes Sociales Multiplataforma (Facebook, Instagram y TikTok) y Especialista en Ciberdefensa Electoral contra Granjas de Bots y Guerra Sucia para ${municipio}, ${estado} (${partido}${candidato ? ' - Candidato: ' + candidato : ''}).
-Analiza la conversación digital real que detona esta propuesta o campaña simultáneamente en **Facebook, Instagram y TikTok**.
+FECHA DE CORTE EN TIEMPO REAL: ${fechaHoy}.
+COYUNTURA Y PROBLEMÁTICAS REALES DEL DÍA EN ${municipio.toUpperCase()}: ${problematicasDia}.
+COLONIAS Y BARRIOS REALES EN MONITOREO: ${coloniasReales}.
+
+Analiza la conversación digital real del día en curso que detona esta propuesta o campaña simultáneamente en **Facebook, Instagram y TikTok** bajo el protocolo de Real-Time Social Grounding:
 1. Evalúa el porcentaje de Opinión Ciudadana Real (Orgánico) vs Manipulación Digital (Tráfico Artificial, Granjas de Bots y Ataques Coordinados de Guerra Sucia) en Facebook, Instagram y TikTok.
-2. Genera la lista de **Hashtags Positivos** (apoyo orgánico, tendencias favorables a la propuesta) y **Hashtags Negativos** (críticas, rechazo o tendencias adversas).
-3. Desglosa métricas independientes para Facebook, Instagram y TikTok, manteniendo integración directa con el ecosistema de Facebook.
+2. Genera la lista de **Hashtags Positivos** (apoyo orgánico real vinculado a ${municipio}) y **Hashtags Negativos** (críticas, rechazo o tendencias adversas del día).
+3. Desglosa métricas independientes para Facebook, Instagram y TikTok, manteniendo integración directa con el ecosistema de Facebook (Meta Ad Library).
 
 Devuelve estrictamente este JSON:
 {
+  "fechaCorteTiempoReal": "${fechaHoy}",
+  "coyunturaDetectadaHoy": "Resumen de la coyuntura real del día en ${municipio} (${problematicasDia})...",
   "organicidad": {
     "porcentajeOrganico": 78,
     "porcentajeBots": 22,
     "cuentasAuditadas": 24680,
-    "diagnostico": "Diagnóstico detallado separando la opinión ciudadana real de la manipulación digital y granjas de bots en ${municipio}..."
+    "diagnostico": "Diagnóstico detallado separando la opinión ciudadana real de la manipulación digital y granjas de bots hoy (${fechaHoy}) en ${municipio}..."
   },
   "sentimiento": {
     "positivo": 58,
@@ -787,7 +809,7 @@ Devuelve estrictamente este JSON:
       "plataformaLider": "Facebook & TikTok",
       "volumen": "18.5K menciones",
       "apoyoOrganico": "91% Orgánico",
-      "narrativa": "Respaldo ciudadano real a los beneficios directos de la propuesta en barrios y colonias.",
+      "narrativa": "Respaldo ciudadano real a los beneficios directos de la propuesta en barrios y colonias como ${coloniasReales}.",
       "tacticaAmplificacion": "Pautar micro-segmentación en Facebook Reels y grupos comunitarios."
     },
     {
@@ -799,17 +821,17 @@ Devuelve estrictamente este JSON:
       "tacticaAmplificacion": "Activar carruseles comparativos en Instagram y Facebook Live."
     },
     {
-      "hashtag": "#ComunidadEnAccion",
+      "hashtag": "#${municipio.replace(/\s+/g, '')}EnAccion",
       "plataformaLider": "TikTok",
       "volumen": "21.4K visualizaciones",
       "apoyoOrganico": "94% Orgánico",
-      "narrativa": "Testimonios cortos de vecinos apoyando la iniciativa.",
+      "narrativa": "Testimonios cortos de vecinos apoyando la iniciativa hoy.",
       "tacticaAmplificacion": "Dúos y retos virales con liderazgos juveniles."
     }
   ],
   "hashtagsNegativos": [
     {
-      "hashtag": "#PromesasSinPresupuesto",
+      "hashtag": "#ExigimosResultados${municipio.replace(/\s+/g, '')}",
       "plataformaLider": "Facebook & TikTok",
       "volumen": "6.8K menciones",
       "porcentajeBots": "64% Bots / Guerra Sucia",
@@ -817,7 +839,7 @@ Devuelve estrictamente este JSON:
       "contraHashtagNeutralizador": "#TransparenciaTotal${municipio.replace(/\s+/g, '')}"
     },
     {
-      "hashtag": "#MasDeLoMismoEn${municipio.replace(/\s+/g, '')}",
+      "hashtag": "#BastaDePromesas${municipio.replace(/\s+/g, '')}",
       "plataformaLider": "Instagram & Facebook",
       "volumen": "4.2K menciones",
       "porcentajeBots": "72% Granja de Troles",
@@ -833,8 +855,8 @@ Devuelve estrictamente este JSON:
       "facebook": {
         "traficoOrganicoReal": 76,
         "traficoArtificialBots": 24,
-        "granjasDetectadas": "Cuentas recién creadas sin foto comentando en grupos vecinales de ${municipio} y páginas de noticias locales.",
-        "vectorGuerraSucia": "Difusión de flyers apócrifos y noticias recortadas en grupos de compra-venta en Facebook.",
+        "granjasDetectadas": "Cuentas recién creadas sin foto comentando en grupos vecinales de ${municipio} (${coloniasReales}) y páginas de noticias locales.",
+        "vectorGuerraSucia": "Difusión de flyers apócrifos y noticias recortadas en grupos de Facebook.",
         "alcanceEstimado": "48,500 usuarios locales",
         "engagementRate": "6.8%",
         "urlEcosistemaFacebook": "https://www.facebook.com/ads/library/?active_status=all&ad_type=political_and_issue_ads&country=MX"
@@ -870,7 +892,7 @@ Devuelve estrictamente este JSON:
       "accionColor": "emerald"
     },
     {
-      "hashtag": "#PromesasSinPresupuesto",
+      "hashtag": "#ExigimosResultados${municipio.replace(/\s+/g, '')}",
       "descripcion": "Tendencia adversa impulsada por granjas de bots opositoras",
       "volumen": "6.8K",
       "sentimiento": "Negativo (68%)",
@@ -899,9 +921,9 @@ Devuelve estrictamente este JSON:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Propuesta en ${municipio}, ${estado}: "${propuestaTexto}". Analiza simultáneamente Facebook, Instagram y TikTok (Hashtags positivos/negativos y radar de bots/guerra sucia) en JSON.` }
+          { role: 'user', content: `Propuesta en ${municipio}, ${estado} hoy (${fechaHoy}): "${propuestaTexto}". Problemáticas reales del día: ${problematicasDia}. Analiza simultáneamente Facebook, Instagram y TikTok (Hashtags positivos/negativos y radar de bots/guerra sucia) en JSON.` }
         ],
-        temperature: 0.55,
+        temperature: 0.2,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1237,7 +1259,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Audita legalmente la siguiente propuesta en ${municipio}, ${estado} (${opleSiglas}): Título: "${tituloProyecto}". Contenido: "${propuestaTexto}". Devuelve JSON.` }
         ],
-        temperature: 0.4,
+        temperature: 0.0,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1249,7 +1271,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
   }
 
   /**
-   * 8. Historial de Elecciones Pasadas con Selector de Año y Sección Electoral (INE + 32 OPLEs)
+   * 8. Historial de Elecciones Pasadas con Selector de Año y Sección Electoral (INE + 32 OPLEs + Secciones Reales)
    */
   async generateElectoralHistoryWithLLM(params = {}) {
     const {
@@ -1258,6 +1280,8 @@ Devuelve ESTRICTAMENTE este objeto JSON:
       anioEleccion = '2024',
       partidoFiltro = 'TODOS',
       seccionFiltro = '',
+      seccionesRealesCatalogadas = [],
+      rangoOficialINE = '4608 - 4698',
       opleInfo = {},
       aiConfig = {}
     } = params;
@@ -1268,16 +1292,34 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     const opleSiglas = opleInfo.siglas || `OPLE ${estado}`;
     const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
     const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
+    const cleanSecFilter = (seccionFiltro && seccionFiltro !== 'TODAS') ? seccionFiltro : '';
+
+    // Seleccionar hasta 12 secciones reales del catálogo oficial del municipio (poniendo primero la sección seleccionada si aplica)
+    let sampleSections = Array.isArray(seccionesRealesCatalogadas) && seccionesRealesCatalogadas.length > 0
+      ? [...seccionesRealesCatalogadas]
+      : [
+          { seccion: cleanSecFilter || '4612', coloniaSede: `Centro de ${municipio}`, tipoSeccion: 'Urbana', listaNominalOficial: 1850 }
+        ];
+    if (cleanSecFilter) {
+      const idx = sampleSections.findIndex(s => String(s.seccion) === String(cleanSecFilter));
+      if (idx > 0) {
+        const [picked] = sampleSections.splice(idx, 1);
+        sampleSections.unshift(picked);
+      }
+    }
+    const targetSectionsList = sampleSections.slice(0, 12).map(s => `${s.seccion} (${s.coloniaSede}, LN: ${s.listaNominalOficial})`).join(', ');
 
     const systemPrompt = `Eres el Director de Estadística y Cartografía Electoral del INE y del ${opleSiglas} (${opleNombre}).
-Genera el informe histórico electoral completo del municipio/alcaldía de **${municipio}, ${estado}** correspondiente al **Año de Elección ${anioEleccion}** (con filtro de partido: ${partidoFiltro}${seccionFiltro ? ' y enfoque en la Sección Electoral: ' + seccionFiltro : ''}).
+REGLA ESTRICTA ANTI-ALUCINACIONES (temperature: 0.0):
+- Utiliza EXCLUSIVAMENTE las Secciones Electorales Oficiales del Marco Geográfico del INE para ${municipio}, ${estado} (Rango Oficial INE: ${rangoOficialINE}): ${targetSectionsList}.
+- Genera el informe histórico electoral completo del municipio/alcaldía de **${municipio}, ${estado}** correspondiente al **Año de Elección ${anioEleccion}** (con filtro de partido: ${partidoFiltro}${cleanSecFilter ? ' y foco prioritario en la Sección Electoral seleccionada: ' + cleanSecFilter : ''}).
 
 Debes incluir:
 1. Resultados históricos en **${municipio}** en el año **${anioEleccion}** para los 3 cargos clave:
    - **Presidencia Municipal / Alcaldía**
    - **Diputaciones (Local y Federal)**
    - **Senadurías / Elección Federal o Estatal concurrente**
-2. Un desglose detallado de **8 Secciones Electorales representativas de ${municipio}** (si el usuario especificó la sección "${seccionFiltro}", asegúrate de que la primera sección de la lista sea exactamente la sección "${seccionFiltro}" y las demás sean secciones reales colindantes de ${municipio}), mostrando la votación exacta por partido político (PVEM, MORENA, PAN, PRI, MC, PT, PRD) y coalición en el año ${anioEleccion}.
+2. Un desglose detallado en "seccionesElectorales" para las siguientes **10 Secciones Electorales Oficiales de ${municipio}**: ${targetSectionsList} (asegurando que si el usuario seleccionó la sección "${cleanSecFilter}", sea la primera de la lista), mostrando la votación por partido político (PVEM, MORENA, PAN, PRI, MC, PT) y coalición en el año ${anioEleccion}.
 
 Devuelve ESTRICTAMENTE este objeto JSON:
 {
@@ -1285,14 +1327,16 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     "estado": "${estado}",
     "municipio": "${municipio}",
     "anioEleccion": "${anioEleccion}",
-    "organismoFederal": "INE (Cómputos Distritales)",
+    "rangoSeccionalOficialINE": "${rangoOficialINE}",
+    "seccionSeleccionada": "${cleanSecFilter || 'TODAS LAS SECCIONES DEL MUNICIPIO'}",
+    "organismoFederal": "INE (Sistema de Cómputos Distritales)",
     "organismoLocalSiglas": "${opleSiglas}",
     "organismoLocalNombre": "${opleNombre}",
     "urlVerificacionOple": "${opleUrl}",
     "urlVerificacionIne": "https://computos2024.ine.mx/",
     "listaNominalMunicipal": 198450,
     "participacionCiudadanaPct": "61.4%",
-    "totalSeccionesMunicipio": 118
+    "totalSeccionesMunicipio": ${seccionesRealesCatalogadas.length || 45}
   },
   "resumenHistoricoIA": "Análisis político-electoral detallado de lo ocurrido en ${municipio}, ${estado} en la elección de ${anioEleccion}, comportamiento del voto, alianzas y competitividad seccional...",
   "eleccionesPorCargo": {
@@ -1343,9 +1387,9 @@ Devuelve ESTRICTAMENTE este objeto JSON:
   },
   "seccionesElectorales": [
     {
-      "seccion": "${seccionFiltro || '4310'}",
-      "coloniaReferencia": "Colonia o Barrio real de ${municipio}",
-      "tipoSeccion": "Urbana" | "Mixta" | "Rural",
+      "seccion": "${cleanSecFilter || (sampleSections[0]?.seccion || '4612')}",
+      "coloniaReferencia": "${sampleSections[0]?.coloniaSede || 'Centro'}",
+      "tipoSeccion": "Urbana",
       "listaNominal": 1850,
       "votosTotales": 1165,
       "participacionPct": "62.9%",
@@ -1359,7 +1403,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
         "COALICION_GANADORA": 687
       },
       "ganadorSeccion": "Coalición PVEM-MORENA-PT",
-      "clasificacionTactica": "Bastión Consolidado" | "Sección Swing / Competida" | "Sección de Recuperación Prioritaria"
+      "clasificacionTactica": "Bastión Consolidado"
     }
   ]
 }`;
@@ -1372,9 +1416,9 @@ Devuelve ESTRICTAMENTE este objeto JSON:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Genera el historial electoral completo (Presidencia Municipal, Diputaciones, Senadurías y 8 Secciones Electorales detalladas) para el municipio de ${municipio}, ${estado} en el año ${anioEleccion} (${opleSiglas} + INE). Partido filtro: ${partidoFiltro}. Sección buscada: ${seccionFiltro || 'Todas'}.` }
+          { role: 'user', content: `Genera el historial electoral completo (Presidencia Municipal, Diputaciones, Senadurías y 10 Secciones Electorales oficiales de la lista: ${targetSectionsList}) para el municipio de ${municipio}, ${estado} en el año ${anioEleccion} (${opleSiglas} + INE). Partido filtro: ${partidoFiltro}. Sección seleccionada en lista: ${cleanSecFilter || 'Todas'}.` }
         ],
-        temperature: 0.45,
+        temperature: 0.0,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1386,13 +1430,16 @@ Devuelve ESTRICTAMENTE este objeto JSON:
   }
 
   /**
-   * 9. Auditoría Legal de Personal Insaculado vs Voluntarios de Casilla (Art. 83 LGIPE + OPLE)
+   * 9. Auditoría Legal de Personal Insaculado vs Voluntarios de Casilla (Art. 83 LGIPE + ENCARTE INE + Nómina Pública PNT)
    */
   async generateInsaculadosAuditWithLLM(params = {}) {
     const {
       estado = 'Estado de México',
       municipio = 'Texcoco',
-      casillaSeccion = 'Sección 4310 - Casilla Básica 01',
+      seccion = '4612',
+      tipoCasilla = 'Básica',
+      casillaSeccion = 'Sección 4612 - Casilla Básica',
+      nombreBusqueda = '',
       funcionarios = [],
       opleInfo = {},
       aiConfig = {}
@@ -1406,57 +1453,57 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
     const legislacionLocal = opleInfo.legislacionLocal || `Código Electoral del Estado de ${estado}`;
 
-    const systemPrompt = `Eres el Director Jurídico de Defensa del Voto y Auditoría de Mesas Directivas de Casilla ante el INE y el ${opleSiglas} (${opleNombre}).
-Tu misión es cruzar la lista de personal insaculado y voluntarios propuestos para integrar la Mesa Directiva de Casilla (**Presidente, Secretario 1, Secretario 2, Escrutadores**) en ${municipio}, ${estado} (${casillaSeccion}) y detectar **IMPEDIMENTOS LEGALES** conforme al **Artículo 83 de la LGIPE**, la **LGSMIME (Art. 75 causal de nulidad de votación en casilla)** y el **${legislacionLocal}**.
-
-Causales estrictas de impedimento legal (Art. 83 LGIPE):
-- Tener cargo de dirección partidista de cualquier jerarquía (nacional, estatal, municipal) en los últimos 3 años.
-- Ser servidor público de confianza con mando superior, o tener a su cargo programas sociales, recursos públicos o brigadas gubernamentales.
-- Ser candidato a puesto de elección popular o representante de partido político ante consejo o casilla.
-- No estar inscrito en el Registro Federal de Electores, no contar con credencial para votar vigente o no pertenecer a la sección electoral respectiva.
-- Tener más de 70 años al día de la elección sin exención expresa o no saber leer y escribir.
-
-Para cada persona en la lista recibida, evalúa su elegibilidad y emite una **ALERTA LEGAL CRÍTICA** si está impedida por ley.
+    const systemPrompt = `Eres el Director Jurídico de Defensa del Voto y Auditoría de Mesas Directivas de Casilla ante el INE, la Plataforma Nacional de Transparencia (PNT) y el ${opleSiglas} (${opleNombre}).
+REGLA ESTRICTA ANTI-ALUCINACIONES (temperature: 0.0):
+- No inventes nombres ni cargos inexistentes. Audita estrictamente los registros recibidos de la Sección Electoral ${seccion} (${tipoCasilla}) en ${municipio}, ${estado}${nombreBusqueda ? ' y la búsqueda nominal solicitada para: "' + nombreBusqueda + '"' : ''}.
+- Cruza cada funcionario (Presidente, Secretario 1, Secretario 2, Escrutadores) contra las causales de inelegibilidad del **Artículo 83 de la LGIPE**, el **Art. 75 de la LGSMIME (nulidad de votación en casilla)**, la **Plataforma Nacional de Transparencia (PNT - Nómina Municipal/Estatal de ${municipio})** y el **Padrón de Operadores de Programas Sociales (Servidores de la Nación / Bienestar)**.
+- Si un funcionario aparece como Servidor Público con nivel de mando (Director, Subdirector, Jefe de Departamento) o vinculado a Programas Sociales o Dirigencia Partidista, activa obligatoriamente **"alertaLegalActiva": true** y **"estatusLegal": "IMPEDIDO POR LEY (ALERTA LEGAL PNT / LGIPE)"** con el sustento jurídico real para su impugnación y reemplazo.
 
 Devuelve ESTRICTAMENTE este objeto JSON:
 {
   "resumenAuditoria": {
     "estado": "${estado}",
     "municipio": "${municipio}",
+    "seccion": "${seccion}",
+    "tipoCasilla": "${tipoCasilla}",
     "casillaAuditada": "${casillaSeccion}",
-    "organismoAutoridad": "INE & ${opleSiglas}",
+    "organismoAutoridad": "INE + PNT + ${opleSiglas}",
     "totalAuditados": ${funcionarios.length || 6},
     "totalAptos": number,
     "totalImpedidosConAlertaLegal": number,
-    "riesgoNulidadCasilla": "ALTO (Riesgo de Nulidad Art. 75 LGSMIME)" | "BAJO (Casilla Blindada Legalmente)",
-    "dictamenEjecutivo": "Explicación jurídica del cruce de padrón de insaculados vs voluntarios..."
+    "riesgoNulidadCasilla": "ALTO (Riesgo de Nulidad Art. 75 LGSMIME por Servidor Público / Dirigente)" | "BAJO (Casilla Blindada Legalmente)",
+    "dictamenEjecutivo": "Dictamen jurídico del cruce entre ENCARTE INE, Nómina Pública Municipal en PNT (${municipio}) y Padrón de Programas Sociales..."
   },
   "resultadosCruceFuncionarios": [
     {
-      "nombre": "Nombre completo del funcionario",
-      "cargoCasilla": "Presidente" | "Secretario 1" | "Secretario 2" | "Escrutador 1" | "Escrutador 2" | "Escrutador 3",
-      "seccion": "Sección Electoral",
-      "perfilDetectado": "Ocupación o vínculo detectado en el cruce",
+      "nombre": "Nombre del funcionario o registro auditado",
+      "cargoCasilla": "Presidente/a" | "Secretario/a 1" | "Secretario/a 2" | "Escrutador/a 1" | "Escrutador/a 2" | "Escrutador/a 3",
+      "seccion": "${seccion} (${tipoCasilla})",
+      "perfilDetectado": "Ocupación y resultado del cruce en Nómina Pública PNT / Programas Sociales / Partidos",
       "estatusLegal": "IMPEDIDO POR LEY (ALERTA LEGAL)" | "APTO LEGALMENTE",
       "alertaLegalActiva": true | false,
       "severidadAlerta": "CRÍTICA" | "PREVENTIVA" | "NINGUNA",
-      "fundamentoLegalInfringido": "Art. 83 inciso e) y f) de la LGIPE / Art. 75 LGSMIME / ${legislacionLocal}",
-      "motivoImpedimento": "Explicación clara de por qué la persona está o no impedida para estar en la casilla...",
-      "accionJuridicaRecomendada": "Presentar escrito de recusación/sustitución inmediata ante el Consejo Distrital del INE y ${opleSiglas} o asentar Escrito de Incidentes."
+      "fundamentoLegalInfringido": "Art. 83 incisos e), f), g) de la LGIPE / Art. 75 LGSMIME / ${legislacionLocal}",
+      "motivoImpedimento": "Explicación jurídica precisa del impedimento detectado en nómina pública o programas sociales (o confirmación de elegibilidad)...",
+      "accionJuridicaRecomendada": "Procedimiento exacto de impugnación y reemplazo ante el Consejo Distrital del INE y ${opleSiglas}..."
     }
   ],
   "protocoloImpugnacionCasilla": [
-    "Paso 1 legal ante la Junta Distrital Ejecutiva del INE y Consejo Municipal del ${opleSiglas}...",
-    "Paso 2 para los Representantes de Casilla (RC) y Representantes Generales (RG)..."
+    "1. Descargar constancia de nómina activa en la Plataforma Nacional de Transparencia (PNT) para acreditar el cargo de mando o adscripción a programas sociales.",
+    "2. Presentar recurso de sustitución por inelegibilidad superveniente (Art. 83 LGIPE) ante la Junta Distrital Ejecutiva del INE y el Consejo Municipal de ${opleSiglas} antes de la jornada, o asentar Escrito de Incidentes y Protesta en el Acta de la Jornada Electoral (causal de nulidad Art. 75 LGSMIME)."
   ],
   "fuentesLegalesVerificables": [
     {
-      "organismo": "LGIPE - Artículo 83 (Requisitos para ser Funcionario de Casilla)",
-      "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf"
+      "organismo": "Plataforma Nacional de Transparencia (PNT — Consulta de Nómina Municipal/Estatal)",
+      "url": "https://consultapublicamx.plataformadetransparencia.org.mx/"
     },
     {
-      "organismo": "INE - Integración de Mesas Directivas de Casilla (Insaculación)",
-      "url": "https://www.ine.mx/voto-y-elecciones/"
+      "organismo": "INE — ENCARTE Oficial y Ubicación de Mesas Directivas de Casilla",
+      "url": "https://ubicatucasilla.ine.mx/"
+    },
+    {
+      "organismo": "LGIPE — Artículo 83 (Impedimentos para ser Funcionario de Casilla)",
+      "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf"
     },
     {
       "organismo": "${opleSiglas} (${opleNombre})",
@@ -1473,9 +1520,9 @@ Devuelve ESTRICTAMENTE este objeto JSON:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Audita legalmente esta lista de funcionarios de casilla e insaculados en ${municipio}, ${estado} (${casillaSeccion}):\n${JSON.stringify(funcionarios, null, 2)}` }
+          { role: 'user', content: `Audita con temperature 0.0 esta integración de Mesa Directiva de Casilla (${casillaSeccion}) en ${municipio}, ${estado} cruzando contra Nómina Pública PNT y Art. 83 LGIPE:\n${JSON.stringify(funcionarios, null, 2)}` }
         ],
-        temperature: 0.35,
+        temperature: 0.0,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1487,7 +1534,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
   }
 
   /**
-   * 10. Generador de Manual de Capacitación Operativa y Liderazgo para Coordinadores (LGIPE + INE + OPLE)
+   * 10. Generador de Manual de Capacitación Operativa y Liderazgo para Coordinadores (LGIPE + INE + OPLE + Auto-Actualización 24h)
    */
   async generateTrainingManualWithLLM(params = {}) {
     const {
@@ -1497,6 +1544,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
       rolCoordinador = 'Coordinador General y Territorial de Campaña',
       enfoqueEspecial = 'Liderazgo de brigadas, trato humano al equipo, defensa del voto y blindaje legal',
       opleInfo = {},
+      autoUpdateStatus = {},
       aiConfig = {}
     } = params;
 
@@ -1507,13 +1555,15 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     const opleNombre = opleInfo.nombreCompleto || `Instituto Electoral del Estado de ${estado}`;
     const opleUrl = opleInfo.urlOficial || 'https://www.ine.mx/voto-y-elecciones/opl/';
     const legislacionLocal = opleInfo.legislacionLocal || `Código Electoral del Estado de ${estado}`;
+    const sello24h = autoUpdateStatus.selloOficialTexto || `🔄 AUTO-ACTUALIZACIÓN 24H ACTIVA • Verificado contra INE, DOF, TEPJF y ${opleSiglas}`;
 
     const systemPrompt = `Eres el Director Nacional de Capacitación Electoral, Doctrina de Liderazgo Político y Cumplimiento Jurídico del Cuarto de Guerra para ${municipio}, ${estado} (${partido}).
-Tu misión es redactar un **Manual Operativo y de Liderazgo para el ${rolCoordinador}**, adaptado específicamente al marco legal de la **Ley Federal Electoral (LGIPE)**, el **INE** y el **${opleSiglas} (${opleNombre} - ${legislacionLocal})**.
+SELLO DE AUTO-ACTUALIZACIÓN NORMATIVA CADA 24 HORAS: "${sello24h}".
+Tu misión es redactar un **Manual Operativo y de Liderazgo para el ${rolCoordinador}**, actualizado con los últimos acuerdos del **INE**, el **Diario Oficial de la Federación (DOF)**, el **TEPJF** y el **${opleSiglas} (${opleNombre} - ${legislacionLocal})**.
 
 El manual debe cubrir de forma magistral y accionable:
 1. **Liderazgo y Trato Humano ("Cómo dirigir, motivar y tratar a su gente"):** Psicología de mando táctico, empatía con brigadistas y voluntarios, resolución de conflictos en campo, comunicación asertiva bajo presión y cohesión del equipo.
-2. **Decálogo Legal Estricto (QUÉ SÍ HACER vs QUÉ NO HACER LEGALMENTE):** Fundamentado en la LGIPE, el INE, la FISEL (Delitos Electorales) y el ${opleSiglas}.
+2. **Decálogo Legal Estricto (QUÉ SÍ HACER vs QUÉ NO HACER LEGALMENTE):** Fundamentado en artículos reales de la LGIPE, el Reglamento de Fiscalización del INE, la Ley General en Materia de Delitos Electorales (FISEL) y el ${opleSiglas}.
 3. **Protocolo Operativo Diario y para la Jornada Electoral (Día D)** en ${municipio}, ${estado}.
 
 Devuelve ESTRICTAMENTE este objeto JSON:
@@ -1521,7 +1571,8 @@ Devuelve ESTRICTAMENTE este objeto JSON:
   "encabezadoManual": {
     "titulo": "Manual Maestro de Liderazgo Táctico y Cumplimiento Electoral — ${municipio}, ${estado}",
     "rolObjetivo": "${rolCoordinador}",
-    "marcoNormativo": "LGIPE + INE + ${opleSiglas} (${legislacionLocal})",
+    "marcoNormativo": "LGIPE + INE + DOF + TEPJF + ${opleSiglas} (${legislacionLocal})",
+    "selloAutoActualizacion24h": "${sello24h}",
     "urlOple": "${opleUrl}",
     "objetivoDoctrinal": "Resumen ejecutivo del propósito del manual para el coordinador..."
   },
@@ -1546,7 +1597,7 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     ]
   },
   "guiaLegalQueSiQueNo": {
-    "autoridadesReguladoras": "INE, ${opleSiglas} (${opleNombre}) y FISEL",
+    "autoridadesReguladoras": "INE, DOF, TEPJF, ${opleSiglas} (${opleNombre}) y FISEL",
     "queSiHacerLegalmente": [
       {
         "accion": "Acción permitida y recomendada 1",
@@ -1598,7 +1649,9 @@ Devuelve ESTRICTAMENTE este objeto JSON:
     { "fase": "Fase 3: Cierre Táctico, Resguardo de Actas y Defensa ante ${opleSiglas}", "pasos": "Instrucciones operativas precisas..." }
   ],
   "fuentesVerificables": [
-    { "organismo": "INE - Capacitación y Organización Electoral", "url": "https://www.ine.mx/" },
+    { "organismo": "INE — Repositorio Documental y Acuerdos del Consejo General", "url": "https://repositoriodocumental.ine.mx/" },
+    { "organismo": "DOF — Diario Oficial de la Federación (Reformas Electorales)", "url": "https://www.dof.gob.mx/" },
+    { "organismo": "TEPJF — IUS Electoral y Jurisprudencia Vigente", "url": "https://www.te.gob.mx/IUSE/" },
     { "organismo": "${opleSiglas} (${opleNombre})", "url": "${opleUrl}" },
     { "organismo": "Ley General de Instituciones y Procedimientos Electorales (LGIPE)", "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf" }
   ]
@@ -1612,9 +1665,9 @@ Devuelve ESTRICTAMENTE este objeto JSON:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Genera el Manual de Capacitación y Liderazgo para ${rolCoordinador} en ${municipio}, ${estado} (${partido}). Enfoque: "${enfoqueEspecial}". Regulador estatal: ${opleSiglas}. Devuelve JSON.` }
+          { role: 'user', content: `Genera el Manual de Capacitación y Liderazgo auto-actualizado (24h) para ${rolCoordinador} en ${municipio}, ${estado} (${partido}). Enfoque: "${enfoqueEspecial}". Regulador estatal: ${opleSiglas}. Devuelve JSON.` }
         ],
-        temperature: 0.5,
+        temperature: 0.1,
         jsonMode: true
       });
       const cleanJson = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();

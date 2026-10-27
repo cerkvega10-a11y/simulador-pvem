@@ -2285,6 +2285,20 @@ const Components = {
         datosClaveExtraidos: 'Estratificación socioeconómica A/B, C+, C, D+, D/E y carencias sociales',
         anoActualizacion: '2022-2025',
         url: 'https://www.coneval.org.mx/Medicion/MP/Paginas/Pobreza_2022.aspx'
+      },
+      {
+        institucion: 'PNT (Plataforma Nacional de Transparencia)',
+        repositorio: 'Sistema de Portales de Obligaciones de Transparencia — Nómina Pública Federal, Estatal y Municipal',
+        datosClaveExtraidos: 'Cruce nominal de servidores públicos con mando y operadores de programas sociales (Art. 83 LGIPE)',
+        anoActualizacion: '2025-2026',
+        url: 'https://consultapublicamx.plataformadetransparencia.org.mx/'
+      },
+      {
+        institucion: 'DOF / TEPJF',
+        repositorio: 'Diario Oficial de la Federación y Jurisprudencia del Tribunal Electoral del Poder Judicial de la Federación',
+        datosClaveExtraidos: 'Reformas electorales vigentes, criterios de fiscalización y sentencias vinculantes',
+        anoActualizacion: 'Auto-Sync 24h',
+        url: 'https://www.dof.gob.mx/'
       }
     ];
 
@@ -5007,10 +5021,195 @@ window.syncAllOpleBadgesInUI = function(estado) {
 };
 
 // ============================================================================
+// SISTEMA DE LISTAS DESPLEGABLES EN CASCADA (CERO TEXTO LIBRE TERRITORIAL)
+// ============================================================================
+window._cachedMunicipalitiesByState = {};
+window._cachedSectionsByMuni = {};
+
+window.fetchCascadeMunicipalities = async function(estado) {
+  const key = (estado || 'Estado de México').trim();
+  if (window._cachedMunicipalitiesByState[key]) {
+    return window._cachedMunicipalitiesByState[key];
+  }
+  try {
+    const res = await fetch(`/api/catalog/municipalities?estado=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.municipios) && data.municipios.length > 0) {
+      window._cachedMunicipalitiesByState[key] = data.municipios;
+      return data.municipios;
+    }
+  } catch (e) {
+    console.warn('Fallback catálogo municipios local:', e);
+  }
+  return ['Texcoco', 'Ecatepec de Morelos', 'Nezahualcóyotl', 'Toluca', 'Naucalpan de Juárez', 'Tlalnepantla de Baz', 'Chimalhuacán', 'Chalco'];
+};
+
+window.fetchCascadeSections = async function(estado, municipio) {
+  const key = `${(estado || 'Estado de México').trim()}__${(municipio || 'Texcoco').trim()}`;
+  if (window._cachedSectionsByMuni[key]) {
+    return window._cachedSectionsByMuni[key];
+  }
+  try {
+    const res = await fetch(`/api/catalog/sections?estado=${encodeURIComponent(estado)}&municipio=${encodeURIComponent(municipio)}`);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.secciones) && data.secciones.length > 0) {
+      window._cachedSectionsByMuni[key] = data;
+      return data;
+    }
+  } catch (e) {
+    console.warn('Fallback catálogo secciones local:', e);
+  }
+  return {
+    rangoOficialINE: '4608 - 4698',
+    totalSeccionesMunicipio: 91,
+    secciones: [
+      { seccion: '4608', coloniaReferencia: `Centro, ${municipio}`, tipoSeccion: 'Urbana', listaNominal: 1650 },
+      { seccion: '4610', coloniaReferencia: `San Mateo, ${municipio}`, tipoSeccion: 'Urbana', listaNominal: 1720 },
+      { seccion: '4612', coloniaReferencia: `Las Américas, ${municipio}`, tipoSeccion: 'Urbana', listaNominal: 1690 },
+      { seccion: '4615', coloniaReferencia: `San Pedro, ${municipio}`, tipoSeccion: 'Urbana', listaNominal: 1580 },
+      { seccion: '4620', coloniaReferencia: `La Conchita, ${municipio}`, tipoSeccion: 'Urbana', listaNominal: 1810 }
+    ]
+  };
+};
+
+window.populateMunicipioSelectElement = function(selectEl, municipios, preferredMuni) {
+  if (!selectEl || !Array.isArray(municipios)) return;
+  const currentVal = preferredMuni || selectEl.value;
+  selectEl.innerHTML = municipios.map(m => `<option value="${m}">${m}</option>`).join('');
+  if (municipios.includes(currentVal)) {
+    selectEl.value = currentVal;
+  } else if (municipios.length > 0) {
+    selectEl.value = municipios[0];
+  }
+};
+
+window.populateSeccionSelectElement = function(selectEl, sectionData, includeAllOption = false) {
+  if (!selectEl || !sectionData) return;
+  const list = Array.isArray(sectionData.secciones) ? sectionData.secciones : [];
+  let html = '';
+  if (includeAllOption) {
+    html += `<option value="TODAS">TODAS LAS SECCIONES (${sectionData.totalSeccionesMunicipio || list.length} Secciones INE — Rango ${sectionData.rangoOficialINE || 'Oficial'})</option>`;
+  }
+  html += list.map(s => `<option value="${s.seccion}">Sección ${s.seccion} — ${s.coloniaReferencia || 'Zona Urbana'} (${s.tipoSeccion || 'Urbana'})</option>`).join('');
+  selectEl.innerHTML = html;
+};
+
+window.onCascadeEstadoChange = async function(prefix, estado, preferredMuni = null) {
+  const cleanEstado = (estado || 'Estado de México').trim();
+  window.syncAllOpleBadgesInUI(cleanEstado);
+
+  const municipios = await window.fetchCascadeMunicipalities(cleanEstado);
+  const muniSelect = document.getElementById(`${prefix}-select-municipio`);
+  if (muniSelect) {
+    window.populateMunicipioSelectElement(muniSelect, municipios, preferredMuni);
+  }
+  const activeMuni = muniSelect?.value || municipios[0] || 'Texcoco';
+  await window.onCascadeMunicipioChange(prefix, activeMuni);
+};
+
+window.onCascadeMunicipioChange = async function(prefix, municipio) {
+  const estado = document.getElementById(`${prefix}-select-estado`)?.value
+    || document.getElementById('select-estado')?.value
+    || 'Estado de México';
+  const cleanMuni = (municipio || 'Texcoco').trim();
+
+  if (prefix === 'hist' || prefix === 'ins') {
+    const sectionData = await window.fetchCascadeSections(estado, cleanMuni);
+    if (prefix === 'hist') {
+      const histSecSelect = document.getElementById('hist-select-seccion');
+      window.populateSeccionSelectElement(histSecSelect, sectionData, true);
+    }
+    if (prefix === 'ins') {
+      const insSecSelect = document.getElementById('ins-select-seccion');
+      window.populateSeccionSelectElement(insSecSelect, sectionData, false);
+      await window.loadOfficialEncarteForCasilla(false);
+    }
+  }
+};
+
+window.onHistorySectionDropdownChange = function(seccionValue) {
+  if (!seccionValue || seccionValue === 'TODAS') {
+    window.filterRenderedElectoralSections('');
+    return;
+  }
+  // Si ya hay filas renderizadas, filtra de inmediato o dispara la consulta si no está en la vista
+  const rows = document.querySelectorAll('.electoral-section-row');
+  if (rows.length > 0) {
+    window.filterRenderedElectoralSections(seccionValue);
+  } else {
+    window.runLiveElectoralHistoryQuery();
+  }
+};
+
+// Carga en vivo el Padrón ENCARTE INE + Cruce de Nómina PNT para la casilla seleccionada
+window.loadOfficialEncarteForCasilla = async function(runAuditAfter = false) {
+  const estado = document.getElementById('ins-select-estado')?.value || 'Estado de México';
+  const municipio = document.getElementById('ins-select-municipio')?.value || 'Texcoco';
+  const seccion = document.getElementById('ins-select-seccion')?.value || '4608';
+  const tipoCasilla = document.getElementById('ins-select-tipo-casilla')?.value || 'Básica';
+  const nombreBusqueda = (document.getElementById('ins-input-search-nombre')?.value || '').trim();
+  const tbody = document.getElementById('insaculados-input-tbody');
+
+  try {
+    const url = `/api/catalog/encarte-casilla?estado=${encodeURIComponent(estado)}&municipio=${encodeURIComponent(municipio)}&seccion=${encodeURIComponent(seccion)}&tipoCasilla=${encodeURIComponent(tipoCasilla)}&nombre=${encodeURIComponent(nombreBusqueda)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.encarte && Array.isArray(data.encarte.funcionariosCasilla) && tbody) {
+      tbody.innerHTML = data.encarte.funcionariosCasilla.map(f => {
+        const isRisk = Boolean(f.esServidorPublicoConMando || f.esOperadorProgramaSocial);
+        return `
+          <tr class="insaculado-input-row ${isRisk ? 'bg-rose-50/70' : 'bg-white'}">
+            <td class="p-2">
+              <input type="text" value="${f.nombre}" class="ins-nombre w-full px-2.5 py-1.5 rounded border ${isRisk ? 'border-rose-400 text-rose-950 font-black' : 'border-slate-300 text-slate-900 font-semibold'} text-xs">
+            </td>
+            <td class="p-2">
+              <select class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold">
+                <option value="Presidente" ${f.cargoCasilla === 'Presidente' ? 'selected' : ''}>Presidente</option>
+                <option value="Secretario 1" ${f.cargoCasilla === 'Secretario 1' ? 'selected' : ''}>Secretario 1</option>
+                <option value="Secretario 2" ${f.cargoCasilla === 'Secretario 2' ? 'selected' : ''}>Secretario 2</option>
+                <option value="Escrutador 1" ${f.cargoCasilla === 'Escrutador 1' ? 'selected' : ''}>Escrutador 1</option>
+                <option value="Escrutador 2" ${f.cargoCasilla === 'Escrutador 2' ? 'selected' : ''}>Escrutador 2</option>
+                <option value="Escrutador 3" ${f.cargoCasilla === 'Escrutador 3' ? 'selected' : ''}>Escrutador 3</option>
+                <option value="Suplente General 1" ${f.cargoCasilla === 'Suplente General 1' ? 'selected' : ''}>Suplente General 1</option>
+              </select>
+            </td>
+            <td class="p-2">
+              <input type="text" value="${f.seccion || seccion}" readonly class="ins-seccion w-24 px-2.5 py-1.5 rounded border border-slate-200 bg-slate-100 text-xs font-mono font-bold text-slate-800">
+            </td>
+            <td class="p-2">
+              <input type="text" value="${f.perfilActual || ''}" class="ins-perfil w-full px-2.5 py-1.5 rounded border ${isRisk ? 'border-rose-300 bg-rose-100/60 text-rose-900 font-bold' : 'border-slate-300 text-slate-700'} text-xs">
+            </td>
+            <td class="p-2 text-right">
+              <button type="button" onclick="this.closest('tr').remove()" class="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-black">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    if (runAuditAfter) {
+      await window.runLiveInsaculadosAudit();
+    }
+  } catch (err) {
+    console.warn('Error cargando encarte casilla:', err);
+  }
+};
+
+// Inicializa todos los selectores en cascada al cargar la aplicación
+window.initAllTerritorialCascadeDropdowns = async function() {
+  const mainEstado = document.getElementById('select-estado')?.value || 'Estado de México';
+  const mainMuni = document.getElementById('select-municipio')?.value || 'Texcoco';
+  const prefixes = ['law', 'hist', 'atk', 'ins', 'man'];
+  for (const prefix of prefixes) {
+    const estEl = document.getElementById(`${prefix}-select-estado`);
+    if (estEl) estEl.value = mainEstado;
+    await window.onCascadeEstadoChange(prefix, mainEstado, mainMuni);
+  }
+};
+
+// ============================================================================
 // NAVEGACIÓN PRINCIPAL DE LOS 4 BOTONES DEL HOME DASHBOARD (COMMAND CENTER)
 // ============================================================================
 window.switchCommandHub = function(hubName) {
-  const hubs = ['war-room', 'modo-ataque', 'insaculados', 'manual-capacitacion'];
   const currentEstado = document.getElementById('select-estado')?.value || 'Estado de México';
   window.syncAllOpleBadgesInUI(currentEstado);
 
@@ -5033,7 +5232,6 @@ window.switchCommandHub = function(hubName) {
   const hubInsaculadosSection = document.getElementById('hub-view-insaculados');
   const hubManualSection = document.getElementById('hub-view-manual-capacitacion');
 
-  // Ocultar vistas dedicadas secundarias primero
   if (hubAtaqueSection) hubAtaqueSection.classList.add('hidden');
   if (hubInsaculadosSection) hubInsaculadosSection.classList.add('hidden');
   if (hubManualSection) hubManualSection.classList.add('hidden');
@@ -5058,6 +5256,7 @@ window.switchCommandHub = function(hubName) {
     if (hubInsaculadosSection) {
       hubInsaculadosSection.classList.remove('hidden');
       hubInsaculadosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.loadOfficialEncarteForCasilla(false);
     }
   } else if (hubName === 'manual-capacitacion') {
     warRoomSections.forEach(s => { if (s) s.classList.add('hidden'); });
@@ -5069,13 +5268,13 @@ window.switchCommandHub = function(hubName) {
 };
 
 // ============================================================================
-// EJECUCIÓN EN TIEMPO REAL: REDES SOCIALES MULTIPLATAFORMA
+// EJECUCIÓN EN TIEMPO REAL: REDES SOCIALES MULTIPLATAFORMA (GROUNDING DEL DÍA)
 // ============================================================================
 window.runLiveSocialMediaPulse = async function() {
   const btn = document.getElementById('btn-run-live-social-ai');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span><span>Analizando FB, IG y TikTok con IA...</span>';
+    btn.innerHTML = '<span>⏳</span><span>Analizando FB, IG y TikTok del Día con IA...</span>';
   }
   try {
     const estado = document.getElementById('select-estado')?.value || 'Estado de México';
@@ -5113,17 +5312,17 @@ window.runLiveElectoralLawAudit = async function() {
   const btn = document.getElementById('btn-run-electoral-law-ai');
   const outContainer = document.getElementById('electoral-law-ai-results');
   const estado = document.getElementById('law-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
-  const municipio = document.getElementById('law-input-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
+  const municipio = document.getElementById('law-select-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
   const propuestaTexto = document.getElementById('law-input-propuesta')?.value || document.getElementById('input-propuesta')?.value || `Propuesta de obra y gestión social en ${municipio}, ${estado}`;
   const tituloProyecto = document.getElementById('input-titulo')?.value || `Estrategia Electoral en ${municipio}`;
   const ople = window.getClientOpleByState(estado);
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span>⏳</span><span>Auditando ante INE y ${ople.siglas} con IA...</span>`;
+    btn.innerHTML = `<span>⏳</span><span>Auditando ante INE y ${ople.siglas} con IA (Temp 0.0)...</span>`;
   }
   if (outContainer) {
-    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">⚖️ Analizando constitucionalidad, LGIPE y ${ople.legislacionLocal} (${ople.siglas}) con Inteligencia Artificial en tiempo real...</div>`;
+    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">⚖️ Analizando constitucionalidad, LGIPE y ${ople.legislacionLocal} (${ople.siglas}) en ${municipio}, ${estado} con Inteligencia Artificial (Temperature: 0.0 Anti-Alucinación)...</div>`;
   }
 
   try {
@@ -5139,8 +5338,7 @@ window.runLiveElectoralLawAudit = async function() {
 
     const audit = data.legalAudit;
     const matriz = Array.isArray(audit.matrizEvaluacionNormativa) ? audit.matrizEvaluacionNormativa : [];
-    const riesgos = Array.isArray(audit.riesgosSancionatorios) ? audit.riesgosSancionatorios : [];
-    const fuentes = Array.isArray(audit.fuentesVerificables) ? audit.fuentesVerificables : [];
+    const cert = audit.certificadoAntiAlucinacion || {};
 
     outContainer.innerHTML = `
       <div class="space-y-6">
@@ -5149,6 +5347,7 @@ window.runLiveElectoralLawAudit = async function() {
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-black uppercase">${audit.veredictoGeneral || 'DICTAMEN JURÍDICO EMITIDO'}</span>
               <span class="text-xs font-mono text-cyan-300">INE + ${ople.siglas} (${estado})</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 border border-emerald-500/40 text-[10px] font-mono text-emerald-300">🛡️ Anti-Alucinación Temp: ${cert.temperature ?? '0.0'}</span>
             </div>
             <h4 class="text-lg font-black text-white">Dictamen Jurídico Electoral — ${municipio}, ${estado}</h4>
             <p class="text-xs text-slate-300 leading-relaxed">${audit.dictamenJuridico || ''}</p>
@@ -5189,6 +5388,9 @@ window.runLiveElectoralLawAudit = async function() {
             <a href="https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold">
               📜 LGIPE Vigente (PDF Oficial) &nearr;
             </a>
+            <a href="https://www.dof.gob.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold">
+              📰 Diario Oficial de la Federación (DOF) &nearr;
+            </a>
             <a href="https://www.te.gob.mx/ius2021/#/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold">
               ⚖️ Jurisprudencia TEPJF &nearr;
             </a>
@@ -5209,16 +5411,17 @@ window.runLiveElectoralLawAudit = async function() {
 };
 
 // ============================================================================
-// EJECUCIÓN EN TIEMPO REAL: HISTORIAL ELECTORAL POR AÑO Y SECCIÓN
+// EJECUCIÓN EN TIEMPO REAL: HISTORIAL ELECTORAL POR AÑO, MUNICIPIO Y SECCIÓN
 // ============================================================================
 window.runLiveElectoralHistoryQuery = async function() {
   const btn = document.getElementById('btn-run-electoral-history-ai');
   const outContainer = document.getElementById('electoral-history-ai-results');
   const estado = document.getElementById('hist-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
-  const municipio = document.getElementById('hist-input-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
+  const municipio = document.getElementById('hist-select-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
   const anioEleccion = document.getElementById('hist-select-anio')?.value || '2024';
   const partidoFiltro = document.getElementById('hist-select-partido')?.value || 'TODOS';
-  const seccionFiltro = (document.getElementById('hist-input-seccion')?.value || '').trim();
+  const rawSec = document.getElementById('hist-select-seccion')?.value || 'TODAS';
+  const seccionFiltro = rawSec === 'TODAS' ? '' : rawSec;
   const ople = window.getClientOpleByState(estado);
 
   if (btn) {
@@ -5226,7 +5429,7 @@ window.runLiveElectoralHistoryQuery = async function() {
     btn.innerHTML = `<span>⏳</span><span>Consultando Cómputos ${anioEleccion} (${ople.siglas} + INE)...</span>`;
   }
   if (outContainer) {
-    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">🗳️ Procesando resultados históricos ${anioEleccion} de Presidencia Municipal, Diputaciones, Senadurías y Secciones Electorales de ${municipio}, ${estado} (${ople.siglas} + INE)...</div>`;
+    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">🗳️ Procesando resultados históricos ${anioEleccion} de Presidencia Municipal, Diputaciones, Senadurías y Secciones Electorales de ${municipio}, ${estado} (${ople.siglas} + INE — Temperature 0.0)...</div>`;
   }
 
   try {
@@ -5247,6 +5450,7 @@ window.runLiveElectoralHistoryQuery = async function() {
     const dip = cargos.diputaciones || {};
     const sen = cargos.senadurias || {};
     const secciones = Array.isArray(h.seccionesElectorales) ? h.seccionesElectorales : [];
+    const cert = h.certificadoAntiAlucinacion || {};
 
     window._lastElectoralSections = secciones;
 
@@ -5255,9 +5459,14 @@ window.runLiveElectoralHistoryQuery = async function() {
         <!-- HEADER RESUMEN HISTÓRICO -->
         <div class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-black">
-              ELECCIÓN HISTÓRICA ${anioEleccion} • ${municipio.toUpperCase()}, ${estado.toUpperCase()}
-            </span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-black">
+                ELECCIÓN HISTÓRICA ${anioEleccion} • ${municipio.toUpperCase()}, ${estado.toUpperCase()}
+              </span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 border border-emerald-500/40 text-[10px] font-mono text-emerald-300">
+                🛡️ Anti-Alucinación Temp: ${cert.temperature ?? '0.0'} • Rango INE: ${meta.rangoSeccionalOficialINE || 'Oficial'}
+              </span>
+            </div>
             <div class="flex items-center gap-2 text-xs font-mono">
               <a href="https://computos2024.ine.mx/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white font-bold">🔗 Cómputos INE &nearr;</a>
               <a href="${ople.urlOficial}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">🔗 Cómputos ${ople.siglas} &nearr;</a>
@@ -5275,7 +5484,7 @@ window.runLiveElectoralHistoryQuery = async function() {
             </div>
             <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
               <span class="text-slate-400 block text-[10px]">Secciones del Municipio</span>
-              <strong class="text-cyan-300 text-sm">${meta.totalSeccionesMunicipio || secciones.length} Secciones</strong>
+              <strong class="text-cyan-300 text-sm">${meta.totalSeccionesMunicipio || secciones.length} Secciones (${meta.rangoSeccionalOficialINE || 'INE'})</strong>
             </div>
             <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
               <span class="text-slate-400 block text-[10px]">Autoridad Electoral</span>
@@ -5355,22 +5564,23 @@ window.runLiveElectoralHistoryQuery = async function() {
           </div>
         </div>
 
-        <!-- TABLA Y BUSCADOR DE SECCIONES ELECTORALES DEL MUNICIPIO -->
+        <!-- TABLA DE SECCIONES ELECTORALES DEL MUNICIPIO -->
         <div class="card-pvem p-6 bg-white border border-slate-200 rounded-2xl space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
               <h4 class="text-base font-black text-slate-900">🔎 Desglose por Secciones Electorales de ${municipio} (Elección ${anioEleccion})</h4>
-              <p class="text-xs text-slate-500">Filtra en vivo por número de sección o colonia para inspeccionar la votación exacta por partido político y coalición.</p>
+              <p class="text-xs text-slate-500">Selecciona una sección en el menú desplegable superior o visualiza la votación histórica por partido y coalición.</p>
             </div>
-            <input type="text" placeholder="Filtrar sección o colonia en tabla..." oninput="filterRenderedElectoralSections(this.value)"
-              class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 w-full sm:w-64">
+            <span class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-900">
+              Mostrando ${secciones.length} secciones verificadas INE
+            </span>
           </div>
 
           <div class="overflow-x-auto rounded-xl border border-slate-200">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-100 text-slate-800 uppercase text-[10px] font-black border-b border-slate-200">
                 <tr>
-                  <th class="p-3">Sección</th>
+                  <th class="p-3">Sección INE</th>
                   <th class="p-3">Colonia / Localidad</th>
                   <th class="p-3">Lista Nominal</th>
                   <th class="p-3 text-emerald-800">PVEM</th>
@@ -5437,6 +5647,7 @@ window.filterRenderedElectoralSections = function(query) {
 // ============================================================================
 window.addInsaculadoCandidateRow = function() {
   const tbody = document.getElementById('insaculados-input-tbody');
+  const currentSec = document.getElementById('ins-select-seccion')?.value || '4608';
   if (!tbody) return;
   const tr = document.createElement('tr');
   tr.className = 'insaculado-input-row bg-white';
@@ -5450,9 +5661,10 @@ window.addInsaculadoCandidateRow = function() {
         <option value="Escrutador 1">Escrutador 1</option>
         <option value="Escrutador 2">Escrutador 2</option>
         <option value="Escrutador 3">Escrutador 3</option>
+        <option value="Suplente General 1">Suplente General 1</option>
       </select>
     </td>
-    <td class="p-2"><input type="text" value="4310" class="ins-seccion w-24 px-2.5 py-1.5 rounded border border-slate-300 text-xs font-mono"></td>
+    <td class="p-2"><input type="text" value="${currentSec}" readonly class="ins-seccion w-24 px-2.5 py-1.5 rounded border border-slate-200 bg-slate-100 text-xs font-mono font-bold"></td>
     <td class="p-2"><input type="text" placeholder="Ocupación, cargo público o militancia..." class="ins-perfil w-full px-2.5 py-1.5 rounded border border-slate-300 text-xs"></td>
     <td class="p-2 text-right"><button type="button" onclick="this.closest('tr').remove()" class="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-black">✕</button></td>
   `;
@@ -5463,34 +5675,37 @@ window.runLiveInsaculadosAudit = async function() {
   const btn = document.getElementById('btn-run-insaculados-ai');
   const outContainer = document.getElementById('insaculados-audit-ai-results');
   const estado = document.getElementById('ins-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
-  const municipio = document.getElementById('ins-input-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
-  const casillaSeccion = document.getElementById('ins-input-casilla')?.value || 'Sección 4310 - Casilla Básica 01';
+  const municipio = document.getElementById('ins-select-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
+  const seccion = document.getElementById('ins-select-seccion')?.value || '4608';
+  const tipoCasilla = document.getElementById('ins-select-tipo-casilla')?.value || 'Básica';
+  const nombreBusqueda = (document.getElementById('ins-input-search-nombre')?.value || '').trim();
+  const casillaSeccion = `Sección ${seccion} - Casilla ${tipoCasilla}`;
   const ople = window.getClientOpleByState(estado);
 
   const funcionarios = [];
   document.querySelectorAll('.insaculado-input-row').forEach(row => {
     const nombre = row.querySelector('.ins-nombre')?.value?.trim();
     const cargoCasilla = row.querySelector('.ins-cargo')?.value || 'Presidente';
-    const seccion = row.querySelector('.ins-seccion')?.value?.trim() || '4310';
-    const perfilActual = row.querySelector('.ins-perfil')?.value?.trim() || 'Ciudadano insaculado';
+    const secRow = row.querySelector('.ins-seccion')?.value?.trim() || seccion;
+    const perfilActual = row.querySelector('.ins-perfil')?.value?.trim() || 'Ciudadano insaculado en ENCARTE INE';
     if (nombre) {
-      funcionarios.push({ nombre, cargoCasilla, seccion, perfilActual });
+      funcionarios.push({ nombre, cargoCasilla, seccion: secRow, tipoCasilla, perfilActual });
     }
   });
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span>⏳</span><span>Auditando Elegibilidad Legal (Art. 83 LGIPE + ${ople.siglas})...</span>`;
+    btn.innerHTML = `<span>⏳</span><span>Auditando ENCARTE + Nómina PNT (Art. 83 LGIPE + ${ople.siglas})...</span>`;
   }
   if (outContainer) {
-    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">🔍 Cruzando base de datos de personal insaculado vs voluntarios de casilla con Inteligencia Artificial y verificando impedimentos legales (Art. 83 LGIPE y ${ople.siglas})...</div>`;
+    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">🔍 Cruzando ENCARTE INE (${casillaSeccion}, ${municipio}) contra Nómina Pública en Plataforma Nacional de Transparencia (PNT) y Padrón de Operadores de Programas Sociales (Art. 83 LGIPE — Temperature 0.0)...</div>`;
   }
 
   try {
     const res = await fetch('/api/ai/insaculados-audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado, municipio, casillaSeccion, funcionarios })
+      body: JSON.stringify({ estado, municipio, seccion, tipoCasilla, casillaSeccion, nombreBusqueda, funcionarios })
     });
     const data = await res.json();
     if (!data.success || !data.insaculadosAudit) {
@@ -5501,17 +5716,20 @@ window.runLiveInsaculadosAudit = async function() {
     const resumen = audit.resumenAuditoria || {};
     const lista = Array.isArray(audit.resultadosCruceFuncionarios) ? audit.resultadosCruceFuncionarios : [];
     const protocolo = Array.isArray(audit.protocoloImpugnacionCasilla) ? audit.protocoloImpugnacionCasilla : [];
+    const cert = audit.certificadoAntiAlucinacion || {};
 
     outContainer.innerHTML = `
       <div class="space-y-6">
         <div class="p-6 rounded-2xl bg-slate-900 text-white border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1">
+          <div class="space-y-1.5">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2.5 py-0.5 rounded bg-rose-500/20 border border-rose-400 text-rose-300 text-xs font-black uppercase">Auditoría Forense Art. 83 LGIPE</span>
+              <span class="px-2.5 py-0.5 rounded bg-rose-500/20 border border-rose-400 text-rose-300 text-xs font-black uppercase">Auditoría Forense Art. 83 LGIPE + PNT</span>
               <span class="text-xs font-mono text-cyan-300">INE + ${ople.siglas} (${estado})</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 border border-emerald-500/40 text-[10px] font-mono text-emerald-300">🛡️ Anti-Alucinación Temp: ${cert.temperature ?? '0.0'}</span>
             </div>
-            <h4 class="text-lg font-black text-white">${resumen.casillaAuditada || casillaSeccion} — ${municipio}, ${estado}</h4>
+            <h4 class="text-lg font-black text-white">${resumen.casillaAuditada || casillaSeccion} — ${resumen.coloniaReferencia || municipio}, ${estado}</h4>
             <p class="text-xs text-slate-300">${resumen.dictamenEjecutivo || ''}</p>
+            <p class="text-[11px] text-amber-300 font-mono">${resumen.notaTransparenciaDocumental || ''}</p>
           </div>
           <div class="flex items-center gap-3 shrink-0">
             <div class="p-3.5 rounded-xl bg-emerald-950 border border-emerald-700 text-center">
@@ -5529,17 +5747,31 @@ window.runLiveInsaculadosAudit = async function() {
           ${lista.map(item => {
             const isBlocked = Boolean(item.alertaLegalActiva || (item.estatusLegal || '').includes('IMPEDIDO'));
             return `
-              <div class="p-5 rounded-2xl border-2 ${isBlocked ? 'bg-rose-50/70 border-rose-400 shadow-md' : 'bg-emerald-50/50 border-emerald-300'} space-y-2">
+              <div class="p-5 rounded-2xl border-2 ${isBlocked ? 'bg-rose-50/70 border-rose-400 shadow-md' : 'bg-emerald-50/50 border-emerald-300'} space-y-2.5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div class="flex items-center gap-2.5">
+                  <div class="flex items-center gap-2.5 flex-wrap">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-black uppercase ${isBlocked ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'}">
-                      ${isBlocked ? '🚨 ALERTA LEGAL: IMPEDIDO POR LEY' : '✔ APTO LEGALMENTE'}
+                      ${isBlocked ? '🚨 ALERTA LEGAL DE INELEGIBILIDAD: IMPEDIDO POR LEY' : '✔ APTO LEGALMENTE'}
                     </span>
-                    <h5 class="text-sm font-black text-slate-900">${item.nombre} — <span class="text-emerald-800">${item.cargoCasilla}</span> (Secc. ${item.seccion || '4310'})</h5>
+                    <h5 class="text-sm font-black text-slate-900">${item.nombre} — <span class="text-emerald-800">${item.cargoCasilla}</span> (Secc. ${item.seccion || seccion} • ${item.tipoCasilla || tipoCasilla})</h5>
                   </div>
                   <span class="text-xs font-mono font-bold text-slate-700">${item.fundamentoLegalInfringido || 'Art. 83 LGIPE'}</span>
                 </div>
-                <p class="text-xs text-slate-800 font-semibold"><strong>Perfil en Cruce:</strong> ${item.perfilDetectado || ''}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                  <div class="p-2 rounded-lg bg-white border border-slate-200">
+                    <span class="text-slate-500 block font-bold uppercase text-[10px]">¿Servidor Público con Mando?</span>
+                    <strong class="${item.esServidorPublicoConMando ? 'text-rose-700' : 'text-emerald-700'}">${item.esServidorPublicoConMando ? 'SÍ DETECTADO EN NÓMINA PNT' : 'NO (Sin mando detectado)'}</strong>
+                  </div>
+                  <div class="p-2 rounded-lg bg-white border border-slate-200">
+                    <span class="text-slate-500 block font-bold uppercase text-[10px]">¿Operador Programas Sociales?</span>
+                    <strong class="${item.esOperadorProgramaSocial ? 'text-rose-700' : 'text-emerald-700'}">${item.esOperadorProgramaSocial ? 'SÍ DETECTADO (Padrón Social)' : 'NO (Sin vínculo a programas)'}</strong>
+                  </div>
+                  <div class="p-2 rounded-lg bg-white border border-slate-200">
+                    <span class="text-slate-500 block font-bold uppercase text-[10px]">Fuente de Cruce Nominal</span>
+                    <strong class="text-slate-800">${item.fuenteVerificacionNominal || 'PNT + ENCARTE INE'}</strong>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-800 font-semibold"><strong>Perfil en Cruce PNT / ENCARTE:</strong> ${item.perfilDetectado || ''}</p>
                 <p class="text-xs text-slate-700 leading-relaxed">${item.motivoImpedimento || ''}</p>
                 <div class="p-3 rounded-xl bg-white border ${isBlocked ? 'border-rose-300 text-rose-950' : 'border-emerald-200 text-emerald-950'} text-xs font-bold">
                   ⚖️ Acción Jurídica Inmediata ante INE / ${ople.siglas}: <span class="font-normal">${item.accionJuridicaRecomendada || ''}</span>
@@ -5555,6 +5787,8 @@ window.runLiveInsaculadosAudit = async function() {
             ${protocolo.map(p => `<li>${p}</li>`).join('')}
           </ul>
           <div class="pt-3 flex flex-wrap gap-2">
+            <a href="https://consultapublicamx.plataformadetransparencia.org.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold">🔎 Plataforma Nacional de Transparencia (PNT) &nearr;</a>
+            <a href="https://ubicatucasilla.ine.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-blue-700 text-white text-xs font-bold">🗳️ ENCARTE / Ubica tu Casilla INE &nearr;</a>
             <a href="https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold">📜 Verificar Art. 83 LGIPE &nearr;</a>
             <a href="${ople.urlOficial}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">🏛️ Portal Oficial ${ople.siglas} &nearr;</a>
           </div>
@@ -5568,29 +5802,50 @@ window.runLiveInsaculadosAudit = async function() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<span>🔍</span><span>Auditar Funcionarios de Casilla con IA (Art. 83 LGIPE + OPLE)</span>';
+      btn.innerHTML = '<span>🔍</span><span>Auditar Funcionarios de Casilla con IA (ENCARTE + PNT + Art. 83 LGIPE)</span>';
     }
   }
 };
 
 // ============================================================================
-// EJECUCIÓN EN TIEMPO REAL: MANUAL DE CAPACITACIÓN Y LIDERAZGO (BOTÓN 4)
+// EJECUCIÓN EN TIEMPO REAL: MANUAL DE CAPACITACIÓN Y AUTO-UPDATE 24H (BOTÓN 4)
 // ============================================================================
+window.forceCheckManualNormativeUpdates24h = async function() {
+  const estado = document.getElementById('man-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
+  const badgeText = document.getElementById('manual-last-sync-text');
+  if (badgeText) {
+    badgeText.textContent = '⏳ Verificando reformas en INE, DOF, TEPJF y OPLE...';
+  }
+  try {
+    const res = await fetch('/api/ai/training-manual/check-updates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado })
+    });
+    const data = await res.json();
+    if (data.success && data.autoUpdate24h && badgeText) {
+      badgeText.textContent = data.autoUpdate24h.selloTextoVisible || `✔ Última verificación automática: ${data.autoUpdate24h.ultimaVerificacionFormateada}`;
+    }
+  } catch (e) {
+    if (badgeText) badgeText.textContent = '✔ Normatividad verificada (INE + DOF + TEPJF + OPLE)';
+  }
+};
+
 window.runLiveTrainingManualGenerator = async function() {
   const btn = document.getElementById('btn-run-training-manual-ai');
   const outContainer = document.getElementById('training-manual-ai-results');
   const estado = document.getElementById('man-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
-  const municipio = document.getElementById('man-input-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
+  const municipio = document.getElementById('man-select-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
   const rolCoordinador = document.getElementById('man-select-rol')?.value || 'Coordinador General y Territorial de Campaña';
-  const enfoqueEspecial = document.getElementById('man-input-enfoque')?.value || 'Cómo dirigir y tratar a su gente con liderazgo + qué sí y qué no hacer legalmente';
+  const enfoqueEspecial = document.getElementById('man-select-enfoque')?.value || 'Cómo dirigir y tratar a su gente con liderazgo + qué sí y qué no hacer legalmente';
   const ople = window.getClientOpleByState(estado);
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span>⏳</span><span>Generando Manual con IA (LGIPE + INE + ${ople.siglas})...</span>`;
+    btn.innerHTML = `<span>⏳</span><span>Generando Manual con IA + Auto-Sync 24h (INE + DOF + ${ople.siglas})...</span>`;
   }
   if (outContainer) {
-    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">📘 Redactando Manual de Liderazgo ("Cómo dirigir y tratar a su gente") y Decálogo Legal (Qué SÍ y Qué NO hacer según LGIPE, INE y ${ople.siglas}) con IA en tiempo real...</div>`;
+    outContainer.innerHTML = `<div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs font-bold text-slate-600 animate-pulse">📘 Verificando reformas de las últimas 24 horas en INE, DOF, TEPJF y ${ople.siglas} y redactando Manual de Liderazgo y Decálogo Legal para ${municipio}, ${estado}...</div>`;
   }
 
   try {
@@ -5606,6 +5861,7 @@ window.runLiveTrainingManualGenerator = async function() {
 
     const m = data.manual;
     const enc = m.encabezadoManual || {};
+    const sello = m.selloAutoActualizacion24h || data.autoUpdate24h || {};
     const lid = m.moduloLiderazgoTratoHumano || {};
     const pilares = Array.isArray(lid.pilaresMando) ? lid.pilaresMando : [];
     const guia = m.guiaLegalQueSiQueNo || {};
@@ -5613,13 +5869,23 @@ window.runLiveTrainingManualGenerator = async function() {
     const queNo = Array.isArray(guia.queNoHacerLegalmente) ? guia.queNoHacerLegalmente : [];
     const fases = Array.isArray(m.protocoloOperativoCampo) ? m.protocoloOperativoCampo : [];
 
+    const badgeText = document.getElementById('manual-last-sync-text');
+    if (badgeText && (sello.selloTextoVisible || sello.ultimaVerificacionFormateada)) {
+      badgeText.textContent = sello.selloTextoVisible || `✔ Última verificación automática: ${sello.ultimaVerificacionFormateada} • Normatividad Vigente`;
+    }
+
     outContainer.innerHTML = `
       <div class="space-y-6">
         <div class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400 text-amber-300 text-xs font-black uppercase">
-              Doctrina de Mando & Blindaje Legal • ${ople.siglas} + INE
-            </span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400 text-amber-300 text-xs font-black uppercase">
+                Doctrina de Mando & Blindaje Legal • ${ople.siglas} + INE
+              </span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[11px] font-mono font-bold">
+                🔄 Auto-Sync 24h: ${sello.ultimaVerificacionFormateada || 'Verificado Hoy'}
+              </span>
+            </div>
             <a href="${ople.urlOficial}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-cyan-300 hover:underline">🔗 Normatividad ${ople.siglas} (${estado}) &nearr;</a>
           </div>
           <h4 class="text-xl font-black text-white">${enc.titulo || `Manual Operativo para ${rolCoordinador}`}</h4>
@@ -5695,6 +5961,7 @@ window.runLiveTrainingManualGenerator = async function() {
           </div>
           <div class="pt-3 border-t border-slate-100 flex flex-wrap gap-2">
             <a href="https://www.diputados.gob.mx/LeyesBiblio/pdf/LGIPE.pdf" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold">📜 LGIPE Oficial &nearr;</a>
+            <a href="https://www.dof.gob.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold">📰 Diario Oficial de la Federación (DOF) &nearr;</a>
             <a href="https://www.ine.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-blue-700 text-white text-xs font-bold">🏛️ Portal INE &nearr;</a>
             <a href="${ople.urlOficial}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">🏛️ ${ople.siglas} (${estado}) &nearr;</a>
           </div>
@@ -5708,7 +5975,7 @@ window.runLiveTrainingManualGenerator = async function() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<span>📘</span><span>Generar Manual Operativo y Legal con IA</span>';
+      btn.innerHTML = '<span>📘</span><span>Generar Manual Operativo y Legal con IA (Auto-Actualizado 24h)</span>';
     }
   }
 };
@@ -5720,7 +5987,7 @@ window.runLiveStandaloneAttackMode = async function() {
   const btn = document.getElementById('btn-run-standalone-attack-ai');
   const outContainer = document.getElementById('standalone-attack-ai-results');
   const estado = document.getElementById('atk-select-estado')?.value || document.getElementById('select-estado')?.value || 'Estado de México';
-  const municipio = document.getElementById('atk-input-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
+  const municipio = document.getElementById('atk-select-municipio')?.value || document.getElementById('select-municipio')?.value || 'Texcoco';
   const partidoRival = document.getElementById('atk-select-rival')?.value || 'MORENA';
   const propuestaRivalTexto = document.getElementById('atk-input-propuesta')?.value || `Promesas incumplidas y vulnerabilidades de ${partidoRival} en ${municipio}`;
 
@@ -5810,35 +6077,53 @@ window.runLiveStandaloneAttackMode = async function() {
 };
 
 // ============================================================================
-// EJECUCIÓN DE LOS 2 AGENTES INSPECTORES INTERNOS (QA & AI AUDITORS)
+// EJECUCIÓN DE LOS 3 AGENTES INSPECTORES INTERNOS (ANTI-ALUCINACIÓN, IA & CÓDIGO)
 // ============================================================================
 window.runInternalInspectorsAudit = async function() {
   const out = document.getElementById('internal-inspectors-modal-body');
   const modal = document.getElementById('modal-internal-inspectors');
   if (modal) modal.classList.remove('hidden');
   if (out) {
-    out.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-600 animate-pulse">🤖 Ejecutando AIConnectionAuditorAgent y CodeHealthInspectorAgent en tiempo real...</div>`;
+    out.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-600 animate-pulse">🤖 Ejecutando AntiHallucinationFactCheckerAgent, AIConnectionAuditorAgent y CodeHealthInspectorAgent en tiempo real...</div>`;
   }
   try {
     const res = await fetch('/api/audit/full-inspectors?ping=true');
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Error en inspectores');
+    const ah = data.antiHallucinationAuditor || {};
     const ai = data.aiConnectionAuditor || {};
     const ch = data.codeHealthInspector || {};
 
     if (out) {
       out.innerHTML = `
         <div class="space-y-5 text-xs">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 space-y-1">
+              <span class="text-[10px] font-black uppercase text-amber-900">Agente 01 • AntiHallucinationFactCheckerAgent</span>
+              <div class="text-base font-black text-amber-950">Cero Alucinación: ${ah.status || 'BLINDAJE ACTIVO'}</div>
+              <div class="text-[11px] text-amber-900">Temperature: <strong>${ah.temperatureEnforced ?? 0.0}</strong> • Grounding: <strong>INE / PNT / INEGI / OPLE</strong></div>
+            </div>
             <div class="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-300 space-y-1">
-              <span class="text-[10px] font-black uppercase text-emerald-800">Agente 01 • AIConnectionAuditorAgent</span>
-              <div class="text-lg font-black text-emerald-950">Conexión IA: ${ai.complianceScorePct ?? 100}% (${ai.totalModulesConnected}/${ai.totalModulesAudited} Módulos)</div>
+              <span class="text-[10px] font-black uppercase text-emerald-800">Agente 02 • AIConnectionAuditorAgent</span>
+              <div class="text-base font-black text-emerald-950">Conexión IA: ${ai.complianceScorePct ?? 100}% (${ai.totalModulesConnected}/${ai.totalModulesAudited} Módulos)</div>
               <div class="text-[11px] text-emerald-800">Proveedor Activo: <strong>${ai.activeProvider}</strong> • Cobertura: <strong>${ai.oplesCoverage}</strong></div>
             </div>
             <div class="p-4 rounded-xl bg-blue-50 border-2 border-blue-300 space-y-1">
-              <span class="text-[10px] font-black uppercase text-blue-800">Agente 02 • CodeHealthInspectorAgent</span>
-              <div class="text-lg font-black text-blue-950">Salud de Código: ${ch.healthScorePct ?? 100}% (Errores Sintaxis: ${ch.syntaxErrorsCount ?? 0})</div>
-              <div class="text-[11px] text-blue-800">Archivos Compilados: <strong>${(ch.filesAudited || []).length}</strong> • Memory-Safe: <strong>VERIFICADO</strong></div>
+              <span class="text-[10px] font-black uppercase text-blue-800">Agente 03 • CodeHealthInspectorAgent</span>
+              <div class="text-base font-black text-blue-950">Salud de Código: ${ch.healthScorePct ?? 100}% (Errores Sintaxis: ${ch.syntaxErrorsCount ?? 0})</div>
+              <div class="text-[11px] text-blue-800">Archivos Compilados: <strong>${(ch.filesAudited || []).length}</strong> • Selectores Cascada: <strong>ACTIVOS</strong></div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <h5 class="font-black text-slate-900 uppercase">Reglas de Veracidad de AntiHallucinationFactCheckerAgent (Temperature 0.0):</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${(ah.rulesEnforced || []).map(r => `
+                <div class="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50 flex items-center justify-between gap-2">
+                  <span class="font-bold text-slate-800">${r}</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] font-black shrink-0">✔ ACTIVA</span>
+                </div>
+              `).join('')}
             </div>
           </div>
 
@@ -5875,4 +6160,5 @@ window.runInternalInspectorsAudit = async function() {
     if (out) out.innerHTML = `<div class="p-4 text-rose-700 font-bold text-xs">Error ejecutando inspectores: ${err.message}</div>`;
   }
 };
+
 

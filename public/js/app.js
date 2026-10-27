@@ -554,7 +554,7 @@ window.switchWarRoomTab = function(tabId) {
     : 'Texcoco';
 
   if (tabId === 'tab-ley-electoral') {
-    const mIn = document.getElementById('law-input-municipio');
+    const mIn = document.getElementById('law-select-municipio');
     if (mIn && (!mIn.value || mIn.value === 'Texcoco')) mIn.value = cleanMuni;
     const pIn = document.getElementById('law-input-propuesta');
     if (pIn && !pIn.value && appState.propuestaTexto) pIn.value = appState.propuestaTexto;
@@ -564,8 +564,13 @@ window.switchWarRoomTab = function(tabId) {
       window.runLiveElectoralLawAudit();
     }
   } else if (tabId === 'tab-historial-electoral') {
-    const mIn = document.getElementById('hist-input-municipio');
-    if (mIn && (!mIn.value || mIn.value === 'Texcoco')) mIn.value = cleanMuni;
+    const mIn = document.getElementById('hist-select-municipio');
+    if (mIn && (!mIn.value || mIn.value === 'Texcoco')) {
+      mIn.value = cleanMuni;
+      if (typeof window.onCascadeMunicipioChange === 'function') {
+        window.onCascadeMunicipioChange('hist', cleanMuni);
+      }
+    }
     const pSel = document.getElementById('hist-select-partido');
     if (pSel && appState.activeParty) pSel.value = appState.activeParty;
     const resBox = document.getElementById('electoral-history-ai-results');
@@ -932,13 +937,24 @@ function setupEventListeners() {
     if (typeof window.syncAllOpleBadgesInUI === 'function') {
       window.syncAllOpleBadgesInUI(appState.estado);
     }
+    if (typeof window.initAllTerritorialCascadeDropdowns === 'function') {
+      window.initAllTerritorialCascadeDropdowns();
+    }
   });
 
   // Cambio de Municipio
   const selectMunicipio = document.getElementById('select-municipio');
   selectMunicipio.addEventListener('change', (e) => {
     appState.municipio = e.target.value;
+    if (typeof window.initAllTerritorialCascadeDropdowns === 'function') {
+      window.initAllTerritorialCascadeDropdowns();
+    }
   });
+
+  // Inicializar selectores en cascada en todos los módulos
+  if (typeof window.initAllTerritorialCascadeDropdowns === 'function') {
+    setTimeout(() => window.initAllTerritorialCascadeDropdowns(), 150);
+  }
 
   // Campo Localidad
   const inputLocalidad = document.getElementById('input-localidad');

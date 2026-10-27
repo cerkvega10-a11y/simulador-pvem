@@ -20,10 +20,13 @@ class CodeHealthInspectorAgent {
       'server.js',
       'src/services/freeLLMService.js',
       'src/services/persistentDatabase.js',
+      'src/services/electoralManualScheduler.js',
       'src/data/oplesNationalCatalog.js',
       'src/data/mexicoNationalCatalog.js',
+      'src/data/ineSectionsAndEncarteCatalog.js',
       'src/data/officialGovernmentData.js',
       'src/agents/orchestratorAgent.js',
+      'src/agents/antiHallucinationFactCheckerAgent.js',
       'src/agents/aiConnectionAuditorAgent.js',
       'src/agents/codeHealthInspectorAgent.js',
       'public/js/app.js',
@@ -117,6 +120,32 @@ class CodeHealthInspectorAgent {
       check: 'INDEPENDENCIA_DE_GRAFICOS_Y_MEMORY_SAFE',
       passed: hasChartDestroy,
       detail: 'Instancias de gráficos aisladas con destrucción segura (.destroy()) para evitar encimamientos y fugas de memoria.'
+    });
+
+    // 6. Verificación de Cero Texto Libre en Filtros Territoriales (Selectores <select> en Cascada)
+    const hasCascadeSelects = indexHtml.includes('id="ins-select-municipio"') &&
+      indexHtml.includes('id="ins-select-seccion"') &&
+      indexHtml.includes('id="ins-select-tipo-casilla"') &&
+      indexHtml.includes('id="hist-select-municipio"') &&
+      indexHtml.includes('id="hist-select-seccion"') &&
+      indexHtml.includes('id="law-select-municipio"') &&
+      indexHtml.includes('id="man-select-municipio"');
+    structuralChecks.push({
+      check: 'CERO_TEXTO_LIBRE_SELECTORES_CASCADA',
+      passed: hasCascadeSelects,
+      detail: hasCascadeSelects
+        ? 'Todos los filtros territoriales (Estado, Municipio, Sección Electoral y Tipo de Casilla) operan mediante listas desplegables <select> en cascada.'
+        : 'Advertencia: Faltan selectores <select> en cascada.'
+    });
+
+    // 7. Verificación de Auto-Actualización cada 24 Horas en Manual de Capacitación
+    const hasManual24hBanner = indexHtml.includes('id="manual-auto-update-24h-banner"');
+    structuralChecks.push({
+      check: 'MANUAL_CAPACITACION_AUTO_UPDATE_24H',
+      passed: hasManual24hBanner,
+      detail: hasManual24hBanner
+        ? 'Scheduler automático de 24 horas (INE + DOF + TEPJF + OPLE) y sello visible activos en el Manual de Capacitación.'
+        : 'Advertencia: Falta banner de auto-actualización 24h.'
     });
 
     const allStructuralPassed = structuralChecks.every(c => c.passed);

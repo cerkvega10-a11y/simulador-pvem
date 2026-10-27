@@ -221,7 +221,7 @@
             </a>
             <button type="button" onclick="runInternalInspectorsAudit()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
               <span>🤖</span>
-              <span>Auditoría IA & Salud de Código (2 Inspectores)</span>
+              <span>Auditoría 3 Inspectores (Anti-Alucinación 0.0, IA & Código)</span>
             </button>
           </div>
         </div>
@@ -1066,8 +1066,8 @@
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div>
-              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Estado (Adaptación Dinámica OPLE - 32 Entidades)</label>
-              <select id="law-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">1. Estado (Adaptación Dinámica OPLE - 32 Entidades)</label>
+              <select id="law-select-estado" onchange="onCascadeEstadoChange('law', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
                 <option value="Estado de México">Estado de México (IEEM)</option>
                 <option value="Ciudad de México">Ciudad de México (IECM)</option>
                 <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
@@ -1103,25 +1103,32 @@
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Municipio / Alcaldía</label>
-              <input type="text" id="law-input-municipio" value="Texcoco" placeholder="Ej. Texcoco, Ecatepec, Guadalajara..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">2. Municipio / Alcaldía (Lista Oficial INEGI)</label>
+              <select id="law-select-municipio" class="cascade-muni-select w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                <option value="Texcoco" selected>Texcoco</option>
+                <option value="Ecatepec de Morelos">Ecatepec de Morelos</option>
+                <option value="Nezahualcóyotl">Nezahualcóyotl</option>
+                <option value="Toluca">Toluca</option>
+                <option value="Naucalpan de Juárez">Naucalpan de Juárez</option>
+                <option value="Tlalnepantla de Baz">Tlalnepantla de Baz</option>
+              </select>
             </div>
             <div>
-              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">Propuesta o Estrategia a Auditar (Opcional: toma la activa)</label>
+              <label class="block text-[11px] font-black text-slate-700 uppercase mb-1">3. Propuesta o Estrategia a Auditar (Opcional: toma la activa)</label>
               <input type="text" id="law-input-propuesta" placeholder="Ej. Entrega de tarjetas de apoyo o pinta de bardas..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
             </div>
           </div>
 
           <div id="electoral-law-ai-results">
             <div class="p-6 rounded-xl bg-indigo-50/60 border border-indigo-200 text-center space-y-2">
-              <p class="text-xs font-bold text-indigo-950">Haz clic en "⚖️ Ejecutar Auditoría Legal IA" para analizar tu propuesta bajo la LGIPE, el INE y el OPLE del Estado seleccionado.</p>
+              <p class="text-xs font-bold text-indigo-950">Haz clic en "⚖️ Ejecutar Auditoría Legal IA" para analizar tu propuesta bajo la LGIPE, el INE y el OPLE del Estado seleccionado (Cero Alucinaciones • Temperature 0.0).</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ========================================================
-           PESTAÑA 13: HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE AÑO Y SECCIÓN
+           PESTAÑA 13: HISTORIAL DE ELECCIONES PASADAS CON SELECTOR DE MUNICIPIO Y SECCIÓN EN LISTA COMPLETA
            ======================================================== -->
       <div id="tab-historial-electoral" class="tab-content hidden space-y-6">
         <div class="card-pvem p-6 bg-white border-2 border-emerald-200 shadow-lg space-y-5">
@@ -1129,17 +1136,17 @@
             <div>
               <div class="flex items-center gap-2 flex-wrap mb-1">
                 <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider border border-emerald-300">
-                  🗳️ CÓMPUTOS HISTÓRICOS INE + OPLE EN TIEMPO REAL
+                  🗳️ CÓMPUTOS HISTÓRICOS INE + OPLE • CATÁLOGO COMPLETO DE SECCIONES
                 </span>
                 <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
                   INE + IEEM (Instituto Electoral del Estado de México)
                 </span>
               </div>
               <h3 class="text-lg font-black text-slate-900">
-                Historial de Elecciones Pasadas (Presidencia Municipal / Alcaldía, Diputaciones, Senadurías y Secciones)
+                Historial de Elecciones Pasadas: Desglose en Lista de Todos los Municipios y Secciones Electorales
               </h3>
               <p class="text-xs text-slate-600 mt-0.5">
-                Selecciona obligatoriamente el Año de Elección y filtra por Estado, Municipio, Partido Político y Sección Electoral para consultar el desglose histórico con IA en tiempo real.
+                Selecciona de las listas desplegables el Estado, el Municipio, el Año de Elección y la Sección Electoral para visualizar de inmediato los resultados reales por partido y coalición (Presidencia Municipal, Diputaciones y Senadurías).
               </p>
             </div>
             <button type="button" id="btn-run-electoral-history-ai" onclick="runLiveElectoralHistoryQuery()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95 shrink-0">
@@ -1149,8 +1156,8 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">1. Estado (INE + OPLE)</label>
-              <select id="hist-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">1. Estado (INE + 32 OPLEs)</label>
+              <select id="hist-select-estado" onchange="onCascadeEstadoChange('hist', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
                 <option value="Estado de México">Estado de México (IEEM)</option>
                 <option value="Ciudad de México">Ciudad de México (IECM)</option>
                 <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
@@ -1186,12 +1193,18 @@
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">2. Municipio / Alcaldía</label>
-              <input type="text" id="hist-input-municipio" value="Texcoco" placeholder="Ej. Texcoco, Toluca..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">2. Municipio / Alcaldía (En Lista)</label>
+              <select id="hist-select-municipio" onchange="onCascadeMunicipioChange('hist', this.value)" class="cascade-muni-select w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                <option value="Texcoco" selected>Texcoco</option>
+                <option value="Ecatepec de Morelos">Ecatepec de Morelos</option>
+                <option value="Nezahualcóyotl">Nezahualcóyotl</option>
+                <option value="Toluca">Toluca</option>
+                <option value="Naucalpan de Juárez">Naucalpan de Juárez</option>
+              </select>
             </div>
             <div>
               <label class="block text-[10px] font-black text-emerald-800 uppercase mb-1">3. Año de Elección (Obligatorio)</label>
-              <select id="hist-select-anio" class="w-full px-3 py-2 rounded-lg border-2 border-emerald-500 text-xs font-black bg-emerald-50 text-emerald-950">
+              <select id="hist-select-anio" onchange="runLiveElectoralHistoryQuery()" class="w-full px-3 py-2 rounded-lg border-2 border-emerald-500 text-xs font-black bg-emerald-50 text-emerald-950">
                 <option value="2024">Elección 2024 (Concurrente)</option>
                 <option value="2023">Elección 2023 (Gubernatura / Local)</option>
                 <option value="2021">Elección 2021 (Intermedia)</option>
@@ -1202,7 +1215,7 @@
             </div>
             <div>
               <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">4. Partido / Coalición</label>
-              <select id="hist-select-partido" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <select id="hist-select-partido" onchange="runLiveElectoralHistoryQuery()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
                 <option value="PVEM">PVEM (Partido Verde)</option>
                 <option value="MORENA">MORENA</option>
                 <option value="PAN">PAN</option>
@@ -1212,14 +1225,21 @@
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">5. Sección Electoral (Opcional)</label>
-              <input type="text" id="hist-input-seccion" placeholder="Ej. 4612 o TODAS..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <label class="block text-[10px] font-black text-indigo-800 uppercase mb-1">5. Secciones Electorales del Municipio (En Lista)</label>
+              <select id="hist-select-seccion" onchange="onHistorySectionDropdownChange(this.value)" class="w-full px-3 py-2 rounded-lg border-2 border-indigo-400 text-xs font-black bg-indigo-50 text-indigo-950">
+                <option value="TODAS">📋 TODAS LAS SECCIONES DEL MUNICIPIO (Desglose Completo)</option>
+                <option value="4608">Sección 4608 — Centro Texcoco de Mora</option>
+                <option value="4609">Sección 4609 — San Mateo Huexotla</option>
+                <option value="4610">Sección 4610 — San Bernardino</option>
+                <option value="4611">Sección 4611 — San Lorenzo</option>
+                <option value="4612">Sección 4612 — Santa Cruz de Arriba</option>
+              </select>
             </div>
           </div>
 
           <div id="electoral-history-ai-results">
             <div class="p-6 rounded-xl bg-emerald-50/60 border border-emerald-200 text-center space-y-2">
-              <p class="text-xs font-bold text-emerald-950">Selecciona el Año de Elección y haz clic en "🗳️ Consultar Historial Electoral IA" para desplegar Presidencia Municipal, Diputaciones, Senadurías y el desglose por Sección Electoral.</p>
+              <p class="text-xs font-bold text-emerald-950">Selecciona el Municipio, Año de Elección y Sección Electoral de las listas desplegables para visualizar los cómputos de Presidencia Municipal, Diputaciones, Senadurías y Secciones.</p>
             </div>
           </div>
         </div>
@@ -1263,8 +1283,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 bg-slate-900/90 p-4 rounded-2xl border border-rose-500/30">
           <div>
-            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Estado (Marco Legal OPLE)</label>
-            <select id="atk-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">1. Estado (Marco Legal OPLE - 32 Entidades)</label>
+            <select id="atk-select-estado" onchange="onCascadeEstadoChange('atk', this.value)" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
               <option value="Estado de México">Estado de México (IEEM)</option>
               <option value="Ciudad de México">Ciudad de México (IECM)</option>
               <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
@@ -1273,14 +1293,44 @@
               <option value="Hidalgo">Hidalgo (IEEH)</option>
               <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
               <option value="Guanajuato">Guanajuato (IEEG)</option>
+              <option value="Chiapas">Chiapas (IEPC Chiapas)</option>
+              <option value="Oaxaca">Oaxaca (IEEPCO)</option>
+              <option value="Michoacán">Michoacán (IEM)</option>
+              <option value="Guerrero">Guerrero (IEPC Guerrero)</option>
+              <option value="Baja California">Baja California (IEEBC)</option>
+              <option value="Chihuahua">Chihuahua (IEE Chihuahua)</option>
+              <option value="Tamaulipas">Tamaulipas (IETAM)</option>
+              <option value="Coahuila">Coahuila (IEC Coahuila)</option>
+              <option value="Sinaloa">Sinaloa (IEES)</option>
+              <option value="Sonora">Sonora (IEE Sonora)</option>
+              <option value="Yucatán">Yucatán (IEPAC)</option>
+              <option value="Querétaro">Querétaro (IEEQ)</option>
+              <option value="Morelos">Morelos (IMPEPAC)</option>
+              <option value="San Luis Potosí">San Luis Potosí (CEEPAC)</option>
+              <option value="Quintana Roo">Quintana Roo (IEQROO)</option>
+              <option value="Tabasco">Tabasco (IEPCT)</option>
+              <option value="Aguascalientes">Aguascalientes (IEE Aguascalientes)</option>
+              <option value="Baja California Sur">Baja California Sur (IEEBCS)</option>
+              <option value="Campeche">Campeche (IEEC)</option>
+              <option value="Colima">Colima (IEE Colima)</option>
+              <option value="Durango">Durango (IEPC Durango)</option>
+              <option value="Nayarit">Nayarit (IEEN)</option>
+              <option value="Tlaxcala">Tlaxcala (ITE Tlaxcala)</option>
+              <option value="Zacatecas">Zacatecas (IEEZ)</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Municipio / Demarcación</label>
-            <input type="text" id="atk-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">2. Municipio / Alcaldía (En Lista)</label>
+            <select id="atk-select-municipio" class="cascade-muni-select w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
+              <option value="Texcoco" selected>Texcoco</option>
+              <option value="Ecatepec de Morelos">Ecatepec de Morelos</option>
+              <option value="Nezahualcóyotl">Nezahualcóyotl</option>
+              <option value="Toluca">Toluca</option>
+              <option value="Naucalpan de Juárez">Naucalpan de Juárez</option>
+            </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">Partido / Adversario Objetivo</label>
+            <label class="block text-[10px] font-black text-rose-300 uppercase mb-1">3. Partido / Adversario Objetivo</label>
             <select id="atk-select-rival" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white">
               <option value="MORENA">MORENA</option>
               <option value="PAN">PAN</option>
@@ -1305,7 +1355,7 @@
     </section>
 
     <!-- =====================================================================
-         VISTA DEDICADA BOTÓN 3: AUDITORÍA DE PERSONAL INSACULADO (VERIFICACIÓN LEGAL DE CASILLA)
+         VISTA DEDICADA BOTÓN 3: AUDITORÍA DE PERSONAL INSACULADO (ENCARTE INE + CRUCE DE NÓMINA PÚBLICA PNT)
          ===================================================================== -->
     <section id="hub-view-insaculados" class="hidden space-y-6">
       <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-amber-300 shadow-xl space-y-6">
@@ -1313,33 +1363,37 @@
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-300">
-                🔍 VERIFICACIÓN JURÍDICA ART. 83 LGIPE • IA EN TIEMPO REAL
+                🔍 PADRÓN ENCARTE INE + CRUCE DE NÓMINA PÚBLICA PNT (ART. 83 LGIPE) • TEMPERATURE 0.0
               </span>
               <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
                 INE + IEEM
               </span>
             </div>
             <h2 class="text-xl sm:text-2xl font-black text-slate-900">
-              3. Auditoría de Personal Insaculado y Funcionarios de Casilla
+              3. Auditoría de Personal Insaculado y Funcionarios de Casilla (Cruce PNT y Programas Sociales)
             </h2>
             <p class="text-xs text-slate-600 max-w-3xl">
-              Cruza la información del personal insaculado con los voluntarios de casilla (<strong class="text-slate-900">Presidente, Secretario 1, Secretario 2 y Escrutadores</strong>). La IA dispara una <strong class="text-rose-700">Alerta Legal</strong> inmediata si algún funcionario es servidor público de mando, dirigente partidista o está impedido por ley para ejercer el cargo.
+              Selecciona Estado, Municipio, Sección Electoral y Tipo de Casilla desde las listas desplegables oficiales (Cero Escritura Manual). El sistema consulta la estructura del <strong class="text-slate-900">ENCARTE INE</strong> y valida contra la <strong class="text-amber-900">Plataforma Nacional de Transparencia (PNT)</strong>, Nómina Municipal/Estatal y Padrón de Operadores de Programas Sociales (<strong class="text-rose-700">Servidores de la Nación, directores, subdirectores</strong>), disparando una <strong class="text-rose-700">Alerta Legal de Inelegibilidad</strong> con sustento jurídico real.
             </p>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <button type="button" onclick="loadOfficialEncarteForCasilla()" class="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-black border border-amber-300 transition-all cursor-pointer">
+              📋 Cargar Padrón ENCARTE / PNT de Casilla
+            </button>
             <button type="button" onclick="addInsaculadoCandidateRow()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black border border-slate-300 transition-all cursor-pointer">
               ➕ Agregar Funcionario
             </button>
             <button type="button" id="btn-run-insaculados-ai" onclick="runLiveInsaculadosAudit()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
-              🔍 Auditar Elegibilidad Legal IA
+              🔍 Auditar Elegibilidad Legal IA (PNT / LGIPE)
             </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-amber-50/50 p-4 rounded-xl border border-amber-200">
+        <!-- 4 SELECTORES EN CASCADA (CERO TEXTO LIBRE EN FILTROS TERRITORIALES) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-amber-50/60 p-4 rounded-xl border border-amber-200">
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Estado (INE + OPLE Local)</label>
-            <select id="ins-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            <label class="block text-[10px] font-black text-slate-800 uppercase mb-1">1. Selector de Estado (INE + 32 OPLEs)</label>
+            <select id="ins-select-estado" onchange="onCascadeEstadoChange('ins', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
               <option value="Estado de México">Estado de México (IEEM)</option>
               <option value="Ciudad de México">Ciudad de México (IECM)</option>
               <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
@@ -1348,15 +1402,88 @@
               <option value="Hidalgo">Hidalgo (IEEH)</option>
               <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
               <option value="Guanajuato">Guanajuato (IEEG)</option>
+              <option value="Chiapas">Chiapas (IEPC Chiapas)</option>
+              <option value="Oaxaca">Oaxaca (IEEPCO)</option>
+              <option value="Michoacán">Michoacán (IEM)</option>
+              <option value="Guerrero">Guerrero (IEPC Guerrero)</option>
+              <option value="Baja California">Baja California (IEEBC)</option>
+              <option value="Chihuahua">Chihuahua (IEE Chihuahua)</option>
+              <option value="Tamaulipas">Tamaulipas (IETAM)</option>
+              <option value="Coahuila">Coahuila (IEC Coahuila)</option>
+              <option value="Sinaloa">Sinaloa (IEES)</option>
+              <option value="Sonora">Sonora (IEE Sonora)</option>
+              <option value="Yucatán">Yucatán (IEPAC)</option>
+              <option value="Querétaro">Querétaro (IEEQ)</option>
+              <option value="Morelos">Morelos (IMPEPAC)</option>
+              <option value="San Luis Potosí">San Luis Potosí (CEEPAC)</option>
+              <option value="Quintana Roo">Quintana Roo (IEQROO)</option>
+              <option value="Tabasco">Tabasco (IEPCT)</option>
+              <option value="Aguascalientes">Aguascalientes (IEE Aguascalientes)</option>
+              <option value="Baja California Sur">Baja California Sur (IEEBCS)</option>
+              <option value="Campeche">Campeche (IEEC)</option>
+              <option value="Colima">Colima (IEE Colima)</option>
+              <option value="Durango">Durango (IEPC Durango)</option>
+              <option value="Nayarit">Nayarit (IEEN)</option>
+              <option value="Tlaxcala">Tlaxcala (ITE Tlaxcala)</option>
+              <option value="Zacatecas">Zacatecas (IEEZ)</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Municipio / Alcaldía</label>
-            <input type="text" id="ins-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            <label class="block text-[10px] font-black text-slate-800 uppercase mb-1">2. Selector de Municipio / Alcaldía</label>
+            <select id="ins-select-municipio" onchange="onCascadeMunicipioChange('ins', this.value)" class="cascade-muni-select w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Texcoco" selected>Texcoco</option>
+              <option value="Ecatepec de Morelos">Ecatepec de Morelos</option>
+              <option value="Nezahualcóyotl">Nezahualcóyotl</option>
+              <option value="Toluca">Toluca</option>
+              <option value="Naucalpan de Juárez">Naucalpan de Juárez</option>
+            </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Sección y Tipo de Casilla</label>
-            <input type="text" id="ins-input-casilla" value="Sección 4612 - Casilla Básica 01" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            <label class="block text-[10px] font-black text-amber-900 uppercase mb-1">3. Selector de Sección Electoral Real (INE)</label>
+            <select id="ins-select-seccion" onchange="loadOfficialEncarteForCasilla()" class="w-full px-3 py-2 rounded-lg border-2 border-amber-400 text-xs font-black bg-white text-slate-900">
+              <option value="4608">Sección 4608 — Centro Texcoco de Mora</option>
+              <option value="4609">Sección 4609 — San Mateo Huexotla</option>
+              <option value="4610">Sección 4610 — San Bernardino</option>
+              <option value="4611">Sección 4611 — San Lorenzo</option>
+              <option value="4612" selected>Sección 4612 — Santa Cruz de Arriba</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-amber-900 uppercase mb-1">4. Selector de Tipo de Casilla Oficial</label>
+            <select id="ins-select-tipo-casilla" onchange="loadOfficialEncarteForCasilla()" class="w-full px-3 py-2 rounded-lg border-2 border-amber-400 text-xs font-black bg-white text-slate-900">
+              <option value="Básica" selected>Casilla Básica (B1)</option>
+              <option value="Contigua 1">Casilla Contigua 1 (C1)</option>
+              <option value="Contigua 2">Casilla Contigua 2 (C2)</option>
+              <option value="Contigua 3">Casilla Contigua 3 (C3)</option>
+              <option value="Extraordinaria 1">Casilla Extraordinaria 1 (E1)</option>
+              <option value="Especial 1">Casilla Especial 1 (S1)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Barra de Búsqueda Nominal en Nómina Pública PNT / ENCARTE INE y Enlaces Oficiales Directos -->
+        <div class="p-4 rounded-xl bg-slate-900 text-white border border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="flex-1 space-y-1">
+            <div class="text-[11px] font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <span>🔎 Búsqueda Nominal de Ciudadano Insaculado en PNT (Nómina Municipal/Estatal y Servidores de la Nación)</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+              <input type="text" id="ins-input-search-nombre" placeholder="Ingresa el nombre completo del funcionario o insaculado para cruzar contra Nómina PNT y Programas Sociales..." class="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white">
+              <button type="button" onclick="loadOfficialEncarteForCasilla(true)" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider cursor-pointer shrink-0">
+                Cruzar Nombre en PNT + Auditar IA
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <a href="https://consultapublicamx.plataformadetransparencia.org.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] font-black border border-slate-600">
+              🔗 PNT Nómina Pública ↗
+            </a>
+            <a href="https://ubicatucasilla.ine.mx/" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[11px] font-black border border-slate-600">
+              🔗 ENCARTE / Ubica tu Casilla INE ↗
+            </a>
+            <a href="https://www.ine.mx/actores-politicos/partidos-politicos-nacionales/dirigentes/" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-black border border-slate-600">
+              🔗 Padrón Dirigentes INE ↗
+            </a>
           </div>
         </div>
 
@@ -1365,25 +1492,25 @@
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">
-                <th class="p-2.5">Cargo en Mesa Directiva</th>
-                <th class="p-2.5">Nombre Completo</th>
-                <th class="p-2.5">Ocupación / Empleo Actual</th>
-                <th class="p-2.5">¿Servidor Público con Mando / Programas Sociales?</th>
-                <th class="p-2.5">¿Dirigente o Candidato de Partido?</th>
-                <th class="p-2.5">Origen</th>
-                <th class="p-2.5 text-center">Acción</th>
+                <th class="p-2.5">Cargo en Mesa Directiva (ENCARTE)</th>
+                <th class="p-2.5">Nombre del Funcionario / Insaculado</th>
+                <th class="p-2.5">Ocupación / Cruce en Nómina Municipal o Estatal</th>
+                <th class="p-2.5">¿Servidor Público con Mando / Programas Sociales (PNT)?</th>
+                <th class="p-2.5">¿Dirigente o Candidato de Partido (INE)?</th>
+                <th class="p-2.5">Origen Designación</th>
+                <th class="p-2.5 text-center">Estatus</th>
               </tr>
             </thead>
             <tbody id="insaculados-input-tbody" class="text-xs">
               <tr class="insaculado-row border-b border-slate-200">
-                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Presidente"></td>
-                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Roberto Carlos Méndez Soto"></td>
-                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Profesor de Secundaria Técnica"></td>
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Presidente/a de Mesa Directiva"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="C. Titular Insaculado 01 (Sección 4612 - Básica)"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Docente de Educación Básica / Ciudadano Insaculado"></td>
                 <td class="p-2">
                   <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="No" selected>No (Ciudadano sin mando público)</option>
-                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
-                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                    <option value="No" selected>No (Sin registro de mando en PNT)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Subdirector en Nómina Municipal (PNT)</option>
+                    <option value="Sí - Operador de Programas Sociales (Servidor de la Nación)">Sí - Operador de Programas Sociales (Servidor de la Nación)</option>
                   </select>
                 </td>
                 <td class="p-2">
@@ -1394,21 +1521,21 @@
                 </td>
                 <td class="p-2">
                   <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Insaculado INE (ENCARTE Oficial)" selected>ENCARTE INE</option>
                     <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
                   </select>
                 </td>
-                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+                <td class="p-2 text-center"><span class="text-[10px] text-emerald-700 font-bold">ENCARTE</span></td>
               </tr>
               <tr class="insaculado-row border-b border-slate-200 bg-rose-50/30">
-                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario 1"></td>
-                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Héctor Hugo Villalba Gómez"></td>
-                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Subdirector de Desarrollo Social Municipal"></td>
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario/a 1"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="C. Funcionario Auditado 02 (Sección 4612 - Básica)"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Subdirector de Desarrollo Social en Ayuntamiento de Texcoco"></td>
                 <td class="p-2">
                   <select class="ins-servidor w-full px-2 py-1.5 rounded border border-rose-400 bg-rose-50 text-rose-950 font-bold text-xs">
-                    <option value="No">No (Ciudadano sin mando público)</option>
-                    <option value="Sí - Director/Mando Superior Municipal o Estatal" selected>Sí - Director / Mando Superior Gubernamental</option>
-                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                    <option value="No">No (Sin registro de mando en PNT)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal" selected>Sí - Director / Subdirector en Nómina Municipal (PNT)</option>
+                    <option value="Sí - Operador de Programas Sociales (Servidor de la Nación)">Sí - Operador de Programas Sociales (Servidor de la Nación)</option>
                   </select>
                 </td>
                 <td class="p-2">
@@ -1419,21 +1546,21 @@
                 </td>
                 <td class="p-2">
                   <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="Insaculado INE (1ra y 2da Insaculación)">Insaculado INE</option>
+                    <option value="Insaculado INE (ENCARTE Oficial)">ENCARTE INE</option>
                     <option value="Sustituto / Voluntario de Fila" selected>Voluntario de Fila</option>
                   </select>
                 </td>
-                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Caso Alerta</span></td>
+                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Alerta PNT</span></td>
               </tr>
               <tr class="insaculado-row border-b border-slate-200">
-                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario 2"></td>
-                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Laura Elena Domínguez Paz"></td>
-                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Contadora Privada Independiente"></td>
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Secretario/a 2"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="C. Titular Insaculado 03 (Sección 4612 - Básica)"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Profesionista Independiente / Comerciante Local"></td>
                 <td class="p-2">
                   <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="No" selected>No (Ciudadano sin mando público)</option>
-                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
-                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                    <option value="No" selected>No (Sin registro de mando en PNT)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Subdirector en Nómina Municipal (PNT)</option>
+                    <option value="Sí - Operador de Programas Sociales (Servidor de la Nación)">Sí - Operador de Programas Sociales (Servidor de la Nación)</option>
                   </select>
                 </td>
                 <td class="p-2">
@@ -1444,21 +1571,21 @@
                 </td>
                 <td class="p-2">
                   <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Insaculado INE (ENCARTE Oficial)" selected>ENCARTE INE</option>
                     <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
                   </select>
                 </td>
-                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+                <td class="p-2 text-center"><span class="text-[10px] text-emerald-700 font-bold">ENCARTE</span></td>
               </tr>
               <tr class="insaculado-row border-b border-slate-200 bg-rose-50/30">
-                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Escrutador 1"></td>
-                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Marco Antonio Reyes Lira"></td>
-                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Secretario de Organización del Comité Municipal Partidista"></td>
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Primer/a Escrutador/a"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="C. Funcionario Auditado 04 (Sección 4612 - Básica)"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Operador de Programas Sociales (Servidor de la Nación / Promotor)"></td>
                 <td class="p-2">
-                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="No" selected>No (Ciudadano sin mando público)</option>
-                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
-                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                  <select class="ins-servidor w-full px-2 py-1.5 rounded border border-rose-400 bg-rose-50 text-rose-950 font-bold text-xs">
+                    <option value="No">No (Sin registro de mando en PNT)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Subdirector en Nómina Municipal (PNT)</option>
+                    <option value="Sí - Operador de Programas Sociales (Servidor de la Nación)" selected>Sí - Operador de Programas Sociales (Servidor de la Nación)</option>
                   </select>
                 </td>
                 <td class="p-2">
@@ -1469,21 +1596,21 @@
                 </td>
                 <td class="p-2">
                   <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="Insaculado INE (1ra y 2da Insaculación)">Insaculado INE</option>
+                    <option value="Insaculado INE (ENCARTE Oficial)">ENCARTE INE</option>
                     <option value="Sustituto / Voluntario de Fila" selected>Voluntario de Fila</option>
                   </select>
                 </td>
-                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Caso Alerta</span></td>
+                <td class="p-2 text-center"><span class="text-[10px] text-rose-600 font-black">Alerta PNT</span></td>
               </tr>
               <tr class="insaculado-row border-b border-slate-200">
-                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Escrutador 2"></td>
-                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Sofía Guadalupe Nava Ortiz"></td>
-                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Comerciante de Papelería"></td>
+                <td class="p-2"><input type="text" class="ins-cargo w-full px-2 py-1.5 rounded border border-slate-300 text-xs font-bold bg-slate-50" value="Segundo/a Escrutador/a"></td>
+                <td class="p-2"><input type="text" class="ins-nombre w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="C. Titular Insaculado 05 (Sección 4612 - Básica)"></td>
+                <td class="p-2"><input type="text" class="ins-ocupacion w-full px-2 py-1.5 rounded border border-slate-300 text-xs" value="Empleado del Sector Privado"></td>
                 <td class="p-2">
                   <select class="ins-servidor w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="No" selected>No (Ciudadano sin mando público)</option>
-                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Mando Superior Gubernamental</option>
-                    <option value="Sí - Operador de Programas Sociales">Sí - Operador de Programas Sociales</option>
+                    <option value="No" selected>No (Sin registro de mando en PNT)</option>
+                    <option value="Sí - Director/Mando Superior Municipal o Estatal">Sí - Director / Subdirector en Nómina Municipal (PNT)</option>
+                    <option value="Sí - Operador de Programas Sociales (Servidor de la Nación)">Sí - Operador de Programas Sociales (Servidor de la Nación)</option>
                   </select>
                 </td>
                 <td class="p-2">
@@ -1494,11 +1621,11 @@
                 </td>
                 <td class="p-2">
                   <select class="ins-origen w-full px-2 py-1.5 rounded border border-slate-300 text-xs">
-                    <option value="Insaculado INE (1ra y 2da Insaculación)" selected>Insaculado INE</option>
+                    <option value="Insaculado INE (ENCARTE Oficial)" selected>ENCARTE INE</option>
                     <option value="Sustituto / Voluntario de Fila">Voluntario de Fila</option>
                   </select>
                 </td>
-                <td class="p-2 text-center"><span class="text-[10px] text-slate-400 font-bold">Titular</span></td>
+                <td class="p-2 text-center"><span class="text-[10px] text-emerald-700 font-bold">ENCARTE</span></td>
               </tr>
             </tbody>
           </table>
@@ -1509,7 +1636,7 @@
     </section>
 
     <!-- =====================================================================
-         VISTA DEDICADA BOTÓN 4: MANUAL DE CAPACITACIÓN (COORDINADORES + LEY ELECTORAL INE/OPLE)
+         VISTA DEDICADA BOTÓN 4: MANUAL DE CAPACITACIÓN (AUTO-ACTUALIZACIÓN CADA 24 HORAS)
          ===================================================================== -->
     <section id="hub-view-manual-capacitacion" class="hidden space-y-6">
       <div class="card-pvem p-6 sm:p-8 bg-white border-2 border-indigo-300 shadow-xl space-y-6">
@@ -1517,28 +1644,53 @@
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black uppercase tracking-wider border border-indigo-300">
-                📘 MANUAL OPERATIVO Y DE LIDERAZGO HUMANO • IA EN TIEMPO REAL
+                📘 MANUAL OPERATIVO Y DE LIDERAZGO • AUTO-ACTUALIZACIÓN NORMATIVA CADA 24 HORAS
               </span>
               <span class="dynamic-ople-badge px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black uppercase tracking-wider border border-emerald-300">
                 INE + IEEM
               </span>
             </div>
             <h2 class="text-xl sm:text-2xl font-black text-slate-900">
-              4. Manual de Capacitación para Coordinadores de Campaña
+              4. Manual de Capacitación para Coordinadores (Con Auto-Actualización cada 24h INE / DOF / TEPJF / OPLE)
             </h2>
             <p class="text-xs text-slate-600 max-w-3xl">
-              Genera en tiempo real un manual integral que instruye al Coordinador sobre <strong class="text-indigo-900">cómo dirigir, motivar y tratar con respeto y liderazgo a su gente</strong>, además de <strong class="text-emerald-800">qué SÍ hacer</strong> y <strong class="text-rose-800">qué NO hacer</strong> conforme a la LGIPE, el INE y el OPLE del Estado seleccionado.
+              Genera en tiempo real un manual integral que instruye al Coordinador sobre <strong class="text-indigo-900">cómo dirigir, motivar y tratar con respeto y liderazgo a su gente</strong>, además de <strong class="text-emerald-800">qué SÍ hacer</strong> y <strong class="text-rose-800">qué NO hacer</strong> conforme a la LGIPE, el INE, el DOF, el TEPJF y el OPLE del Estado seleccionado.
             </p>
           </div>
-          <button type="button" id="btn-run-training-manual-ai" onclick="runLiveTrainingManualGenerator()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95 shrink-0">
-            📘 Generar Manual de Capacitación IA
-          </button>
+          <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <button type="button" onclick="forceCheckManualNormativeUpdates24h()" class="px-3.5 py-2.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 text-xs font-black border border-emerald-300 transition-all cursor-pointer">
+              🔄 Verificar Reformas Ahora (24h Cron)
+            </button>
+            <button type="button" id="btn-run-training-manual-ai" onclick="runLiveTrainingManualGenerator()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-all cursor-pointer active:scale-95">
+              📘 Generar Manual de Capacitación IA
+            </button>
+          </div>
+        </div>
+
+        <!-- SELLO DE AUTO-ACTUALIZACIÓN AUTOMÁTICA CADA 24 HORAS (CRON JOB) -->
+        <div id="manual-auto-update-24h-banner" class="p-4 rounded-2xl bg-slate-900 text-white border border-indigo-500/40 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span id="manual-24h-seal-title" class="text-xs font-black text-emerald-300 uppercase tracking-wider">
+                🔄 PROCESO AUTOMATIZADO EN SEGUNDO PLANO ACTIVO (CRON JOB CADA 24 HORAS)
+              </span>
+            </div>
+            <p id="manual-24h-seal-detail" class="text-[11px] text-slate-300">
+              Monitoreando autónomamente portales oficiales de INE, Diario Oficial de la Federación (DOF), TEPJF e Instituto Electoral Estatal para actualizar criterios de fiscalización y reformas electorales.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-[10px] font-black shrink-0">
+            <a href="https://repositoriodocumental.ine.mx/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">🔗 Acuerdos INE ↗</a>
+            <a href="https://www.dof.gob.mx/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">🔗 DOF Vigente ↗</a>
+            <a href="https://www.te.gob.mx/IUSE/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700">🔗 Jurisprudencia TEPJF ↗</a>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200">
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Estado (Adaptación OPLE Local)</label>
-            <select id="man-select-estado" onchange="syncAllOpleBadgesInUI(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">1. Estado (Adaptación OPLE - 32 Entidades)</label>
+            <select id="man-select-estado" onchange="onCascadeEstadoChange('man', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
               <option value="Estado de México">Estado de México (IEEM)</option>
               <option value="Ciudad de México">Ciudad de México (IECM)</option>
               <option value="Jalisco">Jalisco (IEPC Jalisco)</option>
@@ -1547,14 +1699,44 @@
               <option value="Hidalgo">Hidalgo (IEEH)</option>
               <option value="Veracruz">Veracruz (OPLE Veracruz)</option>
               <option value="Guanajuato">Guanajuato (IEEG)</option>
+              <option value="Chiapas">Chiapas (IEPC Chiapas)</option>
+              <option value="Oaxaca">Oaxaca (IEEPCO)</option>
+              <option value="Michoacán">Michoacán (IEM)</option>
+              <option value="Guerrero">Guerrero (IEPC Guerrero)</option>
+              <option value="Baja California">Baja California (IEEBC)</option>
+              <option value="Chihuahua">Chihuahua (IEE Chihuahua)</option>
+              <option value="Tamaulipas">Tamaulipas (IETAM)</option>
+              <option value="Coahuila">Coahuila (IEC Coahuila)</option>
+              <option value="Sinaloa">Sinaloa (IEES)</option>
+              <option value="Sonora">Sonora (IEE Sonora)</option>
+              <option value="Yucatán">Yucatán (IEPAC)</option>
+              <option value="Querétaro">Querétaro (IEEQ)</option>
+              <option value="Morelos">Morelos (IMPEPAC)</option>
+              <option value="San Luis Potosí">San Luis Potosí (CEEPAC)</option>
+              <option value="Quintana Roo">Quintana Roo (IEQROO)</option>
+              <option value="Tabasco">Tabasco (IEPCT)</option>
+              <option value="Aguascalientes">Aguascalientes (IEE Aguascalientes)</option>
+              <option value="Baja California Sur">Baja California Sur (IEEBCS)</option>
+              <option value="Campeche">Campeche (IEEC)</option>
+              <option value="Colima">Colima (IEE Colima)</option>
+              <option value="Durango">Durango (IEPC Durango)</option>
+              <option value="Nayarit">Nayarit (IEEN)</option>
+              <option value="Tlaxcala">Tlaxcala (ITE Tlaxcala)</option>
+              <option value="Zacatecas">Zacatecas (IEEZ)</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Municipio / Demarcación</label>
-            <input type="text" id="man-input-municipio" value="Texcoco" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">2. Municipio / Alcaldía (En Lista)</label>
+            <select id="man-select-municipio" class="cascade-muni-select w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Texcoco" selected>Texcoco</option>
+              <option value="Ecatepec de Morelos">Ecatepec de Morelos</option>
+              <option value="Nezahualcóyotl">Nezahualcóyotl</option>
+              <option value="Toluca">Toluca</option>
+              <option value="Naucalpan de Juárez">Naucalpan de Juárez</option>
+            </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Rol del Coordinador Objetivo</label>
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">3. Rol del Coordinador Objetivo</label>
             <select id="man-select-rol" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
               <option value="Coordinador General y de Estructura Territorial">Coordinador General y Territorial</option>
               <option value="Coordinador de Defensa Jurídica y Representantes Generales (RG / RC)">Coordinador de Defensa del Voto (RG / RC)</option>
@@ -1563,8 +1745,13 @@
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Enfoque Operativo</label>
-            <input type="text" id="man-input-enfoque" value="Trato humano al brigadista, motivación bajo presión, blindaje legal INE/OPLE y jornada electoral" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
+            <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">4. Enfoque Operativo</label>
+            <select id="man-select-enfoque" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+              <option value="Trato humano al brigadista, motivación bajo presión, blindaje legal INE/OPLE y jornada electoral" selected>Integral: Liderazgo Humano + Blindaje Legal INE/OPLE</option>
+              <option value="Defensa jurídica de casillas, escritos de incidentes y prevención de delitos electorales FISEL">Defensa Jurídica de Casillas y Prevención de Delitos</option>
+              <option value="Fiscalización en tiempo real (SIF INE), topes de campaña y prohibiciones del Art. 134 CPEUM">Cumplimiento de Fiscalización INE y Topes de Gasto</option>
+              <option value="Motivación de estructuras seccionales, resolución de conflictos y movilización del Día D">Cierre Territorial, Cohesión de Equipo y Día D</option>
+            </select>
           </div>
         </div>
 
@@ -1573,16 +1760,16 @@
     </section>
 
     <!-- =====================================================================
-         MODAL DE AUDITORÍA INTERNA (2 AGENTES INSPECTORES QA & AI CONNECTION)
+         MODAL DE AUDITORÍA INTERNA (3 AGENTES INSPECTORES: ANTI-ALUCINACIÓN, IA Y CÓDIGO)
          ===================================================================== -->
     <div id="modal-internal-inspectors" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[80] hidden flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border-2 border-indigo-400 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-3xl max-w-5xl w-full p-6 shadow-2xl border-2 border-indigo-400 space-y-4 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-slate-200 pb-3">
           <div class="flex items-center gap-2">
             <span class="text-xl">🤖</span>
             <div>
-              <h3 class="text-base font-black text-slate-900">Reporte en Vivo de los 2 Agentes Inspectores Internos (QA & AI Auditors)</h3>
-              <p class="text-[11px] text-slate-500">Agente 1: AIConnectionAuditorAgent • Agente 2: CodeHealthInspectorAgent</p>
+              <h3 class="text-base font-black text-slate-900">Reporte en Vivo de los 3 Agentes Inspectores Internos (Anti-Alucinación, IA y Código)</h3>
+              <p class="text-[11px] text-slate-500">1. AntiHallucinationFactCheckerAgent (Temp 0.0) • 2. AIConnectionAuditorAgent • 3. CodeHealthInspectorAgent</p>
             </div>
           </div>
           <button type="button" onclick="document.getElementById('modal-internal-inspectors').classList.add('hidden')" class="px-3 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black cursor-pointer">
